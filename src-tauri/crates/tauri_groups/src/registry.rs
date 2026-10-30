@@ -1,0 +1,147 @@
+use std::{
+  collections::{BTreeMap, HashMap, HashSet},
+  fs, io,
+  path::Path,
+};
+use tauri::{ipc::Invoke, Wry};
+
+pub struct Arg {
+  pub name: &'static str,
+  pub ty: String,
+  pub optional: bool,
+}
+pub struct Sig {
+  pub args: Vec<Arg>,
+  pub ret: String,
+}
+
+/// One `#[command]`. Submitted by the macro
+pub struct CommandEntry {
+  pub group: &'static str,
+  pub name: &'static str,
+  pub wire: &'static str,
+  pub sig: fn() -> Sig,
+  pub call: fn(Invoke<Wry>) -> bool,
+}
+inventory::collect!(CommandEntry);
+
+fn commands() -> Vec<&'static CommandEntry> {
+  let mut v: Vec<_> = inventory::iter::<CommandEntry>().collect();
+  v.sort_by_key(|c| (c.group, c.name));
+  for w in v.windows(2) {
+    if w[0].wire == w[1].wire {
+      panic!(
+        "command `{}.{}` is defined twice; names must be unique within a group",
+        w[0].group, w[0].name
+      );
+    }
+  }
+  v
+}
+
+/// `Builder::default().invoke_handler(tauri_groups::handler())`
+///
+/// Pinned to `Wry` because `tauri::AppHandle` (no type arg) means `AppHandle<Wry>`.
+pub fn handler() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static {
+  let map: HashMap<&'static str, &'static CommandEntry> =
+    commands().into_iter().map(|c| (c.wire, c)).collect();
+  move |invoke| match map.get(invoke.message.command()).copied() {
+    Some(c) => (c.call)(invoke),
+    None => false,
+  }
+}
+
+/// `commands.ts`: the `commands` object, plus an `import type` for whichever
+/// generated types its signatures actually mention (no unused imports).
+pub fn render_commands_ts() -> String {
+  let mut body = String::new();
+  let mut groups: BTreeMap<&str, Vec<&CommandEntry>> = BTreeMap::new();
+  for c in commands() {
+    groups.entry(c.group).or_default().push(c);
+  }
+  body += "export const commands = {\n";
+  for (g, list) in groups {
+    body += &format!("  {g}: {{\n");
+    for c in list {
+      let sig = (c.sig)();
+      let name = camel(c.name);
+      if sig.args.is_empty() {
+        body += &format!("    {name}: () => invoke<{}>(\"{}\"),\n", sig.ret, c.wire);
+      } else {
+        let fields: Vec<_> = sig
+          .args
+          .iter()
+          .map(|a| format!("{}{}: {}", a.name, if a.optional { "?" } else { "" }, a.ty))
+          .collect();
+        // all-optional args -> the whole object is optional too
+        let q = if sig.args.iter().all(|a| a.optional) {
+          "?"
+        } else {
+          ""
+        };
+        body += &format!(
+          "    {name}: (args{q}: {{ {} }}) => invoke<{}>(\"{}\", args),\n",
+          fields.join("; "),
+          sig.ret,
+          c.wire
+        );
+      }
+    }
+    body += "  },\n";
+  }
+  body += "} as const;\n";
+
+  let idents: HashSet<&str> = body
+    .split(|c: char| !(c.is_alphanumeric() || c == '_' || c == '$'))
+    .collect();
+  let used: Vec<&str> = ts_types::type_names()
+    .into_iter()
+    .filter(|n| idents.contains(n))
+    .collect();
+
+  let mut s = String::from(ts_types::HEADER);
+  s += "import { invoke } from \"@tauri-apps/api/core\";\n";
+  if !used.is_empty() {
+    s += &format!(
+      "import type {{ {} }} from \"./{TYPES_MODULE}\";\n",
+      used.join(", ")
+    );
+  }
+  s += "\n";
+  s += &body;
+  s
+}
+
+/// Module name (no extension) the commands file imports types from.
+const TYPES_MODULE: &str = "types";
+
+/// Write `commands.ts` and `types.ts` into `dir`. Only touches a file if its
+/// content changed, so no HMR spam.
+pub fn export_ts(dir: impl AsRef<Path>) -> io::Result<()> {
+  let dir = dir.as_ref();
+  fs::create_dir_all(dir)?;
+  write_if_changed(&dir.join("commands.ts"), &render_commands_ts())?;
+  write_if_changed(&dir.join(format!("{TYPES_MODULE}.ts")), &ts_types::render_types_ts())
+}
+
+fn write_if_changed(path: &Path, s: &str) -> io::Result<()> {
+  if fs::read_to_string(path).ok().as_deref() == Some(s) {
+    return Ok(());
+  }
+  fs::write(path, s)
+}
+
+fn camel(s: &str) -> String {
+  let (mut out, mut up) = (String::new(), false);
+  for c in s.chars() {
+    if c == '_' {
+      up = true;
+    } else if up {
+      out.extend(c.to_uppercase());
+      up = false;
+    } else {
+      out.push(c);
+    }
+  }
+  out
+}
