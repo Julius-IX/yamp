@@ -59,7 +59,7 @@ pub fn render_commands_ts() -> String {
   for c in commands() {
     groups.entry(c.group).or_default().push(c);
   }
-  body += "export const commands = {\n";
+  body += "export const COMMANDS = {\n";
   for (g, list) in groups {
     body += &format!("  {g}: {{\n");
     for c in list {
