@@ -19,6 +19,7 @@ tauri-build = { version = "2", features = [] }
 tauri-groups = { version = "0.2.0" , path = "./crates/tauri_groups" }
 ts-types = { version = "0.2.0", path = "./crates/ts_types" }
 yt-api = { version = "0.1.0", path = "./crates/yt_api" }
+tauri-settings = { version = "0.1.0", path = "./crates/tauri_settings" }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
