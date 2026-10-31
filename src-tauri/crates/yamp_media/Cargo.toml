@@ -1,0 +1,20 @@
+[package]
+name = "yamp-media"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-trait = "0.1"
+log = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["fs", "io-util", "macros", "process", "rt", "sync", "time"] }
+ts-types = { path = "../ts_types" }
+
+# yt-dlp is a standalone binary on desktop, so it is downloaded and verified at runtime
+[target.'cfg(any(target_os = "linux", target_os = "windows", target_os = "macos"))'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["rustls"] }
+sha2 = "0.10"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["rt"] }
