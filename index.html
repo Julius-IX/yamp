@@ -5,6 +5,20 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Yamp</title>
+    <!--
+      Paints the page before any script runs, so there is no flash while the settings load. The
+      first launch uses the dark default. After that it is the exact background of the last theme
+      (AppThemeProvider saves it as "yamp-boot-bg").
+    -->
+    <style>
+      html { background: #030303; }
+    </style>
+    <script>
+      try {
+        var bg = localStorage.getItem("yamp-boot-bg");
+        if (bg) document.documentElement.style.background = bg;
+      } catch (e) {}
+    </script>
   </head>
 
   <body>
