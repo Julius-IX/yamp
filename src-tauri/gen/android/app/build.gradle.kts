@@ -71,6 +71,12 @@ android {
     buildFeatures {
         buildConfig = true
     }
+    // youtubedl-android runs Python and yt-dlp out of the unpacked native libs
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
 }
 
 kotlin {

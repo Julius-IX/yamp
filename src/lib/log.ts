@@ -11,9 +11,23 @@ const CONSOLE: Record<LogLevel, "error" | "warn" | "info" | "debug"> = {
   trace: "debug",
 };
 
+/** Rejections are not always Error instances (DOMException, events), and JSON turns those into "{}". */
+function describe(arg: object): string {
+  const o = arg as { name?: unknown; message?: unknown; type?: unknown };
+  const text = [o.name, o.message, o.type].filter((v) => typeof v === "string" && v).join(": ");
+  let json = "";
+  try {
+    json = JSON.stringify(arg, Object.getOwnPropertyNames(arg));
+  } catch {
+    // circular structures
+  }
+  return `${arg.constructor?.name ?? "Object"} ${text} ${json}`.trim();
+}
+
 function format(arg: unknown): string {
   if (typeof arg === "string") return arg;
   if (arg instanceof Error) return arg.stack ?? `${arg.name}: ${arg.message}`;
+  if (arg && typeof arg === "object") return describe(arg);
   try {
     return JSON.stringify(arg) ?? String(arg);
   } catch {

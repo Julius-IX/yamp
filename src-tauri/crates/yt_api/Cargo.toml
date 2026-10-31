@@ -1,0 +1,19 @@
+[package]
+name = "yt-api"
+version = "0.1.0"
+edition = "2024"
+# required by tauri-plugin, the crate registers itself as a plugin to reach the app handle
+links = "yt-api"
+
+[dependencies]
+log = "0.4"
+tauri = "2"
+yamp-media = { path = "../yamp_media" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }
