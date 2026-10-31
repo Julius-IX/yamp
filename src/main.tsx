@@ -1,9 +1,9 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./app/App";
 import { captureGlobalErrors } from "./lib/log";
 import { loadSettings } from "./lib/settings";
 import { AppThemeProvider } from "./themes/AppThemeProvider";
+import AppLayout from "./app/AppLayout";
 
 captureGlobalErrors();
 
@@ -12,7 +12,7 @@ loadSettings().then(() =>
   ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
     <React.StrictMode>
       <AppThemeProvider>
-        <App />
+        <AppLayout />
       </AppThemeProvider>
     </React.StrictMode>,
   ),

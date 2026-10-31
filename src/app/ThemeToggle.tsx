@@ -1,11 +1,9 @@
 import { MenuItem, Select, Stack, ToggleButton, ToggleButtonGroup } from "@mui/material";
 import { useAppTheme } from "../themes/AppThemeProvider";
-import MediaDemo from "../components/MediaDemo";
-import LogView from "@/components/LogView"
 import { modeLabel, modePrefs, themeLabel, themeNames, type ThemeName } from "../themes/themes";
 
 // Placeholder until there is a settings page.
-function ThemeToggle() {
+export default function ThemeToggle() {
   const { name, setName, mode, setMode } = useAppTheme();
   return (
     <Stack direction="row" spacing={2} sx={{ p: 2 }}>
@@ -31,15 +29,3 @@ function ThemeToggle() {
     </Stack>
   );
 }
-
-function App() {
-  return (
-    <main className="container">
-      <ThemeToggle />
-      <MediaDemo />
-      <LogView/>
-    </main>
-  );
-}
-
-export default App;
