@@ -132,6 +132,31 @@ impl Tracks {
     Ok(out)
   }
 
+  /// Tracks whose title, artist or album contains `text`, best matches by title first.
+  pub async fn search(&self, text: &str, limit: u32) -> Result<Vec<Track>> {
+    // `%`, `_` and the escape itself are literal in what the user typed
+    let like = format!(
+      "%{}%",
+      text
+        .replace('\\', "\\\\")
+        .replace('%', "\\%")
+        .replace('_', "\\_")
+    );
+    Ok(
+      sqlx::query_as!(
+        Track,
+        r#"SELECT t.id AS "id!", t.title AS "title!", t.artist AS "artist!", t.album, t.duration_secs, t.thumbnail, t.release_year AS "release_year: u32" FROM tracks t
+           WHERE t.title LIKE ?1 ESCAPE '\' OR t.artist LIKE ?1 ESCAPE '\' OR t.album LIKE ?1 ESCAPE '\'
+           ORDER BY (t.title LIKE ?1 ESCAPE '\') DESC, t.title COLLATE NOCASE
+           LIMIT ?2"#,
+        like,
+        limit
+      )
+      .fetch_all(&self.pool)
+      .await?,
+    )
+  }
+
   pub async fn count(&self) -> Result<u64> {
     let n = sqlx::query_scalar!(r#"SELECT COUNT(*) AS "n!: i64" FROM tracks"#)
       .fetch_one(&self.pool)
@@ -208,5 +233,35 @@ pub(crate) mod tests {
       .map(|t| t.id)
       .collect();
     assert_eq!(got, ["c", "a"]);
+  }
+
+  #[tokio::test]
+  async fn search_matches_literally() {
+    let db = Db::memory().await.unwrap();
+    let tracks = db.tracks();
+    tracks
+      .save_many(&[
+        track("a", "100% Pure"),
+        track("b", "Plain"),
+        track("c", "Pure Love"),
+      ])
+      .await
+      .unwrap();
+
+    let hits = |q: &'static str| {
+      let tracks = tracks.clone();
+      async move {
+        tracks
+          .search(q, 10)
+          .await
+          .unwrap()
+          .into_iter()
+          .map(|t| t.id)
+          .collect::<Vec<_>>()
+      }
+    };
+    assert_eq!(hits("100%").await, ["a"]);
+    assert_eq!(hits("pure").await, ["a", "c"]);
+    assert_eq!(hits("_").await, Vec::<String>::new());
   }
 }
