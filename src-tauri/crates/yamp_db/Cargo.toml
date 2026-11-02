@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
+log = "0.4"
 # Bundled SQLite, so every platform runs the same version and has STRICT tables and unixepoch().
 # Queries are checked at compile time. A build with DATABASE_URL set checks them against that
 # database, any other build uses the data in `.sqlx` at the workspace root, see the readme.

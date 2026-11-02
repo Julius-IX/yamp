@@ -6026,6 +6026,7 @@ dependencies = [
 name = "yamp-db"
 version = "0.1.0"
 dependencies = [
+ "log",
  "serde",
  "sqlx",
  "tokio",

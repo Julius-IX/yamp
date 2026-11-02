@@ -14,3 +14,5 @@ pub use download::{Download, Downloads};
 pub use like::Likes;
 pub use playlist::{Playlist, Playlists};
 pub use track::{Track, Tracks};
+
+pub(crate) use download::check_name as download_name_check;
