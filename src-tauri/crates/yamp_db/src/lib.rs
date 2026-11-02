@@ -16,5 +16,5 @@ mod store;
 
 pub use db::Db;
 pub use error::{Error, Result};
-pub use media::MediaStore;
+pub use media::{MediaStore, RepairReport};
 pub use store::*;

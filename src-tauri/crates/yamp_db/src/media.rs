@@ -10,11 +10,21 @@
 //! one and never a half copied file.
 
 use std::{
+  collections::HashSet,
   io,
   path::{Path, PathBuf},
 };
 
 use crate::{store::download_name_check, Db, Download, Downloads, Error, Result, Track};
+
+/// What [`MediaStore::repair`] fixed.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct RepairReport {
+  /// Records dropped because their file is gone.
+  pub missing_files: Vec<String>,
+  /// Files deleted because no record names them, including leftover partial imports.
+  pub orphan_files: Vec<String>,
+}
 
 /// The download folder together with the records of what is in it.
 #[derive(Clone)]
@@ -101,6 +111,38 @@ impl MediaStore {
     remove_if_exists(&self.root.join(record.file_name())).await?;
     self.downloads.remove(track_id).await?;
     Ok(true)
+  }
+
+  /// Makes records and files agree again. Meant for app start. It must not run while an
+  /// import is in progress, since the `.part` file of that import counts as leftover.
+  pub async fn repair(&self) -> Result<RepairReport> {
+    let mut report = RepairReport::default();
+    let records = self.downloads.list().await?;
+
+    for record in &records {
+      if !tokio::fs::try_exists(self.root.join(record.file_name())).await? {
+        self.downloads.remove(&record.track_id).await?;
+        report.missing_files.push(record.track_id.clone());
+      }
+    }
+
+    let known: HashSet<String> = records.iter().map(Download::file_name).collect();
+    let mut entries = tokio::fs::read_dir(&self.root).await?;
+    while let Some(entry) = entries.next_entry().await? {
+      if !entry.file_type().await?.is_file() {
+        continue;
+      }
+      let Ok(name) = entry.file_name().into_string() else {
+        continue;
+      };
+      if !known.contains(&name) {
+        remove_if_exists(&entry.path()).await?;
+        report.orphan_files.push(name);
+      }
+    }
+    report.missing_files.sort();
+    report.orphan_files.sort();
+    Ok(report)
   }
 }
 
@@ -217,6 +259,28 @@ mod tests {
     assert!(!store.remove("abc").await.unwrap());
     assert!(!store.root().join("abc.m4a").exists());
     assert_eq!(store.path("abc").await.unwrap(), None);
+    let _ = std::fs::remove_dir_all(base);
+  }
+
+  #[tokio::test]
+  async fn repair_reconciles_records_and_files() {
+    let (store, scratch, base) = setup("repair").await;
+    for id in ["keep", "lost"] {
+      store
+        .import(&track(id, id), &fake(&scratch, "x.m4a", b"audio"))
+        .await
+        .unwrap();
+    }
+    std::fs::remove_file(store.root().join("lost.m4a")).unwrap();
+    std::fs::write(store.root().join("stray.m4a"), b"x").unwrap();
+    std::fs::write(store.root().join(".half.m4a.part"), b"x").unwrap();
+
+    let report = store.repair().await.unwrap();
+    assert_eq!(report.missing_files, ["lost"]);
+    assert_eq!(report.orphan_files, [".half.m4a.part", "stray.m4a"]);
+    assert_eq!(store.downloads().count().await.unwrap(), 1);
+    assert!(store.root().join("keep.m4a").exists());
+    assert_eq!(store.repair().await.unwrap(), RepairReport::default());
     let _ = std::fs::remove_dir_all(base);
   }
 }
