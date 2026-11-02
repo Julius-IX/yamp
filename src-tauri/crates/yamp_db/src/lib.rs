@@ -10,6 +10,7 @@
 mod clock;
 mod db;
 mod error;
+mod link;
 mod media;
 mod migrate;
 mod store;

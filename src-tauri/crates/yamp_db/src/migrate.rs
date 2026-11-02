@@ -19,6 +19,18 @@ pub(crate) async fn run(pool: &SqlitePool) -> Result<()> {
   Ok(())
 }
 
+/// Applies only the first `count` migrations. Tests use it to build a database as an older
+/// version of the app left it.
+#[cfg(test)]
+pub(crate) async fn run_to(pool: &SqlitePool, count: usize) -> Result<()> {
+  let partial = Migrator {
+    migrations: std::borrow::Cow::Owned(MIGRATOR.migrations[..count].to_vec()),
+    ..Migrator::DEFAULT
+  };
+  partial.run(pool).await?;
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;

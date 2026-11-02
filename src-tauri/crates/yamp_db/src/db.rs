@@ -40,6 +40,14 @@ impl Db {
     Self::init(memory_pool().await?).await
   }
 
+  /// An in-memory database migrated only up to migration number `upto`.
+  #[cfg(test)]
+  pub(crate) async fn memory_at(upto: usize) -> Result<Self> {
+    let pool = memory_pool().await?;
+    migrate::run_to(&pool, upto).await?;
+    Ok(Self { pool })
+  }
+
   async fn init(pool: SqlitePool) -> Result<Self> {
     migrate::run(&pool).await?;
     Ok(Self { pool })
