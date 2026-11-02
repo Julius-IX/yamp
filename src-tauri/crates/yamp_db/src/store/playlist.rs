@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
 
-use super::track::Track;
+use super::{
+  ordered,
+  track::{self, Track},
+};
 use crate::{clock::now_ms, Db, Error, Result};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -124,15 +127,7 @@ impl Playlists {
     Ok(
       sqlx::query_as!(
         Track,
-        r#"SELECT
-             t.id AS "id!",
-             t.title AS "title!",
-             t.artist AS "artist!",
-             t.album,
-             t.duration_secs,
-             t.thumbnail,
-             t.release_year AS "release_year: u32"
-           FROM playlist_tracks x JOIN tracks t ON t.id = x.track_id
+        r#"SELECT t.id AS "id!", t.title AS "title!", t.artist AS "artist!", t.album, t.duration_secs, t.thumbnail, t.release_year AS "release_year: u32" FROM playlist_tracks x JOIN tracks t ON t.id = x.track_id
            WHERE x.playlist_id = ? ORDER BY x.position"#,
         id
       )
@@ -140,6 +135,73 @@ impl Playlists {
       .await?,
     )
   }
+
+  /// Appends tracks to the end. Adding a track that is already in the list adds it again.
+  pub async fn add_tracks(&self, id: &str, tracks: &[Track]) -> Result<()> {
+    let mut tx = self.pool.begin().await?;
+    touch(&mut tx, id).await?;
+    for t in tracks {
+      track::upsert(&mut tx, t).await?;
+    }
+    let mut ids = ordered::playlist::ids(&mut tx, id).await?;
+    ids.extend(tracks.iter().map(|t| t.id.clone()));
+    ordered::playlist::replace(&mut tx, id, &ids).await?;
+    tx.commit().await?;
+    Ok(())
+  }
+
+  /// Removes the entry at `position`, counting from 0.
+  pub async fn remove_at(&self, id: &str, position: u32) -> Result<()> {
+    self
+      .edit(id, |ids| {
+        let at = position as usize;
+        if at >= ids.len() {
+          return Err(Error::Invalid(format!("no entry at position {position}")));
+        }
+        ids.remove(at);
+        Ok(())
+      })
+      .await
+  }
+
+  /// Moves the entry at `from` so that it ends up at `to`.
+  pub async fn move_track(&self, id: &str, from: u32, to: u32) -> Result<()> {
+    self
+      .edit(id, |ids| {
+        let (from, to) = (from as usize, to as usize);
+        if from >= ids.len() || to >= ids.len() {
+          return Err(Error::Invalid(format!("cannot move {from} to {to}")));
+        }
+        let moved = ids.remove(from);
+        ids.insert(to, moved);
+        Ok(())
+      })
+      .await
+  }
+
+  async fn edit(
+    &self,
+    id: &str,
+    change: impl FnOnce(&mut Vec<String>) -> Result<()>,
+  ) -> Result<()> {
+    let mut tx = self.pool.begin().await?;
+    touch(&mut tx, id).await?;
+    let mut ids = ordered::playlist::ids(&mut tx, id).await?;
+    change(&mut ids)?;
+    ordered::playlist::replace(&mut tx, id, &ids).await?;
+    tx.commit().await?;
+    Ok(())
+  }
+}
+
+/// Bumps the change time. It runs first in every edit, so a missing playlist fails
+/// before anything else is written.
+async fn touch(conn: &mut SqliteConnection, id: &str) -> Result<()> {
+  let now = now_ms();
+  let done = sqlx::query!("UPDATE playlists SET updated_ms = ? WHERE id = ?", now, id)
+    .execute(conn)
+    .await?;
+  missing_if(done.rows_affected() == 0, id)
 }
 
 fn missing_if(missing: bool, id: &str) -> Result<()> {
@@ -152,7 +214,19 @@ fn missing_if(missing: bool, id: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-  use crate::{Db, Error};
+  use crate::{store::track::tests::track, Db, Error};
+
+  async fn ids(db: &Db, id: &str) -> Vec<String> {
+    let tracks = db.playlists().tracks(id).await.unwrap();
+    tracks.into_iter().map(|t| t.id).collect()
+  }
+
+  async fn filled(db: &Db) -> String {
+    let p = db.playlists().create("Mix", None).await.unwrap();
+    let tracks: Vec<_> = ["a", "b", "c", "d"].map(|i| track(i, i)).into();
+    db.playlists().add_tracks(&p.id, &tracks).await.unwrap();
+    p.id
+  }
 
   #[tokio::test]
   async fn create_list_and_update() {
@@ -168,5 +242,73 @@ mod tests {
       playlists.update("nope", "x", None).await,
       Err(Error::NotFound(_))
     ));
+  }
+
+  #[tokio::test]
+  async fn appends_in_order_and_allows_repeats() {
+    let db = Db::memory().await.unwrap();
+    let id = filled(&db).await;
+    db.playlists()
+      .add_tracks(&id, &[track("a", "a")])
+      .await
+      .unwrap();
+
+    assert_eq!(ids(&db, &id).await, ["a", "b", "c", "d", "a"]);
+    assert_eq!(
+      db.playlists().get(&id).await.unwrap().unwrap().track_count,
+      5
+    );
+  }
+
+  #[tokio::test]
+  async fn moves_in_both_directions() {
+    let db = Db::memory().await.unwrap();
+    let id = filled(&db).await;
+    let playlists = db.playlists();
+
+    playlists.move_track(&id, 0, 2).await.unwrap();
+    assert_eq!(ids(&db, &id).await, ["b", "c", "a", "d"]);
+    playlists.move_track(&id, 3, 0).await.unwrap();
+    assert_eq!(ids(&db, &id).await, ["d", "b", "c", "a"]);
+    assert!(matches!(
+      playlists.move_track(&id, 0, 9).await,
+      Err(Error::Invalid(_))
+    ));
+  }
+
+  #[tokio::test]
+  async fn removes_by_position() {
+    let db = Db::memory().await.unwrap();
+    let id = filled(&db).await;
+    db.playlists().remove_at(&id, 1).await.unwrap();
+
+    assert_eq!(ids(&db, &id).await, ["a", "c", "d"]);
+    assert!(db.playlists().remove_at(&id, 3).await.is_err());
+  }
+
+  #[tokio::test]
+  async fn delete_removes_the_list_and_keeps_tracks() {
+    let db = Db::memory().await.unwrap();
+    let id = filled(&db).await;
+
+    assert!(db.playlists().delete(&id).await.unwrap());
+    assert!(!db.playlists().delete(&id).await.unwrap());
+    assert!(ids(&db, &id).await.is_empty());
+    assert_eq!(db.tracks().count().await.unwrap(), 4);
+  }
+
+  #[tokio::test]
+  async fn cover_is_the_first_thumbnail() {
+    let db = Db::memory().await.unwrap();
+    let p = db.playlists().create("Mix", None).await.unwrap();
+    let mut b = track("b", "b");
+    b.thumbnail = Some("b.jpg".into());
+    db.playlists()
+      .add_tracks(&p.id, &[track("a", "a"), b])
+      .await
+      .unwrap();
+
+    let got = db.playlists().get(&p.id).await.unwrap().unwrap();
+    assert_eq!(got.cover.as_deref(), Some("b.jpg"));
   }
 }
