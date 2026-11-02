@@ -4,6 +4,10 @@ use std::{fmt, io};
 pub enum Error {
   Db(sqlx::Error),
   Io(io::Error),
+  /// An edit named something that does not exist, such as a playlist id.
+  NotFound(String),
+  /// An edit that makes no sense, such as a position past the end of a list.
+  Invalid(String),
   /// The schema in the database does not fit the migrations of this build, for example
   /// because a newer version of the app wrote it.
   Migrate(sqlx::migrate::MigrateError),
@@ -16,6 +20,8 @@ impl fmt::Display for Error {
     match self {
       Error::Db(e) => write!(f, "database error: {e}"),
       Error::Io(e) => write!(f, "io error: {e}"),
+      Error::NotFound(what) => write!(f, "not found: {what}"),
+      Error::Invalid(why) => write!(f, "invalid: {why}"),
       Error::Migrate(e) => write!(f, "migration error: {e}"),
     }
   }
@@ -27,6 +33,7 @@ impl std::error::Error for Error {
       Error::Db(e) => Some(e),
       Error::Io(e) => Some(e),
       Error::Migrate(e) => Some(e),
+      Error::NotFound(_) | Error::Invalid(_) => None,
     }
   }
 }
