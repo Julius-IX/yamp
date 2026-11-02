@@ -6,3 +6,7 @@ edition = "2024"
 [dependencies]
 # Bundled SQLite, so every platform runs the same version and has STRICT tables and unixepoch().
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+tokio = { version = "1", features = ["fs"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
