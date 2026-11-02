@@ -17,6 +17,6 @@ mod store;
 
 pub use db::Db;
 pub use error::{Error, Result};
-pub use link::{DeviceInfo, Link};
+pub use link::{DeviceInfo, Link, SyncReport};
 pub use media::{MediaStore, RepairReport};
 pub use store::*;

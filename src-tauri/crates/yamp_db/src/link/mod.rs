@@ -59,6 +59,15 @@ pub struct Link {
   name: String,
 }
 
+/// What one [`Link::sync`] moved.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct SyncReport {
+  /// Entities received from other devices that changed this library.
+  pub pulled: usize,
+  /// Entities of this library that were sent.
+  pub pushed: usize,
+}
+
 impl Link {
   /// `name` is how other devices list this one, for example the model of the phone.
   pub async fn open(db: &Db, store: Arc<dyn CloudStore>, name: &str) -> Result<Self> {
@@ -72,6 +81,14 @@ impl Link {
 
   pub fn device_id(&self) -> &str {
     &self.device
+  }
+
+  /// Receives, then sends, then tells the others how far this device has read.
+  pub async fn sync(&self) -> Result<SyncReport> {
+    let pulled = self.pull().await?;
+    let pushed = self.push().await?;
+    self.publish().await?;
+    Ok(SyncReport { pulled, pushed })
   }
 
   fn device_dir(&self, device: &str) -> Result<Dir> {
