@@ -33,11 +33,12 @@ mod device;
 mod doc;
 mod export;
 mod kind;
+mod push;
 mod state;
 
 use std::{io, sync::Arc};
 
-use cloud_kit::Dir;
+use cloud_kit::{Dir, Log};
 use cloud_sync::CloudStore;
 use sqlx::SqlitePool;
 
@@ -74,6 +75,10 @@ impl Link {
 
   fn device_dir(&self, device: &str) -> Result<Dir> {
     Ok(self.root.dir(&format!("devices/{device}"))?)
+  }
+
+  fn log_of(&self, device: &str) -> Result<Log> {
+    Ok(Log::new(self.device_dir(device)?.dir("log")?))
   }
 }
 

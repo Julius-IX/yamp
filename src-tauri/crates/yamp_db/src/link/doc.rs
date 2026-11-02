@@ -21,6 +21,12 @@ pub(crate) struct Change {
   pub doc: Option<Value>,
 }
 
+/// The content of one log entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct Batch {
+  pub changes: Vec<Change>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct TrackDoc {
   pub title: String,
