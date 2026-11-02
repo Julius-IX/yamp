@@ -30,6 +30,26 @@ use crate::{clock::now_ms, Error, Result};
 const SNAPSHOTS: &str = "snapshots";
 const INFO: &str = "snapshot.json";
 
+/// A device that has not synced for this long no longer holds back the cleanup of logs.
+/// It starts from a snapshot when it comes back.
+const INACTIVE_MS: i64 = 60 * 24 * 60 * 60 * 1000;
+
+/// How far this device may delete its own log, `None` when it may not delete anything.
+///
+/// Entries go once every active device has read them, and never past `own`, the newest
+/// entry that is part of this device's snapshot. A device that never reported a position
+/// blocks the cleanup, since nothing is known about what it has read.
+pub(crate) fn trim_limit(me: &str, peers: &[DeviceMeta], own: &str, now: i64) -> Option<String> {
+  let mut limit = own.to_string();
+  for peer in peers.iter().filter(|p| now - p.last_seen_ms <= INACTIVE_MS) {
+    let ack = peer.acks.get(me)?;
+    if *ack < limit {
+      limit = ack.clone();
+    }
+  }
+  Some(limit)
+}
+
 impl Link {
   /// Peers whose log has a gap for this device.
   pub(crate) async fn gaps(&self) -> Result<Vec<String>> {
@@ -129,5 +149,81 @@ impl Link {
       out.extend(self.meta_of(&peer).await?.map(|m| (peer, m)));
     }
     Ok(out)
+  }
+
+  /// Syncs, publishes a snapshot and deletes the log entries that every active device has
+  /// read. Meant to run now and then, for example once a week, and not at every sync.
+  pub async fn compact(&self) -> Result<()> {
+    self.sync().await?;
+    self.write_snapshot().await?;
+
+    let own = sqlx::query_scalar!("SELECT value FROM link_meta WHERE key = 'own_cursor'")
+      .fetch_optional(&self.pool)
+      .await?;
+    let Some(own) = own else { return Ok(()) };
+    let peers: Vec<DeviceMeta> = self
+      .peer_metas()
+      .await?
+      .into_iter()
+      .map(|(_, m)| m)
+      .collect();
+    let Some(limit) = trim_limit(&self.device, &peers, &own, now_ms()) else {
+      return Ok(());
+    };
+
+    let marked = limit.clone();
+    self
+      .update_meta(move |m| {
+        if m.trimmed_through.as_ref().is_none_or(|t| *t < marked) {
+          m.trimmed_through = Some(marked);
+        }
+      })
+      .await?;
+    let log = self.log_of(&self.device)?;
+    let removed = blocking(move || log.trim_through(&limit)).await?;
+    log::info!("removed {removed} log entries");
+    Ok(())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn peer(last_seen_ms: i64, ack: Option<&str>) -> DeviceMeta {
+    DeviceMeta {
+      name: "p".into(),
+      created_ms: 0,
+      last_seen_ms,
+      trimmed_through: None,
+      acks: ack
+        .map(|a| ("me".to_string(), a.to_string()))
+        .into_iter()
+        .collect(),
+    }
+  }
+
+  #[test]
+  fn trims_to_the_slowest_active_reader() {
+    let now = 10 * INACTIVE_MS;
+    let peers = [peer(now, Some("c")), peer(now, Some("b"))];
+    assert_eq!(trim_limit("me", &peers, "e", now).as_deref(), Some("b"));
+    // never past what the snapshot covers
+    assert_eq!(trim_limit("me", &peers, "a", now).as_deref(), Some("a"));
+  }
+
+  #[test]
+  fn a_device_that_never_reported_blocks_the_cleanup() {
+    let now = 10 * INACTIVE_MS;
+    let peers = [peer(now, Some("c")), peer(now, None)];
+    assert_eq!(trim_limit("me", &peers, "e", now), None);
+  }
+
+  #[test]
+  fn silent_devices_stop_counting() {
+    let now = 10 * INACTIVE_MS;
+    let peers = [peer(now, Some("d")), peer(now - INACTIVE_MS - 1, None)];
+    assert_eq!(trim_limit("me", &peers, "e", now).as_deref(), Some("d"));
+    assert_eq!(trim_limit("me", &[], "e", now).as_deref(), Some("e"));
   }
 }
