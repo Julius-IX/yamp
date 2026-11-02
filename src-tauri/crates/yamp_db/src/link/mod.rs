@@ -35,13 +35,15 @@ mod export;
 mod kind;
 mod state;
 
-use std::sync::Arc;
+use std::{io, sync::Arc};
 
 use cloud_kit::Dir;
 use cloud_sync::CloudStore;
 use sqlx::SqlitePool;
 
-use crate::{Db, Result};
+pub use device::DeviceInfo;
+
+use crate::{Db, Error, Result};
 
 /// A library linked to a cloud folder.
 ///
@@ -68,5 +70,19 @@ impl Link {
 
   pub fn device_id(&self) -> &str {
     &self.device
+  }
+
+  fn device_dir(&self, device: &str) -> Result<Dir> {
+    Ok(self.root.dir(&format!("devices/{device}"))?)
+  }
+}
+
+/// The cloud calls block, so they run off the async threads.
+async fn blocking<T: Send + 'static>(
+  work: impl FnOnce() -> cloud_kit::Result<T> + Send + 'static,
+) -> Result<T> {
+  match tokio::task::spawn_blocking(work).await {
+    Ok(done) => Ok(done?),
+    Err(e) => Err(Error::Io(io::Error::other(e))),
   }
 }
