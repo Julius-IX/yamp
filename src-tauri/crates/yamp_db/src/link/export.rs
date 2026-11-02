@@ -233,3 +233,4 @@ pub(crate) async fn snapshot_changes(conn: &mut SqliteConnection, me: &str) -> R
     doc: None,
   }));
   Ok(out)
+}
