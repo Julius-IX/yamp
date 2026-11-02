@@ -4,7 +4,10 @@ use std::{path::PathBuf, sync::Arc, thread::sleep, time::Duration};
 
 use cloud_sync::{fs::LocalDirStore, CloudStore};
 
-use super::*;
+use super::{
+  device::{DeviceMeta, META},
+  *,
+};
 use crate::store::track::tests::track;
 
 struct Rig {
@@ -171,6 +174,87 @@ async fn devices_are_listed_and_can_be_forgotten() {
   assert!(la.forget_device(la.device_id()).await.is_err());
   la.forget_device(lb.device_id()).await.unwrap();
   assert_eq!(la.devices().await.unwrap().len(), 1);
+}
+
+fn log_entries(rig: &Rig, device: &str) -> usize {
+  std::fs::read_dir(rig.store_dir(device)).map_or(0, |d| d.count())
+}
+
+#[tokio::test]
+async fn a_new_device_starts_from_a_snapshot_after_a_cleanup() {
+  let rig = Rig::new("snapshot");
+  let (a, la) = rig.device("Phone").await;
+  let (_b, lb) = rig.device("Laptop").await;
+  for name in ["One", "Two", "Three"] {
+    a.playlists().create(name, None).await.unwrap();
+    nap();
+  }
+  a.likes().like(&track("t1", "One")).await.unwrap();
+  la.sync().await.unwrap();
+  lb.sync().await.unwrap();
+
+  la.compact().await.unwrap();
+  assert_eq!(log_entries(&rig, la.device_id()), 0);
+
+  // an edit after the cleanup reaches the newcomer through the log
+  nap();
+  a.playlists().create("Four", None).await.unwrap();
+  la.sync().await.unwrap();
+
+  let (c, lc) = rig.device("Tablet").await;
+  lc.sync().await.unwrap();
+  assert_eq!(names(&c).await, names(&a).await);
+  assert_eq!(names(&c).await.len(), 4);
+  assert_eq!(c.likes().ids().await.unwrap(), ["t1"]);
+}
+
+#[tokio::test]
+async fn the_cleanup_waits_for_devices_that_have_not_read() {
+  let rig = Rig::new("waits");
+  let (a, la) = rig.device("Phone").await;
+  let (_b, lb) = rig.device("Laptop").await;
+  lb.sync().await.unwrap();
+
+  a.playlists().create("Mix", None).await.unwrap();
+  la.compact().await.unwrap();
+  // the laptop is active and has not read the entry, so it stays
+  assert_eq!(log_entries(&rig, la.device_id()), 1);
+
+  lb.sync().await.unwrap();
+  la.compact().await.unwrap();
+  assert_eq!(log_entries(&rig, la.device_id()), 0);
+}
+
+#[tokio::test]
+async fn a_device_that_was_away_for_long_catches_up_from_a_snapshot() {
+  let rig = Rig::new("away");
+  let (a, la) = rig.device("Phone").await;
+  let (b, lb) = rig.device("Laptop").await;
+  let p = a.playlists().create("Start", None).await.unwrap();
+  la.sync().await.unwrap();
+  lb.sync().await.unwrap();
+
+  nap();
+  a.playlists().update(&p.id, "Renamed", None).await.unwrap();
+  a.playlists().create("Another", None).await.unwrap();
+  la.sync().await.unwrap();
+
+  // the laptop has been silent for longer than devices are waited for
+  let dir = cloud_kit::Dir::root(rig.store.clone())
+    .dir(&format!("devices/{}", lb.device_id()))
+    .unwrap();
+  dir
+    .update_json(META, |mut m: DeviceMeta| {
+      m.last_seen_ms = 0;
+      m
+    })
+    .unwrap();
+  la.compact().await.unwrap();
+  assert_eq!(log_entries(&rig, la.device_id()), 0);
+
+  lb.sync().await.unwrap();
+  assert_eq!(names(&b).await, names(&a).await);
+  assert_eq!(names(&b).await.len(), 2);
 }
 
 impl Rig {
