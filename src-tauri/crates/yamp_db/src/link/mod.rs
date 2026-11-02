@@ -28,6 +28,7 @@
 
 #![allow(dead_code)]
 
+mod apply;
 mod doc;
 mod export;
 mod kind;
