@@ -109,3 +109,6 @@ async fn blocking<T: Send + 'static>(
     Err(e) => Err(Error::Io(io::Error::other(e))),
   }
 }
+
+#[cfg(test)]
+mod tests;
