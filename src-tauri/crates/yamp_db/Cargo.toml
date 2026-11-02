@@ -1,0 +1,8 @@
+[package]
+name = "yamp-db"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Bundled SQLite, so every platform runs the same version and has STRICT tables and unixepoch().
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
