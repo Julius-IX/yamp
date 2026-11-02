@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT kind, key, ts_ms, device FROM link_versions WHERE deleted = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "kind",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "key",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "ts_ms",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "device",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6fe57ad583f9381d64fe6bc58c299403071a4d79a6a7b25fa522619ea9fa338d"
+}

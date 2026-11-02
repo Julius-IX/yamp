@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ts_ms FROM link_dirty WHERE kind = ? AND key = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "ts_ms",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "4da7a69f1639d383ec2227721dfd06c50bd79082aea56d0ee8c5e6f7e1b2d5b2"
+}

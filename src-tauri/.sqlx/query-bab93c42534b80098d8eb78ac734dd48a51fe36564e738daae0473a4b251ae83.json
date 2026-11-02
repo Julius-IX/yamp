@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT ts_ms, device FROM link_versions WHERE kind = ? AND key = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "ts_ms",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "device",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "bab93c42534b80098d8eb78ac734dd48a51fe36564e738daae0473a4b251ae83"
+}

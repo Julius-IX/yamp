@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO tracks (id, title, artist, album, duration_secs, thumbnail, release_year)\n     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)\n     ON CONFLICT(id) DO UPDATE SET\n       title = excluded.title,\n       artist = excluded.artist,\n       album = COALESCE(excluded.album, album),\n       duration_secs = COALESCE(excluded.duration_secs, duration_secs),\n       thumbnail = COALESCE(excluded.thumbnail, thumbnail),\n       release_year = COALESCE(excluded.release_year, release_year)\n     WHERE (title, artist, album, duration_secs, thumbnail, release_year) IS NOT (\n       excluded.title,\n       excluded.artist,\n       COALESCE(excluded.album, album),\n       COALESCE(excluded.duration_secs, duration_secs),\n       COALESCE(excluded.thumbnail, thumbnail),\n       COALESCE(excluded.release_year, release_year)\n     )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "1e30ce18b796f27b7b549910ab98fb126dd419122353276f088514028708c77d"
+}

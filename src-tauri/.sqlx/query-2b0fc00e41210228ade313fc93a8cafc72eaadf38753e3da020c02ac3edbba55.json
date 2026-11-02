@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT track_id AS \"track_id!\" FROM playlist_tracks WHERE playlist_id = ? ORDER BY position",
+  "describe": {
+    "columns": [
+      {
+        "name": "track_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2b0fc00e41210228ade313fc93a8cafc72eaadf38753e3da020c02ac3edbba55"
+}

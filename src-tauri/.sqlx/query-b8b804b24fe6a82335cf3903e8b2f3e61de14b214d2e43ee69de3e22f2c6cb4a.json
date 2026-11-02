@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO followed_artists (id, name, thumbnail, followed_ms) VALUES (?1, ?2, ?3, ?4)\n       ON CONFLICT(id) DO UPDATE SET\n         name = excluded.name,\n         thumbnail = COALESCE(excluded.thumbnail, thumbnail)\n       WHERE (name, thumbnail) IS NOT (excluded.name, COALESCE(excluded.thumbnail, thumbnail))",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "b8b804b24fe6a82335cf3903e8b2f3e61de14b214d2e43ee69de3e22f2c6cb4a"
+}

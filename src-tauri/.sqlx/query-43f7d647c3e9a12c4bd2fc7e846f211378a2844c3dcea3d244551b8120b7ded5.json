@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM followed_artists WHERE id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "43f7d647c3e9a12c4bd2fc7e846f211378a2844c3dcea3d244551b8120b7ded5"
+}

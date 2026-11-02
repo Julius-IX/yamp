@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO likes (track_id, liked_ms) VALUES (?, ?)\n         ON CONFLICT (track_id) DO UPDATE SET liked_ms = excluded.liked_ms",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "2c8b32d0127bf6f6f488440f9a2fa3aa56a925b2d49fc533d740e00cdca9c28b"
+}

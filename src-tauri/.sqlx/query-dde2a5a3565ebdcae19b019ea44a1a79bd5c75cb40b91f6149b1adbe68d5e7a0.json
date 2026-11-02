@@ -1,0 +1,50 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT title, artist, album, duration_secs, thumbnail, release_year AS \"release_year: u32\"\n           FROM tracks WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "artist",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "album",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_secs",
+        "ordinal": 3,
+        "type_info": "Float"
+      },
+      {
+        "name": "thumbnail",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "release_year: u32",
+        "ordinal": 5,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "dde2a5a3565ebdcae19b019ea44a1a79bd5c75cb40b91f6149b1adbe68d5e7a0"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO likes (track_id, liked_ms) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "78d7e8a7ffc232c6656a8081a762617ecae1f3d6f59b1174cd87869d56d652ff"
+}

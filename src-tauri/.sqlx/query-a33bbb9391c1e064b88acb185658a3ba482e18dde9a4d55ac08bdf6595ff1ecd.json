@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT track_id AS \"track_id!\", ext AS \"ext!\", size_bytes AS \"size_bytes: u64\", downloaded_ms\n           FROM downloads ORDER BY downloaded_ms DESC, track_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "track_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "ext!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "size_bytes: u64",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "downloaded_ms",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a33bbb9391c1e064b88acb185658a3ba482e18dde9a4d55ac08bdf6595ff1ecd"
+}

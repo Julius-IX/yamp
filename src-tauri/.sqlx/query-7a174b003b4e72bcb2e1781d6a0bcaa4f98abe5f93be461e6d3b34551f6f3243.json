@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT p.id AS \"id!\", p.name AS \"name!\", p.description, p.created_ms, p.updated_ms,\n             (SELECT COUNT(*) FROM playlist_tracks WHERE playlist_id = p.id) AS \"track_count!: u32\",\n             (SELECT t.thumbnail FROM playlist_tracks x JOIN tracks t ON t.id = x.track_id\n               WHERE x.playlist_id = p.id AND t.thumbnail IS NOT NULL\n               ORDER BY x.position LIMIT 1) AS cover\n           FROM playlists p WHERE p.id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "description",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_ms",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "updated_ms",
+        "ordinal": 4,
+        "type_info": "Integer"
+      },
+      {
+        "name": "track_count!: u32",
+        "ordinal": 5,
+        "type_info": "Null"
+      },
+      {
+        "name": "cover",
+        "ordinal": 6,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      null,
+      true
+    ]
+  },
+  "hash": "7a174b003b4e72bcb2e1781d6a0bcaa4f98abe5f93be461e6d3b34551f6f3243"
+}

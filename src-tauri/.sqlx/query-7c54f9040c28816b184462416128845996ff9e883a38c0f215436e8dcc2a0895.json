@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO playlists (id, name, description, created_ms, updated_ms)\n         VALUES (?1, ?2, ?3, ?4, ?5)\n         ON CONFLICT (id) DO UPDATE SET\n           name = excluded.name, description = excluded.description,\n           created_ms = excluded.created_ms, updated_ms = excluded.updated_ms",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "7c54f9040c28816b184462416128845996ff9e883a38c0f215436e8dcc2a0895"
+}

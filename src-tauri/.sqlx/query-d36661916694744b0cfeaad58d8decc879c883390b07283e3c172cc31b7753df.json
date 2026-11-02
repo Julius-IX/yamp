@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO tracks (id, title, artist, album, duration_secs, thumbnail, release_year)\n         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)\n         ON CONFLICT (id) DO UPDATE SET\n           title = excluded.title, artist = excluded.artist, album = excluded.album,\n           duration_secs = excluded.duration_secs, thumbnail = excluded.thumbnail,\n           release_year = excluded.release_year",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 7
+    },
+    "nullable": []
+  },
+  "hash": "d36661916694744b0cfeaad58d8decc879c883390b07283e3c172cc31b7753df"
+}

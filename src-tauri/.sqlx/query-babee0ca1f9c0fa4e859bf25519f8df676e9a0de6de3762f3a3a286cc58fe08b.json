@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT liked_ms FROM likes WHERE track_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "liked_ms",
+        "ordinal": 0,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "babee0ca1f9c0fa4e859bf25519f8df676e9a0de6de3762f3a3a286cc58fe08b"
+}

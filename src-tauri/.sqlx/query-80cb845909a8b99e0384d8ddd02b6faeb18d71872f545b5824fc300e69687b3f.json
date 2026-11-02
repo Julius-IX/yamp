@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE link_flag SET applying = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "80cb845909a8b99e0384d8ddd02b6faeb18d71872f545b5824fc300e69687b3f"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM link_cursors WHERE device = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "b6212c648f0cb029e36fee403874120e01bc5b6e5efb9c09756d11cd58b8462a"
+}
