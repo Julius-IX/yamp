@@ -10,6 +10,8 @@
 mod db;
 mod error;
 mod migrate;
+mod store;
 
 pub use db::Db;
 pub use error::{Error, Result};
+pub use store::*;
