@@ -33,6 +33,7 @@ mod device;
 mod doc;
 mod export;
 mod kind;
+mod pull;
 mod push;
 mod state;
 

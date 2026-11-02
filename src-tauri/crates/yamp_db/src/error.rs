@@ -7,6 +7,9 @@ pub enum Error {
   Json(serde_json::Error),
   /// The cloud folder could not be read or written.
   Cloud(cloud_kit::Error),
+  /// Another device removed log entries this device has not read. Only a snapshot can
+  /// close the gap.
+  Gap(String),
   /// An edit named something that does not exist, such as a playlist id.
   NotFound(String),
   /// An edit that makes no sense, such as a position past the end of a list.
@@ -25,6 +28,7 @@ impl fmt::Display for Error {
       Error::Io(e) => write!(f, "io error: {e}"),
       Error::Json(e) => write!(f, "json error: {e}"),
       Error::Cloud(e) => write!(f, "cloud error: {e}"),
+      Error::Gap(device) => write!(f, "log of device {device} has a gap"),
       Error::NotFound(what) => write!(f, "not found: {what}"),
       Error::Invalid(why) => write!(f, "invalid: {why}"),
       Error::Migrate(e) => write!(f, "migration error: {e}"),
@@ -40,7 +44,7 @@ impl std::error::Error for Error {
       Error::Json(e) => Some(e),
       Error::Cloud(e) => Some(e),
       Error::Migrate(e) => Some(e),
-      Error::NotFound(_) | Error::Invalid(_) => None,
+      Error::NotFound(_) | Error::Invalid(_) | Error::Gap(_) => None,
     }
   }
 }
