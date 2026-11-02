@@ -2,6 +2,8 @@
 //! apart from the models of the stores and change only in ways older versions can read.
 //! Unknown fields are ignored on read and optional fields may be missing.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -25,6 +27,21 @@ pub(crate) struct Change {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct Batch {
   pub changes: Vec<Change>,
+}
+
+/// The blob of a snapshot, the whole library of one device at one moment.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct Snapshot {
+  pub changes: Vec<Change>,
+}
+
+/// Describes a snapshot without having to download it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct SnapshotInfo {
+  pub created_ms: i64,
+  /// For every device, the last log entry that is part of the snapshot. A device that
+  /// starts from it continues reading each log right after these.
+  pub covers: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

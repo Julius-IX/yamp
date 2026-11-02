@@ -141,3 +141,95 @@ pub(crate) async fn outgoing(conn: &mut SqliteConnection, device: &str) -> Resul
   }
   Ok(out)
 }
+
+/// The version a snapshot reports for an entity that exists. A change that is still
+/// pending counts as made by this device, with the same time `outgoing` would give it.
+async fn version_of(
+  conn: &mut SqliteConnection,
+  kind: Kind,
+  key: &str,
+  me: &str,
+) -> Result<(i64, String)> {
+  let kind_name = kind.as_str();
+  let dirty = sqlx::query_scalar!(
+    "SELECT ts_ms FROM link_dirty WHERE kind = ? AND key = ?",
+    kind_name,
+    key
+  )
+  .fetch_optional(&mut *conn)
+  .await?;
+  let known = sqlx::query!(
+    "SELECT ts_ms, device FROM link_versions WHERE kind = ? AND key = ?",
+    kind_name,
+    key
+  )
+  .fetch_optional(&mut *conn)
+  .await?
+  .map(|r| (r.ts_ms, r.device));
+  Ok(match (dirty, known) {
+    (Some(d), Some((v, _))) => (d.max(v + 1), me.into()),
+    (Some(d), None) => (d, me.into()),
+    (None, Some(known)) => known,
+    (None, None) => (0, me.into()),
+  })
+}
+
+/// The keys of every entity of a kind that exists.
+async fn keys(conn: &mut SqliteConnection, kind: Kind) -> Result<Vec<String>> {
+  Ok(match kind {
+    Kind::Track => {
+      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM tracks"#)
+        .fetch_all(conn)
+        .await?
+    }
+    Kind::Like => {
+      sqlx::query_scalar!(r#"SELECT track_id AS "key!" FROM likes"#)
+        .fetch_all(conn)
+        .await?
+    }
+    Kind::Artist => {
+      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM followed_artists"#)
+        .fetch_all(conn)
+        .await?
+    }
+    Kind::Album => {
+      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM albums"#)
+        .fetch_all(conn)
+        .await?
+    }
+    Kind::Playlist => {
+      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM playlists"#)
+        .fetch_all(conn)
+        .await?
+    }
+  })
+}
+
+/// The whole library as changes, deletions included. A deletion has to be in there, since
+/// a device that applies the snapshot may still hold the entity.
+pub(crate) async fn snapshot_changes(conn: &mut SqliteConnection, me: &str) -> Result<Vec<Change>> {
+  let mut out = Vec::new();
+  for kind in Kind::ALL {
+    for key in keys(conn, kind).await? {
+      let (ts_ms, device) = version_of(conn, kind, &key, me).await?;
+      out.push(Change {
+        kind: kind.as_str().into(),
+        doc: load(conn, kind, &key).await?,
+        key,
+        ts_ms,
+        device,
+      });
+    }
+  }
+  let tombstones =
+    sqlx::query!("SELECT kind, key, ts_ms, device FROM link_versions WHERE deleted = 1")
+      .fetch_all(conn)
+      .await?;
+  out.extend(tombstones.into_iter().map(|r| Change {
+    kind: r.kind,
+    key: r.key,
+    ts_ms: r.ts_ms,
+    device: r.device,
+    doc: None,
+  }));
+  Ok(out)
