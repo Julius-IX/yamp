@@ -7,6 +7,7 @@
 //! migrations at the workspace root, see `migrate`. The crate has no Tauri dependency on
 //! purpose, so it can be checked and tested alone like `yamp-media`.
 
+mod clock;
 mod db;
 mod error;
 mod migrate;
