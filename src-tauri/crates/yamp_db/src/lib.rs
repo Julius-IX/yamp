@@ -9,6 +9,7 @@
 
 mod db;
 mod error;
+mod migrate;
 
 pub use db::Db;
 pub use error::{Error, Result};

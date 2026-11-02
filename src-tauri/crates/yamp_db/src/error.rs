@@ -4,6 +4,9 @@ use std::{fmt, io};
 pub enum Error {
   Db(sqlx::Error),
   Io(io::Error),
+  /// The schema in the database does not fit the migrations of this build, for example
+  /// because a newer version of the app wrote it.
+  Migrate(sqlx::migrate::MigrateError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -13,6 +16,7 @@ impl fmt::Display for Error {
     match self {
       Error::Db(e) => write!(f, "database error: {e}"),
       Error::Io(e) => write!(f, "io error: {e}"),
+      Error::Migrate(e) => write!(f, "migration error: {e}"),
     }
   }
 }
@@ -22,6 +26,7 @@ impl std::error::Error for Error {
     match self {
       Error::Db(e) => Some(e),
       Error::Io(e) => Some(e),
+      Error::Migrate(e) => Some(e),
     }
   }
 }
@@ -35,5 +40,11 @@ impl From<sqlx::Error> for Error {
 impl From<io::Error> for Error {
   fn from(e: io::Error) -> Self {
     Error::Io(e)
+  }
+}
+
+impl From<sqlx::migrate::MigrateError> for Error {
+  fn from(e: sqlx::migrate::MigrateError) -> Self {
+    Error::Migrate(e)
   }
 }

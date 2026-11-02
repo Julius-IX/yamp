@@ -5,7 +5,9 @@ edition = "2024"
 
 [dependencies]
 # Bundled SQLite, so every platform runs the same version and has STRICT tables and unixepoch().
-sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite"] }
+# Queries are checked at compile time. A build with DATABASE_URL set checks them against that
+# database, any other build uses the data in `.sqlx` at the workspace root, see the readme.
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "sqlite", "macros", "migrate"] }
 tokio = { version = "1", features = ["fs"] }
 
 [dev-dependencies]

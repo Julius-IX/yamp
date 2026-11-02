@@ -5,7 +5,7 @@ use sqlx::{
   SqlitePool,
 };
 
-use crate::Result;
+use crate::{migrate, Result};
 
 /// Handle to the library database. Clones share one connection pool.
 #[derive(Clone)]
@@ -41,6 +41,7 @@ impl Db {
   }
 
   async fn init(pool: SqlitePool) -> Result<Self> {
+    migrate::run(&pool).await?;
     Ok(Self { pool })
   }
 
