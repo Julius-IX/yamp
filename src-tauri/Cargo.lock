@@ -6026,6 +6026,8 @@ dependencies = [
 name = "yamp-db"
 version = "0.1.0"
 dependencies = [
+ "cloud-kit",
+ "cloud-sync",
  "log",
  "serde",
  "serde_json",

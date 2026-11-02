@@ -29,7 +29,44 @@
 #![allow(dead_code)]
 
 mod apply;
+mod device;
 mod doc;
 mod export;
 mod kind;
 mod state;
+
+use std::sync::Arc;
+
+use cloud_kit::Dir;
+use cloud_sync::CloudStore;
+use sqlx::SqlitePool;
+
+use crate::{Db, Result};
+
+/// A library linked to a cloud folder.
+///
+/// The cloud account and its login belong to the app. Whatever opened the
+/// [`CloudStore`] is given here, see `cloud-sync` for the providers.
+#[derive(Clone)]
+pub struct Link {
+  pool: SqlitePool,
+  root: Dir,
+  device: String,
+  name: String,
+}
+
+impl Link {
+  /// `name` is how other devices list this one, for example the model of the phone.
+  pub async fn open(db: &Db, store: Arc<dyn CloudStore>, name: &str) -> Result<Self> {
+    Ok(Self {
+      pool: db.pool().clone(),
+      root: Dir::root(store),
+      device: device::device_id(db.pool()).await?,
+      name: name.into(),
+    })
+  }
+
+  pub fn device_id(&self) -> &str {
+    &self.device
+  }
+}
