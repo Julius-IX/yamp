@@ -6,7 +6,7 @@
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
-use sqlx::SqlitePool;
+use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
 
 use super::{blocking, Link};
@@ -39,6 +39,15 @@ pub struct DeviceInfo {
   pub name: String,
   pub last_seen_ms: i64,
   pub this_device: bool,
+}
+
+/// Same as [`Link::cursors`] on a connection that is already held, since asking the pool
+/// for a second one while a transaction is open can wait forever on a small pool.
+pub(crate) async fn cursors_on(conn: &mut SqliteConnection) -> Result<BTreeMap<String, String>> {
+  let rows = sqlx::query!("SELECT device, cursor FROM link_cursors")
+    .fetch_all(conn)
+    .await?;
+  Ok(rows.into_iter().map(|r| (r.device, r.cursor)).collect())
 }
 
 /// The id of this device. It is made once and kept in the database. A copy of the
@@ -82,10 +91,8 @@ impl Link {
 
   /// Cursors into the logs of the other devices, as stored after each applied entry.
   pub(crate) async fn cursors(&self) -> Result<BTreeMap<String, String>> {
-    let rows = sqlx::query!("SELECT device, cursor FROM link_cursors")
-      .fetch_all(&self.pool)
-      .await?;
-    Ok(rows.into_iter().map(|r| (r.device, r.cursor)).collect())
+    let mut conn = self.pool.acquire().await?;
+    cursors_on(&mut conn).await
   }
 
   /// Updates the meta file of this device. Only this device writes it.

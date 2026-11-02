@@ -26,8 +26,6 @@
 //! everyone has read. A device that was away for longer, or a new one, starts from a
 //! snapshot and reads the logs from where the snapshot ends, see `snapshot`.
 
-#![allow(dead_code)]
-
 mod apply;
 mod device;
 mod doc;
@@ -35,6 +33,7 @@ mod export;
 mod kind;
 mod pull;
 mod push;
+mod snapshot;
 mod state;
 
 use std::{io, sync::Arc};
@@ -83,8 +82,12 @@ impl Link {
     &self.device
   }
 
-  /// Receives, then sends, then tells the others how far this device has read.
+  /// Receives, then sends, then tells the others how far this device has read. A device
+  /// that missed deleted log entries starts from a snapshot first.
   pub async fn sync(&self) -> Result<SyncReport> {
+    if !self.gaps().await?.is_empty() {
+      self.restore().await?;
+    }
     let pulled = self.pull().await?;
     let pushed = self.push().await?;
     self.publish().await?;
