@@ -1,9 +1,9 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use ts_types::TsType;
 
 /// A playable item. Only `id` and `title` are guaranteed, the rest is best effort because
 /// providers differ in what their listings expose.
-#[derive(Debug, Clone, Serialize, TsType)]
+#[derive(Debug, Clone, Serialize, Deserialize, TsType)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
   pub id: String,
