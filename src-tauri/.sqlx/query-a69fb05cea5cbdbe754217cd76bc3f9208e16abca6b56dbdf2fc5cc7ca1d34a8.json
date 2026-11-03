@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT name, thumbnail, followed_ms FROM followed_artists WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "name",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "thumbnail",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "followed_ms",
+        "ordinal": 2,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "a69fb05cea5cbdbe754217cd76bc3f9208e16abca6b56dbdf2fc5cc7ca1d34a8"
+}

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO link_cursors (device, cursor) VALUES (?, ?)\n       ON CONFLICT (device) DO UPDATE SET cursor = MAX(cursor, excluded.cursor)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6afead1a0b6ac0a6bc54718cc8a91021937752fb14ffe0adca4aa48205e24a09"
+}

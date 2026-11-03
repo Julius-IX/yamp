@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO link_versions (kind, key, ts_ms, device, deleted) VALUES (?, ?, ?, ?, ?)\n         ON CONFLICT (kind, key) DO UPDATE SET\n           ts_ms = excluded.ts_ms, device = excluded.device, deleted = excluded.deleted",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "d308d32b19bb62f66ee16467a369c223ae2ca86639fd3f6c26fad1c0a8ef0d48"
+}

@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT title, artist, cover, release_year AS \"release_year: u32\", added_ms\n           FROM albums WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "title",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "artist",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "cover",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "release_year: u32",
+        "ordinal": 3,
+        "type_info": "Integer"
+      },
+      {
+        "name": "added_ms",
+        "ordinal": 4,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "eafdc4eb0f7a8f28184675cb30503c51c18a95435113ec304a02ef786db3bb26"
+}

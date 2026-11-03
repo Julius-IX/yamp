@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM link_dirty WHERE kind = ? AND key = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "6ac1adaf423143d705bc3c862fad815d593fe3fd6cc7b15e8c3057d2dff812b2"
+}

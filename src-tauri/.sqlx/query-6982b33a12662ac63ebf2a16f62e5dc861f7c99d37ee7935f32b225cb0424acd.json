@@ -1,0 +1,56 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT t.id AS \"id!\", t.title AS \"title!\", t.artist AS \"artist!\", t.album, t.duration_secs, t.thumbnail, t.release_year AS \"release_year: u32\" FROM album_tracks x JOIN tracks t ON t.id = x.track_id\n           WHERE x.album_id = ? ORDER BY x.position",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "title!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "artist!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "album",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "duration_secs",
+        "ordinal": 4,
+        "type_info": "Float"
+      },
+      {
+        "name": "thumbnail",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "release_year: u32",
+        "ordinal": 6,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "6982b33a12662ac63ebf2a16f62e5dc861f7c99d37ee7935f32b225cb0424acd"
+}

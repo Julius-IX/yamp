@@ -1,8 +1,9 @@
 mod api;
+mod library;
 mod logging;
 
 /// Every saved setting. Keys outside this list are dropped when the settings file is loaded.
-const SETTINGS: &[&str] = &["theme", "mode"];
+const SETTINGS: &[&str] = &["theme", "mode", library::SYNC_KEY];
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -17,6 +18,7 @@ pub fn run() {
     .setup(|app| {
       tauri_settings::init(app.handle(), SETTINGS)?;
       logging::attach(app.handle().clone());
+      library::init(app.handle())?;
       log::info!("yamp started");
       Ok(())
     })

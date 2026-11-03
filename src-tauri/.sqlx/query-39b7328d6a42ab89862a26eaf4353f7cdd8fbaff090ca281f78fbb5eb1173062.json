@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO downloads (track_id, ext, size_bytes, downloaded_ms) VALUES (?1, ?2, ?3, ?4)\n       ON CONFLICT(track_id) DO UPDATE SET\n         ext = excluded.ext, size_bytes = excluded.size_bytes, downloaded_ms = excluded.downloaded_ms",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "39b7328d6a42ab89862a26eaf4353f7cdd8fbaff090ca281f78fbb5eb1173062"
+}

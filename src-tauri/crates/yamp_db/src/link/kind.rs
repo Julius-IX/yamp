@@ -1,0 +1,49 @@
+/// The entities that are shared between devices.
+///
+/// The names are part of the wire format and of the database, so they never change.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Kind {
+  Track,
+  Like,
+  Artist,
+  Album,
+  Playlist,
+}
+
+impl Kind {
+  pub const ALL: [Kind; 5] = [
+    Kind::Track,
+    Kind::Like,
+    Kind::Artist,
+    Kind::Album,
+    Kind::Playlist,
+  ];
+
+  pub fn as_str(self) -> &'static str {
+    match self {
+      Kind::Track => "track",
+      Kind::Like => "like",
+      Kind::Artist => "artist",
+      Kind::Album => "album",
+      Kind::Playlist => "playlist",
+    }
+  }
+
+  /// `None` for a kind this version does not know, which can come from a newer app.
+  pub fn parse(s: &str) -> Option<Kind> {
+    Kind::ALL.into_iter().find(|k| k.as_str() == s)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn names_roundtrip() {
+    for kind in Kind::ALL {
+      assert_eq!(Kind::parse(kind.as_str()), Some(kind));
+    }
+    assert_eq!(Kind::parse("podcast"), None);
+  }
+}

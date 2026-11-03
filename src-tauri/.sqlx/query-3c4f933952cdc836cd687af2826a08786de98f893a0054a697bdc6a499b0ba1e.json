@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO link_meta (key, value) VALUES ('device_id', ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": []
+  },
+  "hash": "3c4f933952cdc836cd687af2826a08786de98f893a0054a697bdc6a499b0ba1e"
+}
