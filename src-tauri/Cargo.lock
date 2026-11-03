@@ -6009,6 +6009,7 @@ name = "yamp"
 version = "0.1.0"
 dependencies = [
  "android_logger",
+ "cloud-sync",
  "log",
  "oslog",
  "serde",
@@ -6019,6 +6020,7 @@ dependencies = [
  "tauri-plugin-opener",
  "tauri-settings",
  "ts-types",
+ "yamp-db",
  "yt-api",
 ]
 
