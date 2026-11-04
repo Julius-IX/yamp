@@ -5,6 +5,7 @@ import { IS_MOBILE } from "@/util/platform";
 import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
+import Player from "@/player/Player";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -72,33 +73,38 @@ export default function AppLayout() {
       <Box
         sx={{
           display: "flex",
-          flexDirection: IS_MOBILE ? "column" : "row",
+          flexDirection: "column",
           height: "100dvh",
           pt: IS_MOBILE ? "env(safe-area-inset-top)" : 0,
           // with the bottom bar hidden the safe area is no longer covered by it
           pb: IS_MOBILE && navHidden ? "env(safe-area-inset-bottom)" : 0,
         }}
       >
-        {!IS_MOBILE && !navHidden && (
-          <Sidebar tabs={tabs} activeId={activeId} onSelect={goTo} />
-        )}
+        <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
+          {!IS_MOBILE && !navHidden && (
+            <Sidebar tabs={tabs} activeId={activeId} onSelect={goTo} />
+          )}
 
-        <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>
-          {tabs.map((t) => (
-            <Box
-              key={`${t.id}-${stacks[t.id].gen}`}
-              sx={{
-                display: t.id === activeId ? "block" : "none",
-                height: "100%",
-                overflowY: "auto",
-                scrollbarWidth: "none",
-                "&::-webkit-scrollbar": { display: "none" },
-              }}
-            >
-              <RouterProvider router={stacks[t.id].router} />
-            </Box>
-          ))}
+          <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+            {tabs.map((t) => (
+              <Box
+                key={`${t.id}-${stacks[t.id].gen}`}
+                sx={{
+                  display: t.id === activeId ? "block" : "none",
+                  height: "100%",
+                  overflowY: "auto",
+                  scrollbarWidth: "none",
+                  "&::-webkit-scrollbar": { display: "none" },
+                }}
+              >
+                <RouterProvider router={stacks[t.id].router} />
+              </Box>
+            ))}
+          </Box>
         </Box>
+
+        {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
+        <Player />
 
         {IS_MOBILE && !navHidden && (
           <Paper elevation={3} sx={{ pb: "env(safe-area-inset-bottom)" }}>
