@@ -3,6 +3,7 @@ import { Box, ButtonBase, IconButton, LinearProgress, Paper, Typography } from "
 import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
+import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
 import NowPlayingSheet from "./NowPlayingSheet";
@@ -45,6 +46,9 @@ export default function MiniPlayer() {
             </Box>
           </ButtonBase>
           <LikeButton track={track} />
+          <IconButton aria-label="Previous" onClick={player.prev}>
+            <SkipPreviousIcon />
+          </IconButton>
           <IconButton aria-label={state.playing ? "Pause" : "Play"} onClick={player.togglePlay}>
             {state.playing ? <PauseIcon /> : <PlayArrowIcon />}
           </IconButton>
