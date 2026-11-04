@@ -55,6 +55,7 @@ export default function NowPlayingSheet({ open, onClose }: { open: boolean; onCl
             <Box sx={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", px: 3 }}>
               <Cover
                 src={track?.thumbnail}
+                px={1024}
                 sx={{ width: "100%", maxWidth: 360, height: "auto", aspectRatio: "1", borderRadius: 2, fontSize: 96 }}
               />
             </Box>
