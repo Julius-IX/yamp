@@ -3,7 +3,18 @@ mod library;
 mod logging;
 
 /// Every saved setting. Keys outside this list are dropped when the settings file is loaded.
-const SETTINGS: &[&str] = &["theme", "mode", library::SYNC_KEY];
+const SETTINGS: &[&str] = &[
+  "theme",
+  "mode",
+  "volume",
+  "muted",
+  "shuffle",
+  "repeat",
+  "autoplay",
+  "quality",
+  "playback",
+  library::SYNC_KEY,
+];
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

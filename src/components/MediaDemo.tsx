@@ -23,6 +23,7 @@ import PlayQueuePanel from "./media/PlayQueuePanel";
 import { useDownloadJobs } from "./media/useDownloadJobs";
 import { useMediaSession } from "./media/useMediaSession";
 import { MAX_QUEUED, useStreamQueue } from "./media/useStreamQueue";
+import { player } from "@/player/store";
 
 const log = logger("media-demo");
 
@@ -131,9 +132,11 @@ export default function MediaDemo() {
     });
   };
 
-  // the URL expires, so a direct play resolves it right before playing and never stores it
-  const playStream = (t: Track) =>
-    run("stream", async () => startStream(t, await COMMANDS.media.stream({ id: t.id, quality })));
+  // the player bar resolves the stream itself, and the result list becomes its queue
+  const playStream = (t: Track) => {
+    setNow(null); // the local element would otherwise keep playing over the bar
+    player.play(listing.tracks, listing.tracks.indexOf(t));
+  };
 
   // SECTION: play queue
 
