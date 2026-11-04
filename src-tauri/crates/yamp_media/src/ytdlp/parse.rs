@@ -56,7 +56,8 @@ fn track_of(v: &Value) -> Option<Track> {
 }
 
 fn first_json(out: &str) -> Result<Value> {
-  let line = out.lines().find(|l| !l.trim().is_empty()).ok_or(MediaError::NotFound)?;
+  // yt-dlp can print warnings next to the JSON on some engines, so only a line that opens an object counts
+  let line = out.lines().find(|l| l.trim_start().starts_with('{')).ok_or(MediaError::NotFound)?;
   Ok(serde_json::from_str(line)?)
 }
 
@@ -91,6 +92,13 @@ pub fn playlist(out: &str) -> Result<Playlist> {
     title: str_of(&v, "title").unwrap_or_default(),
     tracks,
   })
+}
+
+/// Unix seconds before which the stream URL answers 403. Some YouTube clients (the TV ones)
+/// hand out URLs that only start working a few seconds after extraction, yt-dlp itself sleeps
+/// through this when downloading. `None` when the format has no such delay.
+pub fn available_at(out: &str) -> Option<u64> {
+  first_json(out).ok()?.get("available_at")?.as_u64()
 }
 
 pub fn stream(out: &str) -> Result<StreamInfo> {
@@ -169,6 +177,19 @@ mod tests {
     assert_eq!(s.expires_at, Some(1_790_000_000));
     assert_eq!(s.mime, "audio/mp4");
     assert_eq!(s.bitrate_kbps, Some(129.5));
+  }
+
+  #[test]
+  fn available_at_is_read_when_present() {
+    assert_eq!(available_at(r#"{"url":"u","available_at":1793804425}"#), Some(1_793_804_425));
+    assert_eq!(available_at(r#"{"url":"u"}"#), None);
+    assert_eq!(available_at(""), None);
+  }
+
+  #[test]
+  fn warnings_before_the_json_are_skipped() {
+    let out = "WARNING: [youtube] something\n{\"url\":\"https://x/y?expire=5\",\"ext\":\"m4a\"}\n";
+    assert_eq!(stream(out).unwrap().expires_at, Some(5));
   }
 
   #[test]

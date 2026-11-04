@@ -79,14 +79,30 @@ impl DesktopEngine {
     // both pipes are drained at once, a full pipe would otherwise stall the child
     let (out, err) = tokio::join!(drain(stdout, progress), drain(stderr, progress));
     let status = child.wait().await?;
+    let err = err?;
+    log_stderr(&err);
     if status.success() {
       return Ok(out?);
     }
-    let last = err?.lines().rev().find(|l| !l.trim().is_empty()).map(str::to_owned);
+    let last = err.lines().rev().find(|l| !l.trim().is_empty()).map(str::to_owned);
     let message =
       last.map(|l| l.trim_start_matches("ERROR: ").to_owned()).unwrap_or_else(|| "yt-dlp failed".into());
     log::debug!("yt-dlp exited with {status}: {message}");
     Err(MediaError::Engine(message))
+  }
+}
+
+/// Forwards what yt-dlp wrote to stderr to the log, on success as well. Warnings there are
+/// often the first sign of a problem, like a missing JS runtime or an upcoming format change.
+fn log_stderr(err: &str) {
+  for line in err.lines().map(str::trim).filter(|l| !l.is_empty()) {
+    if line.starts_with("ERROR") {
+      log::error!("yt-dlp: {line}");
+    } else if line.starts_with("WARNING") {
+      log::warn!("yt-dlp: {line}");
+    } else {
+      log::debug!("yt-dlp: {line}");
+    }
   }
 }
 

@@ -10,10 +10,14 @@ use crate::{
 use async_trait::async_trait;
 use std::{
   path::{Path, PathBuf},
-  time::SystemTime,
+  time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 const MAX_LIMIT: usize = 50;
+
+/// Upper bound on waiting for a stream URL to become valid. The delay is about 5s in practice,
+/// a larger value means something is off and waiting longer would only hang playback.
+const MAX_AVAILABILITY_WAIT_SECS: u64 = 15;
 
 pub struct YtDlpBackend<E> {
   engine: E,
@@ -61,8 +65,16 @@ fn flat_listing(target: String, limit: usize) -> YtDlpArgs {
   YtDlpArgs::new(target)
     .flag("--flat-playlist")
     .flag("--dump-json")
-    .flag("--no-warnings")
     .opt("--playlist-end", limit.to_string())
+}
+
+/// Seconds still to wait before a URL with the given `available_at` works, capped.
+fn availability_wait(available_at: u64, now: u64) -> u64 {
+  available_at.saturating_sub(now).min(MAX_AVAILABILITY_WAIT_SECS)
+}
+
+fn now_secs() -> u64 {
+  SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0)
 }
 
 // SECTION: media source
@@ -98,8 +110,7 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
     check_id(id)?;
     let args = YtDlpArgs::new(watch_url(id))
       .flag("--dump-json")
-      .flag("--no-playlist")
-      .flag("--no-warnings");
+      .flag("--no-playlist");
     parse::track(&self.engine.run(&args, None).await?)
   }
 
@@ -107,8 +118,7 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
     check_id(id)?;
     let args = YtDlpArgs::new(format!("https://www.youtube.com/playlist?list={id}"))
       .flag("--flat-playlist")
-      .flag("--dump-single-json")
-      .flag("--no-warnings");
+      .flag("--dump-single-json");
     parse::playlist(&self.engine.run(&args, None).await?)
   }
 
@@ -132,9 +142,18 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
     let args = YtDlpArgs::new(watch_url(id))
       .opt("-f", selector(quality))
       .flag("--dump-json")
-      .flag("--no-playlist")
-      .flag("--no-warnings");
-    parse::stream(&self.engine.run(&args, None).await?)
+      .flag("--no-playlist");
+    let out = self.engine.run(&args, None).await?;
+    // The URL answers 403 until `available_at`. The webview would request it right away, so
+    // the wait happens here and the caller only ever sees a URL that already works.
+    if let Some(at) = parse::available_at(&out) {
+      let wait = availability_wait(at, now_secs());
+      if wait > 0 {
+        log::debug!("stream url for {id} becomes available in {wait}s, waiting");
+        tokio::time::sleep(Duration::from_secs(wait)).await;
+      }
+    }
+    parse::stream(&out)
   }
 }
 
@@ -183,7 +202,6 @@ impl<E: YtDlpEngine> Downloader for YtDlpBackend<E> {
       .opt("-f", selector(quality))
       .opt("-o", template)
       .flag("--no-playlist")
-      .flag("--no-warnings")
       .flag("--no-mtime");
     self.engine.run(&args, progress).await?;
 
@@ -239,6 +257,14 @@ mod tests {
   }
 
   const SONG: &str = r#"{"id":"aaaaaaaaaaa","title":"Song","duration":200.0}"#;
+
+  #[test]
+  fn availability_wait_is_remaining_time_and_capped() {
+    assert_eq!(availability_wait(105, 100), 5);
+    assert_eq!(availability_wait(100, 100), 0);
+    assert_eq!(availability_wait(90, 100), 0);
+    assert_eq!(availability_wait(10_000, 100), MAX_AVAILABILITY_WAIT_SECS);
+  }
 
   #[tokio::test]
   async fn search_falls_back_to_plain_youtube() {
