@@ -34,7 +34,7 @@ export default function DebuggingPage() {
 
   const version = engine === null ? "Checking..." : engine.installed ? (engine.version ?? "Unknown version") : "Not installed";
   return (
-    <Section title="Debugging" mobileHeading={false}>
+    <Section title="Debugging">
       <ActionRow
         title={engine?.installed === false ? "Install yt-dlp" : "Update yt-dlp"}
         summary={error ?? version}

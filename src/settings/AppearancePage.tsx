@@ -11,7 +11,7 @@ export default function AppearancePage() {
   const { name, setName, mode, setMode } = useAppTheme();
   const [animations, setAnimations] = useSetting("animations", true, isBoolean);
   return (
-    <Section title="Appearance" mobileHeading={false}>
+    <Section title="Appearance">
       <ChoiceRow
         title="Theme"
         summary="Choose a color theme for the app"

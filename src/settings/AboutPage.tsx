@@ -17,7 +17,7 @@ export default function AboutPage() {
   }, []);
 
   return (
-    <Section title="About" mobileHeading={false}>
+    <Section title="About">
       <PrefRow title="Version" summary={version || "..."} />
       <ActionRow
         title="Github"

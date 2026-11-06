@@ -104,7 +104,7 @@ export default function DataPage() {
   }, []);
 
   return (
-    <Section title="Data" mobileHeading={false}>
+    <Section title="Data">
       <PrefRow
         title="Downloaded Songs"
         summary={usage ? `${usage.songs} ${usage.songs === 1 ? "song" : "songs"}, ${size(usage.bytes)}` : "Checking..."}

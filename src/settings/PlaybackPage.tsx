@@ -16,7 +16,7 @@ export default function PlaybackPage() {
   const [prefetch, setPrefetch] = useSetting("prefetch", true, isBoolean);
 
   return (
-    <Section title="Playback" mobileHeading={false}>
+    <Section title="Playback">
       <SwitchRow
         title="Autoplay"
         summary="Continue playing similar songs when queue ends"

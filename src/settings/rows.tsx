@@ -48,7 +48,7 @@ export function PrefRow({ title, icon, summary, control, onClick, danger }: Pref
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography color={danger ? "error" : "text.primary"}>{title}</Typography>
         {summary != null && (
-          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word" }}>
+          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word", color: (t) => alpha(t.palette.text.secondary, 0.8) }}>
             {summary}
           </Typography>
         )}
@@ -66,18 +66,16 @@ export function PrefRow({ title, icon, summary, control, onClick, danger }: Pref
   );
 }
 
-export function Section({ title, description, mobileHeading = true, children }: {
+export function Section({ title, description, children }: {
   title?: string;
   /** A line of explanation under the title, desktop only. */
   description?: string;
-  /** Set to false when the title only repeats the top bar of the page, which mobile has. */
-  mobileHeading?: boolean;
   children: ReactNode;
 }) {
   if (IS_MOBILE) {
     return (
       <Box sx={{ pb: 1 }}>
-        {title && mobileHeading && (
+        {title && (
           <Typography variant="subtitle2" color="primary" sx={{ px: 2, pt: 2, pb: 0.5, fontWeight: 600 }}>
             {title}
           </Typography>
