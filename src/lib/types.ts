@@ -105,6 +105,11 @@ export type SyncDevice = {
   thisDevice: boolean;
 }
 
+export type SyncProvider = {
+  id: string;
+  name: string;
+}
+
 export type SyncReport = {
   pulled: number;
   pushed: number;
@@ -112,6 +117,8 @@ export type SyncReport = {
 
 export type SyncStatus = {
   connected: boolean;
+  provider: string | null;
+  account: string | null;
   folder: string | null;
   deviceName: string | null;
   deviceId: string | null;
