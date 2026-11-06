@@ -71,8 +71,11 @@ build did not see the file, check that it is the `config.toml` in this folder an
 ## The scheme of the app
 
 The mobile flows need the system to open the app for a link. The identifier of the app,
-`com.salad.yamp`, is registered for that in `tauri.conf.json` under `plugins > deep-link`, and it is
-all that Android needs. Microsoft sends the browser back to `com.salad.yamp://auth` and an Android
+`com.salad.yamp`, is registered for that in `tauri.conf.json` under `plugins > deep-link`. The plugin only turns that
+into an intent filter of the activity during `tauri android dev` and `tauri android build`, so the
+filter is also kept in `gen/android/app/src/main/AndroidManifest.xml` between the markers the plugin
+uses. A build started from Android Studio would otherwise have no filter, and the browser would have
+nothing to open the redirect with. Changing the scheme means changing both places. Microsoft sends the browser back to `com.salad.yamp://auth` and an Android
 client of Google to `com.salad.yamp:/oauth2redirect`, since Google only accepts the package name as
 the scheme of an Android client. Sending anything else, such as the client id turned around, gets the
 request blocked before the sign in page. If the redirect is for a scheme the app did not register,
