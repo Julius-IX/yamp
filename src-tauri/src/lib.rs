@@ -13,6 +13,9 @@ const SETTINGS: &[&str] = &[
   "autoplay",
   "quality",
   "playback",
+  "animations",
+  "prefetch",
+  "lastCompact",
   library::SYNC_KEY,
 ];
 
@@ -23,13 +26,27 @@ pub fn run() {
   #[cfg(all(debug_assertions, desktop))]
   export_bindings();
 
-  tauri::Builder::default()
+  let builder = tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
-    .plugin(yt_api::init())
+    .plugin(yt_api::init());
+  // a sign in on a phone is answered with a link of a scheme of this app, which the system hands over
+  #[cfg(any(target_os = "android", target_os = "ios"))]
+  let builder = builder.plugin(tauri_plugin_deep_link::init());
+
+  builder
     .setup(|app| {
       tauri_settings::init(app.handle(), SETTINGS)?;
       logging::attach(app.handle().clone());
       library::init(app.handle())?;
+      #[cfg(any(target_os = "android", target_os = "ios"))]
+      {
+        use tauri_plugin_deep_link::DeepLinkExt;
+        app.deep_link().on_open_url(|event| {
+          for url in event.urls() {
+            cloud_auth::deliver_redirect(url.as_str());
+          }
+        });
+      }
       log::info!("yamp started");
       Ok(())
     })
