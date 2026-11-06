@@ -7,11 +7,10 @@ import type { Tab } from "@/router/types";
 import { IS_MOBILE } from "@/util/platform";
 import { placeholderRoutes } from "./Placeholder";
 import MediaDemo from "@/components/MediaDemo";
-import LogView from "@/components/LogView";
 import AlbumsPage from "./sidebar/AlbumsPage";
-import ThemeToggle from "./ThemeToggle";
+import { settingsRoutes } from "@/settings/routes";
 
-// Home and Settings hold the existing demos until their real screens exist.
+// Home holds the demo until its real screen exists.
 // The first tab is the one shown at launch and the one Android back falls back to.
 export const tabs: Tab[] = [
   { id: "home", label: "Home", icon: <HomeIcon />, routes: [{ index: true, element: <MediaDemo /> }] },
@@ -19,5 +18,5 @@ export const tabs: Tab[] = [
   { id: "library", label: "Library", icon: <LibraryMusicIcon />, routes: placeholderRoutes("Library") },
   // desktop shows the albums in the sidebar instead
   ...(IS_MOBILE ? [{ id: "albums", label: "Albums", icon: <AlbumIcon />, routes: [{ index: true, element: <AlbumsPage /> }] }] : []),
-  { id: "settings", label: "Settings", icon: <SettingsIcon />, routes: [{ index: true, element: <><ThemeToggle /><LogView /></> }] },
+  { id: "settings", label: "Settings", icon: <SettingsIcon />, routes: settingsRoutes },
 ];
