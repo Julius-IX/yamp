@@ -43,7 +43,10 @@ pub fn run() {
         use tauri_plugin_deep_link::DeepLinkExt;
         app.deep_link().on_open_url(|event| {
           for url in event.urls() {
-            cloud_auth::deliver_redirect(url.as_str());
+            // the query carries the authorization code, so only the part before it is logged
+            let taken = cloud_auth::deliver_redirect(url.as_str());
+            let (scheme, host, path) = (url.scheme(), url.host_str().unwrap_or(""), url.path());
+            log::info!("link opened the app: {scheme}://{host}{path}, taken by a sign in: {taken}");
           }
         });
       }
