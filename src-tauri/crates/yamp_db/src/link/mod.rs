@@ -44,7 +44,7 @@ use sqlx::SqlitePool;
 
 pub use device::DeviceInfo;
 
-use crate::{Db, Error, Result};
+use crate::{db, Db, Error, Result};
 
 /// A library linked to a cloud folder.
 ///
@@ -91,6 +91,9 @@ impl Link {
     let pulled = self.pull().await?;
     let pushed = self.push().await?;
     self.publish().await?;
+    // The pulled rows sit in the write-ahead log until it is folded back. The database file
+    // is what gets copied off a phone to check a sync, so it has to hold them.
+    db::checkpoint(&self.pool).await;
     Ok(SyncReport { pulled, pushed })
   }
 
