@@ -165,6 +165,14 @@ impl From<db::Download> for DownloadRecord {
   }
 }
 
+/// A cloud service the library can be linked to in this build.
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncProvider {
+  pub id: String,
+  pub name: String,
+}
+
 /// Another device that shares the library, or this one.
 #[derive(Serialize, TsType)]
 #[serde(rename_all = "camelCase")]
@@ -201,6 +209,10 @@ impl From<db::SyncReport> for SyncReport {
 #[serde(rename_all = "camelCase")]
 pub struct SyncStatus {
   pub connected: bool,
+  /// Id of the cloud service, none for a link to a plain folder.
+  pub provider: Option<String>,
+  /// The account the library is linked to at the service.
+  pub account: Option<String>,
   pub folder: Option<String>,
   pub device_name: Option<String>,
   pub device_id: Option<String>,
