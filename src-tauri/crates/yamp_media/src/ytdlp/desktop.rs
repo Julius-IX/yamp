@@ -13,7 +13,10 @@ use tokio::{
   process::Command,
 };
 
-const BASE: &str = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
+/// The nightly builds, not the stable releases. YouTube changes often and the extractors break
+/// until yt-dlp ships a fix, which reaches the nightly channel days before a stable release. The
+/// assets and the checksum file are named the same as in the stable repository.
+const BASE: &str = "https://github.com/yt-dlp/yt-dlp-nightly-builds/releases/latest/download";
 
 /// Listings and metadata should finish quickly. A hung extractor would otherwise keep the
 /// command pending forever. Downloads are exempt since their length depends on the file.

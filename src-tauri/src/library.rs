@@ -9,6 +9,8 @@ use std::{
   },
 };
 
+use cloud_auth::TokenStore;
+use cloud_sync::{CloudStore, Provider};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_settings::Settings;
@@ -17,8 +19,11 @@ use yt_api::{DownloadJob, JobState};
 
 const DB_FILE: &str = "library.db";
 
-/// Setting that remembers the linked folder, so the link is restored at the next start.
+/// Setting that remembers where the library is linked to, so the link is restored at the next start.
 pub const SYNC_KEY: &str = "sync";
+
+/// File of the sign in tokens, see `cloud_auth::TokenStore`.
+const TOKENS_FILE: &str = "cloud_tokens.json";
 
 /// Event with a track id as payload, sent once a finished download is part of the library.
 pub const DOWNLOADED_EVENT: &str = "library:downloaded";
@@ -49,18 +54,12 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn Error>> {
     Err(e) => log::warn!("download repair failed: {e}"),
   }
 
-  let sync = SyncState::default();
-  if let Some(config) = app.state::<Settings>().get::<SyncConfig>(SYNC_KEY) {
-    match tauri::async_runtime::block_on(connect(&db, &config)) {
-      Ok(link) => sync.set(Some(Connected { link, config })),
-      Err(e) => log::warn!("linked folder {} is not available: {e}", config.folder.display()),
-    }
-  }
-
   adopt_finished_downloads(app, db.clone(), media.clone());
-  app.manage(sync);
+  app.manage(SyncState::default());
+  app.manage(TokenStore::new(data_dir.join(TOKENS_FILE)));
   app.manage(db);
   app.manage(media);
+  restore_link(app);
   log::info!("library ready");
   Ok(())
 }
@@ -100,11 +99,30 @@ async fn adopt(db: &Db, media: &MediaStore, id: &str, path: &Path) -> yamp_db::R
   Ok(true)
 }
 
+/// Links the library again to what the last run was linked to. It runs in the background since a
+/// cloud account has to be reached for it, and a start without a network must not wait for that.
+fn restore_link(app: &AppHandle) {
+  let Some(config) = app.state::<Settings>().get::<SyncConfig>(SYNC_KEY) else { return };
+  let app = app.clone();
+  tauri::async_runtime::spawn(async move {
+    let (db, tokens, sync) = (app.state::<Db>(), app.state::<TokenStore>(), app.state::<SyncState>());
+    match connect(&db, &config, &tokens).await {
+      Ok(link) => sync.set(Some(Connected { link, config })),
+      Err(e) => log::warn!("the linked library is not available: {e}"),
+    }
+  });
+}
+
 /// Where the library is linked to and under which name this device shows up there.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SyncConfig {
+  /// The folder of a link to a plain folder. Empty for a cloud account.
+  #[serde(default)]
   pub folder: PathBuf,
+  /// The cloud service of the link, none for a plain folder.
+  #[serde(default)]
+  pub provider: Option<Provider>,
   pub device_name: String,
 }
 
@@ -115,17 +133,37 @@ pub struct Connected {
   pub config: SyncConfig,
 }
 
-/// Links the library to a folder that something else keeps equal between devices, for example
-/// a cloud drive client. The providers of `cloud-sync` that talk to an account directly need a
-/// login flow, which the app does not have yet.
-pub async fn connect(db: &Db, config: &SyncConfig) -> Result<Link, String> {
-  let name = config.device_name.trim();
-  if config.folder.as_os_str().is_empty() || name.is_empty() {
-    return Err("a folder and a device name are needed".into());
+/// Links the library to where the config says. A cloud account needs the tokens of an earlier
+/// sign in, a folder is for something else that keeps it equal between devices.
+pub async fn connect(db: &Db, config: &SyncConfig, tokens: &TokenStore) -> Result<Link, String> {
+  let store: Arc<dyn CloudStore> = match config.provider {
+    Some(provider) => {
+      let session = cloud_auth::Session::from_store(provider, tokens.clone()).map_err(|e| e.to_string())?;
+      cloud_store(provider, session)?
+    }
+    None => {
+      if config.folder.as_os_str().is_empty() {
+        return Err("a folder is needed".into());
+      }
+      Arc::new(cloud_sync::fs::LocalDirStore::new(config.folder.clone()).map_err(|e| e.to_string())?)
+    }
+  };
+  link(db, &config.device_name, store).await
+}
+
+/// The store of a cloud service, signed in through `session`.
+pub fn cloud_store(provider: Provider, session: cloud_auth::Session) -> Result<Arc<dyn CloudStore>, String> {
+  let settings = cloud_sync::Settings::default().with_tokens(Arc::new(session));
+  let store = cloud_sync::open(provider, settings).map_err(|e| e.to_string())?;
+  Ok(Arc::from(store))
+}
+
+pub async fn link(db: &Db, device_name: &str, store: Arc<dyn CloudStore>) -> Result<Link, String> {
+  let name = device_name.trim();
+  if name.is_empty() {
+    return Err("a device name is needed".into());
   }
-  let store =
-    cloud_sync::fs::LocalDirStore::new(config.folder.clone()).map_err(|e| e.to_string())?;
-  Link::open(db, Arc::new(store), name).await.map_err(|e| e.to_string())
+  Link::open(db, store, name).await.map_err(|e| e.to_string())
 }
 
 /// The link to the cloud folder. Empty until a folder is connected.
@@ -133,6 +171,8 @@ pub async fn connect(db: &Db, config: &SyncConfig) -> Result<Link, String> {
 pub struct SyncState {
   current: RwLock<Option<Connected>>,
   busy: AtomicBool,
+  /// Raised to abandon a sign in that waits for the browser. Shared with the thread that waits.
+  cancel_sign_in: Arc<AtomicBool>,
 }
 
 impl SyncState {
@@ -143,6 +183,16 @@ impl SyncState {
 
   pub fn set(&self, next: Option<Connected>) {
     *self.current.write().unwrap_or_else(PoisonError::into_inner) = next;
+  }
+
+  /// Hands out the flag of a new sign in, lowered.
+  pub fn new_sign_in(&self) -> Arc<AtomicBool> {
+    self.cancel_sign_in.store(false, Ordering::Release);
+    self.cancel_sign_in.clone()
+  }
+
+  pub fn cancel_sign_in(&self) {
+    self.cancel_sign_in.store(true, Ordering::Release);
   }
 
   /// Reserves the link for one long operation. Two syncs at once would both append to the log of

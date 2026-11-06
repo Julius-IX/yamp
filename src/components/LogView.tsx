@@ -32,6 +32,9 @@ const COLORS: Record<LogLevel, string> = {
   trace: "text.disabled",
 };
 
+/** Release builds start at the levels that matter to a user. Dev builds show everything. */
+const DEFAULT_LEVEL: LogLevel = import.meta.env.DEV ? "trace" : "info";
+
 type SourceFilter = LogSource | "all";
 
 const time = (ts: number) => new Date(ts).toISOString().slice(11, 23);
@@ -89,7 +92,7 @@ function useLogEntries() {
 export default function LogView() {
   const entries = useLogEntries();
   const [source, setSource] = useState<SourceFilter>("all");
-  const [minLevel, setMinLevel] = useState<LogLevel>("trace");
+  const [minLevel, setMinLevel] = useState<LogLevel>(DEFAULT_LEVEL);
   const [query, setQuery] = useState("");
   const [follow, setFollow] = useState(true);
   const scroller = useRef<HTMLDivElement>(null);

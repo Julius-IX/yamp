@@ -22,11 +22,15 @@ yt-api = { version = "0.1.0", path = "./crates/yt_api" }
 tauri-settings = { version = "0.1.0", path = "./crates/tauri_settings" }
 yamp-db = { version = "0.1.0", path = "./crates/yamp_db" }
 cloud-sync = { version = "0.1.0", path = "./crates/cloud_sync" }
+cloud-auth = { version = "0.1.0", path = "./crates/cloud_auth" }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 log = "0.4"
+
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
+tauri-plugin-deep-link = "2"
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.15"

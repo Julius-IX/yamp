@@ -5,7 +5,9 @@ import { IS_MOBILE } from "@/util/platform";
 import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
+import { useAutoSync } from "@/lib/sync";
 import Player from "@/player/Player";
+import Motion from "@/themes/Motion";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -25,6 +27,7 @@ function useNavHidden(router: TabRouter) {
 }
 
 export default function AppLayout() {
+  useAutoSync();
   const [activeId, setActiveId] = useState(tabs[0].id);
   // `gen` changes the key of a tab's view, a reset remounts it with a fresh router.
   const [stacks, setStacks] = useState(() =>
@@ -105,6 +108,7 @@ export default function AppLayout() {
 
         {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
         <Player />
+        <Motion />
 
         {IS_MOBILE && !navHidden && (
           <Paper elevation={3} sx={{ pb: "env(safe-area-inset-bottom)" }}>

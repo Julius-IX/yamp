@@ -61,7 +61,7 @@ class YtdlpPlugin(private val activity: Activity) : Plugin(activity) {
     fun update(invoke: Invoke) {
         bg(invoke) {
             ensure()
-            YoutubeDL.getInstance().updateYoutubeDL(ctx, YoutubeDL.UpdateChannel.STABLE)
+            YoutubeDL.getInstance().updateYoutubeDL(ctx, YoutubeDL.UpdateChannel.NIGHTLY)
             JSObject().put("out", YoutubeDL.getInstance().version(ctx) ?: "")
         }
     }

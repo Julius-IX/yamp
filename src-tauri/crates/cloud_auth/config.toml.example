@@ -1,0 +1,44 @@
+# Copy this file to config.toml in this folder and fill in the ids of the clients you have. The
+# real config.toml is ignored by git and must not be committed, see README.md next to this file.
+#
+# The build script of this crate reads it and bakes the ids into the app, also when the build is
+# started from Android Studio or Xcode. The same names set in the environment win over the file, which is
+# how a CI build does it. A build looks at the variable
+# of its own system first (LINUX, MACOS, WINDOWS, ANDROID, IOS) and then at the generic one of its
+# kind (DESKTOP for the first three, MOBILE for the other two). An empty value counts as not set.
+# A service with no id for the platform being built is not part of that build, so it is not shown
+# in the settings. When none is set, the settings say that no cloud services are available.
+#
+# DESKTOP is enough for most setups. MOBILE only makes sense for Microsoft, Google needs ANDROID
+# and IOS since they are different kinds of client. The README says which type each one is.
+
+[env]
+# Google Drive. The desktop levels are "Desktop app" clients, ANDROID is an Android client and IOS
+# an iOS client. The last two have no secret.
+# desktop
+YAMP_GOOGLE_DESKTOP_CLIENT_ID = ""
+YAMP_GOOGLE_DESKTOP_CLIENT_SECRET = ""
+YAMP_GOOGLE_LINUX_CLIENT_ID = ""
+YAMP_GOOGLE_LINUX_CLIENT_SECRET = ""
+YAMP_GOOGLE_MACOS_CLIENT_ID = ""
+YAMP_GOOGLE_MACOS_CLIENT_SECRET = ""
+YAMP_GOOGLE_WINDOWS_CLIENT_ID = ""
+YAMP_GOOGLE_WINDOWS_CLIENT_SECRET = ""
+# mobile
+YAMP_GOOGLE_MOBILE_CLIENT_ID = ""
+YAMP_GOOGLE_MOBILE_CLIENT_SECRET = ""
+YAMP_GOOGLE_ANDROID_CLIENT_ID = ""
+YAMP_GOOGLE_ANDROID_CLIENT_SECRET = ""
+YAMP_GOOGLE_IOS_CLIENT_ID = ""
+YAMP_GOOGLE_IOS_CLIENT_SECRET = ""
+
+# OneDrive. Public clients, so there are no secrets.
+# desktop
+YAMP_MICROSOFT_DESKTOP_CLIENT_ID = ""
+YAMP_MICROSOFT_LINUX_CLIENT_ID = ""
+YAMP_MICROSOFT_MACOS_CLIENT_ID = ""
+YAMP_MICROSOFT_WINDOWS_CLIENT_ID = ""
+# mobile
+YAMP_MICROSOFT_MOBILE_CLIENT_ID = ""
+YAMP_MICROSOFT_ANDROID_CLIENT_ID = ""
+YAMP_MICROSOFT_IOS_CLIENT_ID = ""
