@@ -42,6 +42,8 @@ export const isQuality = (v: unknown): v is AudioQuality => QUALITIES.includes(v
 const RESTART_AFTER_SECS = 3;
 /** The playback position is saved at most this often while playing. */
 const SAVE_EVERY_MS = 15_000;
+/** A stream URL stays usable for hours, a prefetched one is dropped after this to be safe. */
+const PREFETCH_MAX_AGE_MS = 20 * 60_000;
 /** How many related tracks autoplay appends at once. */
 const AUTOPLAY_BATCH = 15;
 
@@ -54,6 +56,12 @@ let original: Track[] = [];
 /** Bumped by every load, so a stream that resolves after a newer request is dropped. */
 let token = 0;
 let extending = false;
+/** Stream URLs resolved ahead of time. Resolving is the slow part of starting a track. */
+const prefetched = new Map<string, { url: string; at: number }>();
+/** Fetching the audio itself ahead of time fills the HTTP cache the main element reads from. */
+const warm = new Audio();
+warm.preload = "auto";
+warm.muted = true;
 let lastSave = 0;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
@@ -129,9 +137,9 @@ async function start(index: number, resumeAt = 0, retried = false): Promise<void
   set({ index, loading: true, error: null });
   setTime(resumeAt, track.durationSecs ?? 0);
   try {
-    const info = await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality) });
+    const url = await streamUrl(track);
     if (mine !== token) return;
-    audio.src = info.url;
+    audio.src = url;
     if (resumeAt > 0) audio.currentTime = resumeAt;
     // a failure after this point reaches the error event
     audio.onerror = () => recover(mine, index, retried);
@@ -142,6 +150,30 @@ async function start(index: number, resumeAt = 0, retried = false): Promise<void
     log.error(`couldn't play ${track.title}:`, e);
     set({ loading: false, playing: false, error: String(e) });
   }
+}
+
+async function streamUrl(track: Track): Promise<string> {
+  const hit = prefetched.get(track.id);
+  prefetched.delete(track.id);
+  if (hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS) return hit.url;
+  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality) })).url;
+}
+
+/** Resolves and starts loading the track after the playing one, when the setting allows it. */
+function prefetchNext() {
+  if (!getSetting("prefetch", true, isBoolean)) return;
+  const { queue, index, repeat } = read();
+  const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
+  if (!next || next.id === queue[index]?.id || prefetched.has(next.id)) return;
+  COMMANDS.media
+    .stream({ id: next.id, quality: getSetting("quality", "high", isQuality) })
+    .then((info) => {
+      prefetched.set(next.id, { url: info.url, at: Date.now() });
+      // only the nearest track is worth the bandwidth, older entries are not coming up
+      for (const id of [...prefetched.keys()].slice(0, -2)) prefetched.delete(id);
+      warm.src = info.url;
+    })
+    .catch((e) => log.warn(`couldn't prefetch ${next.title}:`, e));
 }
 
 /** A stream URL that expired while paused fails on resume, so it is resolved once more at the same spot. */
@@ -181,7 +213,10 @@ async function extend(): Promise<boolean> {
 
 // SECTION: audio events
 
-audio.addEventListener("playing", () => set({ playing: true, loading: false }));
+audio.addEventListener("playing", () => {
+  set({ playing: true, loading: false });
+  prefetchNext();
+});
 audio.addEventListener("pause", () => {
   set({ playing: false });
   save();
