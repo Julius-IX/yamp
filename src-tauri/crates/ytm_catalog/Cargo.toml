@@ -1,0 +1,14 @@
+[package]
+name = "ytm-catalog"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+async-trait = "0.1"
+log = "0.4"
+tokio = { version = "1", features = ["macros", "sync"] }
+yamp-media = { path = "../yamp_media" }
+# TLS is chosen to match yamp-media, which also builds reqwest with rustls. reqwest is named here
+# because the http client is built by hand, see `connect` in catalog.rs.
+reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2"] }
+ytmapi-rs = { version = "0.3.3", default-features = false, features = ["rustls", "simplified-queries", "reqwest"] }
