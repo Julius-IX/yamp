@@ -119,6 +119,13 @@ const setTime = (position: number, duration = time.duration) => {
 
 export const getTime = () => (read(), time);
 
+/** The state without a hook, for code that reacts to events outside of rendering. */
+export const getPlayer = () => read();
+
+/** Called when the position is moved on purpose, which the steady time updates cannot tell. */
+const seekListeners = new Set<() => void>();
+export const onSeek = (cb: () => void) => (seekListeners.add(cb), () => void seekListeners.delete(cb));
+
 const shuffled = <T>(list: T[]): T[] => {
   const out = [...list];
   for (let i = out.length - 1; i > 0; i--) {
@@ -285,6 +292,11 @@ export const player = {
     else audio.pause();
   },
 
+  /** Leaves the position as it is, unlike `togglePlay` this never starts anything. */
+  pause() {
+    audio.pause();
+  },
+
   next() {
     void advance(false);
   },
@@ -302,6 +314,7 @@ export const player = {
   seek(secs: number) {
     audio.currentTime = secs;
     setTime(secs);
+    seekListeners.forEach((l) => l());
   },
 
   /** `next` puts the tracks right after the playing one, `end` at the back. */
