@@ -7,6 +7,8 @@ const log = logger("browse");
 const TTL_MS = 10 * 60_000;
 /** Every query starts a process on desktop, so only a few run at once and the rest wait. */
 const MAX_RUNNING = 3;
+/** Longer than the backend waits on its own, so a stalled query ends there with a reason first. */
+const JOB_TIMEOUT_MS = 90_000;
 
 const cache = new Map<string, { at: number; value: unknown }>();
 
@@ -23,12 +25,23 @@ async function gated<T>(job: () => Promise<T>): Promise<T> {
   if (running >= MAX_RUNNING) await new Promise<void>((resolve) => waiting.push(resolve));
   else running++;
   try {
-    return await job();
+    return await withTimeout(job());
   } finally {
     const next = waiting.shift();
     if (next) next();
     else running--;
   }
+}
+
+/**
+ * A query that never answers would keep its slot for good, and with a few of them stuck every
+ * later query waits behind them. Giving up frees the slot and the screen shows the fallback.
+ */
+function withTimeout<T>(job: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("timed out")), JOB_TIMEOUT_MS);
+    job.then(resolve, reject).finally(() => clearTimeout(timer));
+  });
 }
 
 /** Forgets every result whose key starts with `prefix`, for data that just changed. */
