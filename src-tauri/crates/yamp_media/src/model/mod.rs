@@ -1,8 +1,10 @@
+mod browse;
 mod download;
 mod status;
 mod stream;
 mod track;
 
+pub use browse::{AlbumPage, ArtistPage, Item, ItemKind, TopSong};
 pub use download::{DownloadJob, DownloadedFile, JobState};
 pub use status::EngineStatus;
 pub use stream::{AudioQuality, StreamInfo};
