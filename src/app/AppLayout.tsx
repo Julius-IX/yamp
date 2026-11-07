@@ -8,6 +8,7 @@ import type { RouteHandle, Tab } from "@/router/types";
 import { useAutoSync } from "@/lib/sync";
 import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
+import VideoModal from "@/video/VideoModal";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -50,7 +51,11 @@ export default function AppLayout() {
     setActiveId(id);
     if (to) latest.current.stacks[id].router.navigate(to);
   }, []);
-  const tabsApi = useMemo(() => ({ activeId, openTab }), [activeId, openTab]);
+  const openBrowse = useCallback((to: string) => {
+    const active = tabs.find((t) => t.id === latest.current.activeId);
+    openTab((active?.browse ? active : tabs.find((t) => t.browse)!).id, to);
+  }, [openTab]);
+  const tabsApi = useMemo(() => ({ activeId, openTab, openBrowse }), [activeId, openTab, openBrowse]);
 
   // Android hardware back arrives as a popstate. A sentinel entry is kept pushed so there is always
   // something to pop. It pops the active tab's stack, then goes to the first tab, then lets the OS exit.
@@ -88,7 +93,9 @@ export default function AppLayout() {
             <Sidebar tabs={tabs} activeId={activeId} onSelect={goTo} />
           )}
 
-          <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+          {/* minWidth 0 lets the page be narrower than its content. A flex item otherwise grows to fit it,
+              and a row of cards then stretches the whole page instead of scrolling */}
+          <Box component="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative" }}>
             {tabs.map((t) => (
               <Box
                 key={`${t.id}-${stacks[t.id].gen}`}
@@ -108,6 +115,7 @@ export default function AppLayout() {
 
         {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
         <Player />
+        <VideoModal />
         <Motion />
 
         {IS_MOBILE && !navHidden && (

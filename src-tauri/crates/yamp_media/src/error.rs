@@ -8,6 +8,8 @@ pub enum MediaError {
   NotInstalled,
   /// The request was understood but the provider returned nothing usable.
   NotFound,
+  /// The provider has no such feature. Callers can fall back to another way.
+  Unsupported,
   /// An identifier that could never be valid. Rejected before reaching the provider.
   InvalidId,
   /// The provider tooling ran and failed. Carries its own message.
@@ -22,6 +24,7 @@ impl fmt::Display for MediaError {
     match self {
       Self::NotInstalled => f.write_str("the media engine is not installed yet"),
       Self::NotFound => f.write_str("nothing found"),
+      Self::Unsupported => f.write_str("not supported by this provider"),
       Self::InvalidId => f.write_str("invalid id"),
       Self::Engine(m) | Self::Io(m) | Self::Network(m) | Self::Parse(m) => f.write_str(m),
     }

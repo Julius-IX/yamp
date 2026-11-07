@@ -1,28 +1,20 @@
 import { useEffect } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { IS_IOS } from "@/util/platform";
 import { currentTrack, getTime, player, usePlayer } from "./store";
 
 const SEEK_STEP_SECS = 10;
 
 /**
- * Publishes the playing track to the system. The window title is what taskbars show on desktop,
- * and the Media Session is what media widgets, lock screens and keyboard media keys use where the
- * webview exposes it. Mount it once.
+ * The webview's own Media Session. Only iOS gets it published to the system, since WKWebView
+ * does. Everywhere else the webview does not, or does it twice next to the native one, which
+ * `useNativeSession` covers. Mount it once.
  */
 export function usePlayerMediaSession() {
   const state = usePlayer();
   const track = currentTrack(state);
 
   useEffect(() => {
-    const label = track ? [track.title, track.artist].filter(Boolean).join(" · ") : "yamp";
-    try {
-      getCurrentWindow()
-        .setTitle(label)
-        .catch(() => {});
-    } catch {
-      // no native window to retitle
-    }
-    if (!("mediaSession" in navigator)) return;
+    if (!IS_IOS || !("mediaSession" in navigator)) return;
     navigator.mediaSession.metadata = track
       ? new MediaMetadata({
           title: track.title,
@@ -34,7 +26,7 @@ export function usePlayerMediaSession() {
   }, [track?.id]);
 
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (!IS_IOS || !("mediaSession" in navigator)) return;
     const session = navigator.mediaSession;
     session.playbackState = !track ? "none" : state.playing ? "playing" : "paused";
     // a position state without a length is rejected, and the provider does not always know it
@@ -50,7 +42,7 @@ export function usePlayerMediaSession() {
 
   // the handlers read the store when they run, so they are registered once
   useEffect(() => {
-    if (!("mediaSession" in navigator)) return;
+    if (!IS_IOS || !("mediaSession" in navigator)) return;
     const session = navigator.mediaSession;
     const seekBy = (delta: number) => player.seek(Math.max(0, getTime().position + delta));
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [

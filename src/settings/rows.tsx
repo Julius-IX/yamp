@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import { alpha, Box, Divider, ListItemButton, Paper, Stack, Typography } from "@mui/material";
+import { Box, Divider, ListItemButton, Paper, Stack, Typography } from "@mui/material";
+import { subdued, panel } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
 
 /**
@@ -32,7 +33,7 @@ export function PrefRow({ title, icon, summary, control, onClick, danger }: Pref
           </Typography>
           {/* the subdued text color of the theme, so the explanation reads as secondary to the option */}
           {summary != null && (
-            <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word", color: (t) => alpha(t.palette.text.secondary, 0.8) }}>
+            <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word", ...subdued }}>
               {summary}
             </Typography>
           )}
@@ -48,7 +49,7 @@ export function PrefRow({ title, icon, summary, control, onClick, danger }: Pref
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography color={danger ? "error" : "text.primary"}>{title}</Typography>
         {summary != null && (
-          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word", color: (t) => alpha(t.palette.text.secondary, 0.8) }}>
+          <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-word", ...subdued }}>
             {summary}
           </Typography>
         )}
@@ -87,7 +88,7 @@ export function Section({ title, description, children }: {
   return (
     <Paper
       variant="outlined"
-      sx={{ mb: 3, p: 3, borderRadius: 2, bgcolor: (t) => alpha(t.palette.background.paper, 0.6) }}
+      sx={{ mb: 3, p: 3, ...panel }}
     >
       {title && (
         <>
@@ -102,7 +103,7 @@ export function Section({ title, description, children }: {
         </>
       )}
       {description && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, color: (t) => alpha(t.palette.text.secondary, 0.8) }}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, ...subdued }}>
           {description}
         </Typography>
       )}

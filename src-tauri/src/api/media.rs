@@ -1,6 +1,6 @@
 use super::err;
 use tauri::State;
-use yt_api::{AudioQuality, Playlist, StreamInfo, Track, YtApi};
+use yt_api::{AlbumPage, ArtistPage, AudioQuality, Item, ItemKind, Playlist, StreamInfo, Track, YtApi};
 
 #[tauri_groups::command(media)]
 pub async fn search(
@@ -9,6 +9,35 @@ pub async fn search(
   limit: Option<u32>,
 ) -> Result<Vec<Track>, String> {
   api.search(&query, limit.map(|l| l as usize)).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn search_items(
+  api: State<'_, YtApi>,
+  query: String,
+  kind: ItemKind,
+  limit: Option<u32>,
+) -> Result<Vec<Item>, String> {
+  api.search_items(&query, kind, limit.map(|l| l as usize)).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn search_videos(
+  api: State<'_, YtApi>,
+  query: String,
+  limit: Option<u32>,
+) -> Result<Vec<Track>, String> {
+  api.search_videos(&query, limit.map(|l| l as usize)).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn artist(api: State<'_, YtApi>, id: String) -> Result<ArtistPage, String> {
+  api.artist(&id).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn album(api: State<'_, YtApi>, id: String) -> Result<AlbumPage, String> {
+  api.album(&id).await.map_err(err)
 }
 
 #[tauri_groups::command(media)]

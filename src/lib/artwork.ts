@@ -10,6 +10,9 @@ export function artworkCandidates(url: string | null | undefined, px: number): s
   if (!url) return [];
   const video = url.match(/^https?:\/\/(?:i\d?\.ytimg\.com|img\.youtube\.com)\/vi(?:_webp)?\/([\w-]+)\//);
   if (video) {
+    // Every failed candidate costs a round trip. Below this size the listed thumbnail is sharp
+    // enough, so the upgrade is not worth trying.
+    if (px < 640) return [url];
     const base = `https://i.ytimg.com/vi/${video[1]}`;
     // hq720 is 16:9 without the black bars that hqdefault has baked in, but older videos lack it
     return [`${base}/hq720.jpg`, `${base}/hqdefault.jpg`, url];

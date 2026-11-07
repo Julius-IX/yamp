@@ -14,6 +14,8 @@ export type Tab = {
   icon: ReactNode;
   /** The tab's screens and sub-screens. Paths are relative to the tab root. */
   routes: RouteObject[];
+  /** The routes include `browseRoutes`, so an artist, album or playlist can open inside this tab. */
+  browse?: boolean;
   /** Runs when the active tab is tapped again and it resets to its root. For state kept outside the router. */
   onReset?: () => void;
 };
