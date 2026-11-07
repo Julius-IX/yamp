@@ -1,6 +1,7 @@
 use crate::convert::{self, TrackParts};
 use async_trait::async_trait;
 use reqwest::header::{HeaderMap, HeaderValue, COOKIE};
+use std::time::Duration;
 use tokio::sync::OnceCell;
 use yamp_media::{
   AlbumPage, ArtistPage, Catalog, Item, ItemKind, MediaError, Playlist, Result, TopSong, Track,
@@ -69,6 +70,12 @@ const MAX_HEADER_BYTES: u32 = 1 << 20;
 /// records a choice as made, which is how other clients of this API get past the page.
 const CONSENT_COOKIE: &str = "SOCS=CAI";
 
+/// A stalled connection has to end in an error. The handle is made once and every call waits for
+/// that, so a request that never answers would hold up each search behind it. A failed call
+/// falls back to the engine, which only happens once this one gives up.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(8);
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+
 /// The verifier that reqwest uses with rustls reads the system trust store through the JVM, and
 /// nothing in the app hands it a JVM handle. On Android the first handshake then never finishes,
 /// so every call waits forever. The roots of Mozilla are compiled in for that platform instead.
@@ -96,6 +103,8 @@ async fn connect() -> Result<YtMusic<NoAuthToken>> {
   let mut headers = HeaderMap::new();
   headers.insert(COOKIE, HeaderValue::from_static(CONSENT_COOKIE));
   let http = with_tls(reqwest::Client::builder())?
+    .connect_timeout(CONNECT_TIMEOUT)
+    .timeout(REQUEST_TIMEOUT)
     .default_headers(headers)
     .http2_max_header_list_size(MAX_HEADER_BYTES)
     .build()
