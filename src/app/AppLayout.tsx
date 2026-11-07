@@ -8,6 +8,7 @@ import type { RouteHandle, Tab } from "@/router/types";
 import { useAutoSync } from "@/lib/sync";
 import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
+import VideoModal from "@/video/VideoModal";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -114,6 +115,7 @@ export default function AppLayout() {
 
         {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
         <Player />
+        <VideoModal />
         <Motion />
 
         {IS_MOBILE && !navHidden && (

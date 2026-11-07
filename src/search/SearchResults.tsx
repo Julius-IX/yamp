@@ -66,6 +66,7 @@ export default function SearchResults() {
         variant="wide"
         subtitle={(t) => duration(t.durationSecs)}
         hideWhenEmpty
+        videos
       />
     </Box>
   );

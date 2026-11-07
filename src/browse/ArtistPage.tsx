@@ -171,6 +171,7 @@ export default function ArtistPage() {
         variant="wide"
         subtitle={(t) => duration(t.durationSecs)}
         hideWhenEmpty
+        videos
       />
       <ItemShelf title="Fans might also like" items={of((p) => p.related)} empty="" hideWhenEmpty />
     </Box>
