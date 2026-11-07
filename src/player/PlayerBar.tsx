@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ArtistLink from "@/home/ArtistLink";
+import { subdued } from "@/themes/ui";
 import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import Cover from "./Cover";
@@ -37,7 +39,7 @@ export default function PlayerBar() {
           <Cover src={track?.thumbnail} sx={{ width: 56, height: 56, flexShrink: 0, fontSize: 28 }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography noWrap sx={{ fontWeight: 600 }}>{track?.title ?? "Pick something to listen to"}</Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>{track?.artist ?? "Search, or open your library"}</Typography>
+            <Typography variant="body2" sx={subdued} noWrap>{track ? <ArtistLink artist={track.artist} /> : "Search, or open your library"}</Typography>
           </Box>
           <LikeButton track={track} />
         </Box>
