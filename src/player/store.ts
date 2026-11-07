@@ -3,6 +3,7 @@ import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
 import { getSetting, isBoolean, isNumber, setSetting } from "@/lib/settings";
 import type { AudioQuality, Track } from "@/lib/types";
+import { recordPlayed } from "./history";
 import { loadPlayback, savePlayback } from "./persist";
 
 /**
@@ -215,6 +216,8 @@ async function extend(): Promise<boolean> {
 
 audio.addEventListener("playing", () => {
   set({ playing: true, loading: false });
+  const { queue, index } = read();
+  if (queue[index]) recordPlayed(queue[index]);
   prefetchNext();
 });
 audio.addEventListener("pause", () => {
