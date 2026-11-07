@@ -50,7 +50,11 @@ export default function AppLayout() {
     setActiveId(id);
     if (to) latest.current.stacks[id].router.navigate(to);
   }, []);
-  const tabsApi = useMemo(() => ({ activeId, openTab }), [activeId, openTab]);
+  const openBrowse = useCallback((to: string) => {
+    const active = tabs.find((t) => t.id === latest.current.activeId);
+    openTab((active?.browse ? active : tabs.find((t) => t.browse)!).id, to);
+  }, [openTab]);
+  const tabsApi = useMemo(() => ({ activeId, openTab, openBrowse }), [activeId, openTab, openBrowse]);
 
   // Android hardware back arrives as a popstate. A sentinel entry is kept pushed so there is always
   // something to pop. It pops the active tab's stack, then goes to the first tab, then lets the OS exit.

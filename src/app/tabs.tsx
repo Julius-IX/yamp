@@ -12,7 +12,7 @@ import { settingsRoutes } from "@/settings/routes";
 
 // The first tab is the one shown at launch and the one Android back falls back to.
 export const tabs: Tab[] = [
-  { id: "home", label: "Home", icon: <HomeIcon />, routes: homeRoutes },
+  { id: "home", label: "Home", icon: <HomeIcon />, routes: homeRoutes, browse: true },
   { id: "explore", label: "Explore", icon: <ExploreIcon />, routes: placeholderRoutes("Explore") },
   { id: "library", label: "Library", icon: <LibraryMusicIcon />, routes: placeholderRoutes("Library") },
   // desktop shows the albums in the sidebar instead

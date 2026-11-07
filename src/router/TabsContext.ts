@@ -4,6 +4,8 @@ export type TabsApi = {
   activeId: string;
   /** Switches to a tab, optionally pushing a URL on that tab's own stack. */
   openTab: (id: string, to?: string) => void;
+  /** Opens a browse screen, in the active tab when that tab has them and otherwise in the first one that does. */
+  openBrowse: (to: string) => void;
 };
 
 export const TabsContext = createContext<TabsApi | null>(null);

@@ -34,13 +34,13 @@ const names = (artist: string) => artist.split(/,\s*|\s+&\s+/).filter(Boolean);
  * when clicked. `onOpen` runs on a click, for a screen that has to get out of the way first.
  */
 export default function ArtistLink({ artist, onOpen }: { artist: string; onOpen?: () => void }) {
-  const { openTab } = useTabs();
+  const { openBrowse } = useTabs();
 
   const open = async (name: string) => {
     onOpen?.();
     try {
       const id = await resolveArtist(name);
-      if (id) openTab("home", Artist.to({ id }));
+      if (id) openBrowse(Artist.to({ id }));
     } catch (e) {
       log.warn(`couldn't find the artist "${name}":`, e);
     }
