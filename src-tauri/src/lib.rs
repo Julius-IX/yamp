@@ -13,6 +13,8 @@ const SETTINGS: &[&str] = &[
   "autoplay",
   "quality",
   "playback",
+  "history",
+  "recentSearches",
   "animations",
   "prefetch",
   "lastCompact",
