@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import type { MouseEvent, ReactNode } from "react";
 import { Box, ButtonBase, Skeleton, Typography } from "@mui/material";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -30,7 +30,8 @@ const shell = (variant: CardVariant) =>
 type Props = {
   thumbnail?: string | null;
   title: string;
-  subtitle?: string;
+  /** Text, or links such as an artist. Clicks on a link must not reach the card. */
+  subtitle?: ReactNode;
   variant?: CardVariant;
   onClick: () => void;
   /** Plays without opening. Without it a click on the overlay is a click on the card. */

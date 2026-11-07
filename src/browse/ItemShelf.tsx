@@ -4,6 +4,7 @@ import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
 import type { Item } from "@/lib/types";
 import { player } from "@/player/store";
+import { ArtistLine } from "./ArtistLink";
 import MediaCard from "./MediaCard";
 import { Album, Artist, Playlist } from "./paths";
 import { unique } from "./tracks";
@@ -15,11 +16,11 @@ const log = logger("browse");
 const pathOf = (item: Item) =>
   item.kind === "artist" ? Artist.to({ id: item.id }) : item.kind === "album" ? Album.to({ id: item.id }) : Playlist.to({ id: item.id });
 
-const defaultByline = (item: Item) =>
+const defaultByline = (item: Item): ReactNode =>
   item.kind === "artist"
     ? (item.subtitle ?? "Artist")
     : item.kind === "album"
-      ? [item.subtitle, item.releaseYear].filter(Boolean).join(" · ")
+      ? <ArtistLine artist={item.subtitle} rest={[item.releaseYear]} />
       : (item.subtitle ?? item.label ?? "Playlist");
 
 async function playItem(item: Item) {
@@ -31,7 +32,7 @@ async function playItem(item: Item) {
   }
 }
 
-function ItemCard({ item, byline, thumbnail }: { item: Item; byline: (item: Item) => string; thumbnail?: string | null }) {
+function ItemCard({ item, byline, thumbnail }: { item: Item; byline: (item: Item) => ReactNode; thumbnail?: string | null }) {
   const navigate = useNavigate();
   return (
     <MediaCard
@@ -50,7 +51,7 @@ function ItemCard({ item, byline, thumbnail }: { item: Item; byline: (item: Item
  * Related artists come without a picture. The artist page has one, and opening it later is
  * likely, so it is fetched under the key that page reads. The query is shared, not wasted.
  */
-function ArtistCard({ item, byline }: { item: Item; byline: (item: Item) => string }) {
+function ArtistCard({ item, byline }: { item: Item; byline: (item: Item) => ReactNode }) {
   const page = useCached(`artist:${item.id}`, () => COMMANDS.media.artist({ id: item.id }), null);
   return <ItemCard item={item} byline={byline} thumbnail={page?.thumbnail} />;
 }
@@ -65,7 +66,7 @@ export default function ItemShelf({
   hideWhenEmpty?: boolean;
   controls?: ReactNode;
   /** The line under a title. The default suits a search result. */
-  byline?: (item: Item) => string;
+  byline?: (item: Item) => ReactNode;
 }) {
   const list = items && unique(items);
   const round = list?.[0]?.kind === "artist";

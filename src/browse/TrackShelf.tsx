@@ -1,5 +1,7 @@
+import type { ReactNode } from "react";
 import { player } from "@/player/store";
 import type { Track } from "@/lib/types";
+import ArtistLink from "./ArtistLink";
 import type { CardVariant } from "./MediaCard";
 import MediaCard from "./MediaCard";
 import Shelf from "./Shelf";
@@ -7,13 +9,13 @@ import { unique } from "./tracks";
 
 /** A shelf of playable tracks. `tracks` is undefined or null while loading. Playing a card queues the whole row from it. */
 export default function TrackShelf({
-  title, tracks, empty, variant = "square", subtitle = (t) => t.artist, hideWhenEmpty,
+  title, tracks, empty, variant = "square", subtitle = (t) => <ArtistLink artist={t.artist} />, hideWhenEmpty,
 }: {
   title: string;
   tracks: Track[] | null | undefined;
   empty: string;
   variant?: CardVariant;
-  subtitle?: (t: Track) => string;
+  subtitle?: (t: Track) => ReactNode;
   hideWhenEmpty?: boolean;
 }) {
   const list = tracks && unique(tracks);

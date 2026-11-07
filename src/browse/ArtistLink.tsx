@@ -1,4 +1,4 @@
-import { Fragment, type KeyboardEvent, type MouseEvent } from "react";
+import { Fragment, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Box } from "@mui/material";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
@@ -70,6 +70,21 @@ export default function ArtistLink({ artist, onOpen }: { artist: string; onOpen?
           </Box>
         </Fragment>
       ))}
+    </>
+  );
+}
+
+/**
+ * The line under a card for a release. The artist is a link and the other parts follow after
+ * a dot. Parts that are empty are left out, and so is the dot.
+ */
+export function ArtistLine({ artist, rest }: { artist: string | null; rest: (string | number | null | undefined)[] }): ReactNode {
+  const tail = rest.filter(Boolean).join(" · ");
+  return (
+    <>
+      {artist && <ArtistLink artist={artist} />}
+      {artist && tail && " · "}
+      {tail}
     </>
   );
 }

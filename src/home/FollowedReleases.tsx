@@ -1,5 +1,6 @@
 import { COMMANDS } from "@/lib/commands";
 import type { Item } from "@/lib/types";
+import { ArtistLine } from "@/browse/ArtistLink";
 import ItemShelf from "@/browse/ItemShelf";
 import { interleave, mapLimit } from "@/browse/tracks";
 import { useCached } from "@/browse/useCached";
@@ -10,7 +11,7 @@ const PER_ARTIST = 3;
 const MAX_ITEMS = 20;
 const CONCURRENCY = 2;
 
-const byline = (i: Item) => [i.subtitle, i.releaseYear, i.label].filter(Boolean).join(" · ");
+const byline = (i: Item) => <ArtistLine artist={i.subtitle} rest={[i.releaseYear, i.label]} />;
 
 /** This year and last year, a release with no year cannot be told from an old one and is left out. */
 async function load(): Promise<Item[]> {
