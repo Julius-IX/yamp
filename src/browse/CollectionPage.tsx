@@ -12,10 +12,10 @@ import Cover from "@/player/Cover";
 import { player } from "@/player/store";
 import { accentFill, eyebrow, GUTTER, heroTitle, radius, subdued } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
-import TrackTable from "@/browse/TrackTable";
-import { useCached } from "@/browse/useCached";
+import TrackTable from "./TrackTable";
+import { useCached } from "./useCached";
 
-const log = logger("home");
+const log = logger("browse");
 const COVER = IS_MOBILE ? 140 : 200;
 
 const shuffled = (tracks: Track[]) => {

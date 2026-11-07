@@ -1,9 +1,7 @@
 import type { RouteObject } from "react-router-dom";
-import ArtistPage from "./ArtistPage";
-import CollectionPage from "./CollectionPage";
+import { browseRoutes } from "@/browse/routes";
 import HomeLayout from "./HomeLayout";
 import HomePage from "./HomePage";
-import { Album, Artist, Playlist } from "@/browse/paths";
 import { Search } from "./paths";
 import SearchResults from "./SearchResults";
 
@@ -13,9 +11,7 @@ export const homeRoutes: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       { path: Search.path, element: <SearchResults /> },
-      { path: Artist.path, element: <ArtistPage /> },
-      { path: Album.path, element: <CollectionPage kind="album" /> },
-      { path: Playlist.path, element: <CollectionPage kind="playlist" /> },
+      ...browseRoutes,
     ],
   },
 ];
