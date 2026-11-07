@@ -17,7 +17,7 @@ const BACK_INSET = BACK_SIZE + 12;
  * Back steps through the tab's own history, so a screen can be left without rebuilding the
  * route to the one before it. The first entry has the key "default" and nothing to go back to.
  */
-export default function HomeLayout() {
+export default function SearchLayout() {
   const navigate = useNavigate();
   const canGoBack = useLocation().key !== "default";
 

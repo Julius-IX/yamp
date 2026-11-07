@@ -1,17 +1,12 @@
 import type { RouteObject } from "react-router-dom";
 import { browseRoutes } from "@/browse/routes";
-import HomeLayout from "./HomeLayout";
+import SearchLayout from "@/search/SearchLayout";
+import { searchRoutes } from "@/search/routes";
 import HomePage from "./HomePage";
-import { Search } from "./paths";
-import SearchResults from "./SearchResults";
 
 export const homeRoutes: RouteObject[] = [
   {
-    element: <HomeLayout />,
-    children: [
-      { index: true, element: <HomePage /> },
-      { path: Search.path, element: <SearchResults /> },
-      ...browseRoutes,
-    ],
+    element: <SearchLayout />,
+    children: [{ index: true, element: <HomePage /> }, ...searchRoutes, ...browseRoutes],
   },
 ];
