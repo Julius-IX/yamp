@@ -12,3 +12,9 @@ yamp-media = { path = "../yamp_media" }
 # because the http client is built by hand, see `connect` in catalog.rs.
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "http2"] }
 ytmapi-rs = { version = "0.3.3", default-features = false, features = ["rustls", "simplified-queries", "reqwest"] }
+
+# Only for Android, where the verifier of rustls has no JVM handle to ask for the system roots.
+# The rustls version has to be the one reqwest uses, or the preconfigured config is rejected.
+[target.'cfg(target_os = "android")'.dependencies]
+rustls = "0.23"
+webpki-roots = "1"

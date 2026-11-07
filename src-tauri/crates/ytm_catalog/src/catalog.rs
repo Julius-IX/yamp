@@ -69,11 +69,33 @@ const MAX_HEADER_BYTES: u32 = 1 << 20;
 /// records a choice as made, which is how other clients of this API get past the page.
 const CONSENT_COOKIE: &str = "SOCS=CAI";
 
+/// The verifier that reqwest uses with rustls reads the system trust store through the JVM, and
+/// nothing in the app hands it a JVM handle. On Android the first handshake then never finishes,
+/// so every call waits forever. The roots of Mozilla are compiled in for that platform instead.
+#[cfg(target_os = "android")]
+fn with_tls(builder: reqwest::ClientBuilder) -> Result<reqwest::ClientBuilder> {
+  let tls_error = |e: rustls::Error| MediaError::Network(format!("couldn't set up tls: {e}"));
+  let mut roots = rustls::RootCertStore::empty();
+  roots.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+  // the provider is named because more than one is compiled in, and rustls has no default then
+  let provider = std::sync::Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+  let config = rustls::ClientConfig::builder_with_provider(provider)
+    .with_safe_default_protocol_versions()
+    .map_err(tls_error)?
+    .with_root_certificates(roots)
+    .with_no_client_auth();
+  Ok(builder.tls_backend_preconfigured(config))
+}
+
+#[cfg(not(target_os = "android"))]
+fn with_tls(builder: reqwest::ClientBuilder) -> Result<reqwest::ClientBuilder> {
+  Ok(builder.use_rustls_tls())
+}
+
 async fn connect() -> Result<YtMusic<NoAuthToken>> {
   let mut headers = HeaderMap::new();
   headers.insert(COOKIE, HeaderValue::from_static(CONSENT_COOKIE));
-  let http = reqwest::Client::builder()
-    .use_rustls_tls()
+  let http = with_tls(reqwest::Client::builder())?
     .default_headers(headers)
     .http2_max_header_list_size(MAX_HEADER_BYTES)
     .build()
