@@ -14,7 +14,7 @@ const greeting = () => {
 export default function HomePage() {
   return (
     // the search bar floats over the top, so on a narrow screen the greeting sits below it
-    <Box sx={{ pt: IS_MOBILE ? 10 : 3, pb: 2 }}>
+    <Box sx={{ pt: IS_MOBILE ? 10 : 3, pb: 2, marginBottom: 1 }}>
       <Typography variant={IS_MOBILE ? "h5" : "h4"} sx={{ px: GUTTER, pb: 3, fontWeight: 800, lineHeight: "40px" }}>
         {greeting()}
       </Typography>
