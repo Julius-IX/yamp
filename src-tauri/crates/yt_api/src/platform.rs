@@ -12,10 +12,15 @@ pub fn backend(_api: &PluginApi<Wry, ()>, data_dir: &Path) -> Result<Backend, Bo
   Ok(Backend::single(YtDlpBackend::new(engine)).with_catalog(Arc::new(YtMusicCatalog::new())))
 }
 
+/// The plugin has no limit on a call, so one that stalls would leave the search waiting on it. The
+/// first call also waits for the embedded Python to unpack, which is why the limit is generous.
+#[cfg(target_os = "android")]
+const QUERY_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(60);
+
 /// yt-dlp runs as an embedded Python build behind a Kotlin plugin, there is no binary to manage.
 #[cfg(target_os = "android")]
 pub fn backend(api: &PluginApi<Wry, ()>, _data_dir: &Path) -> Result<Backend, Box<dyn Error>> {
-  let engine = crate::android::engine(api)?;
+  let engine = yamp_media::ytdlp::Timed::new(crate::android::engine(api)?, QUERY_TIMEOUT);
   Ok(Backend::single(YtDlpBackend::new(engine)).with_catalog(Arc::new(YtMusicCatalog::new())))
 }
 

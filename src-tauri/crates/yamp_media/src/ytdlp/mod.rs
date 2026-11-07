@@ -13,4 +13,4 @@ mod desktop;
 pub use desktop::DesktopEngine;
 
 pub use backend::YtDlpBackend;
-pub use engine::{Opt, YtDlpArgs, YtDlpEngine};
+pub use engine::{Opt, Timed, YtDlpArgs, YtDlpEngine};
