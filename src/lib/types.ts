@@ -8,10 +8,33 @@ export type Album = {
   releaseYear: number | null;
 }
 
+export type AlbumPage = {
+  id: string;
+  title: string;
+  artist: string;
+  year: number | null;
+  releaseType: string | null;
+  thumbnail: string | null;
+  tracks: Track[];
+}
+
 export type Artist = {
   id: string;
   name: string;
   thumbnail: string | null;
+}
+
+export type ArtistPage = {
+  id: string;
+  name: string;
+  description: string | null;
+  audience: string | null;
+  thumbnail: string | null;
+  topSongs: TopSong[];
+  albums: Item[];
+  singles: Item[];
+  videos: Track[];
+  related: Item[];
 }
 
 export type AudioQuality = "low" | "medium" | "high";
@@ -48,6 +71,18 @@ export type FollowedArtist = {
   thumbnail: string | null;
   followedMs: number;
 }
+
+export type Item = {
+  id: string;
+  kind: ItemKind;
+  title: string;
+  subtitle: string | null;
+  label: string | null;
+  thumbnail: string | null;
+  releaseYear: number | null;
+}
+
+export type ItemKind = "artist" | "album" | "playlist";
 
 export type JobState = "queued" | "running" | "done" | "failed" | "cancelled";
 
@@ -122,6 +157,11 @@ export type SyncStatus = {
   folder: string | null;
   deviceName: string | null;
   deviceId: string | null;
+}
+
+export type TopSong = {
+  track: Track;
+  plays: string | null;
 }
 
 export type Track = {

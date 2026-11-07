@@ -15,6 +15,6 @@ mod android;
 pub use api::YtApi;
 pub use plugin::{init, DOWNLOAD_EVENT};
 pub use yamp_media::{
-  AudioQuality, DownloadJob, DownloadedFile, EngineStatus, JobState, MediaError, Playlist, Result,
-  StreamInfo, Track,
+  AlbumPage, ArtistPage, AudioQuality, DownloadJob, DownloadedFile, EngineStatus, Item, ItemKind,
+  JobState, MediaError, Playlist, Result, StreamInfo, TopSong, Track,
 };

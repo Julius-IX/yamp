@@ -9,6 +9,7 @@ links = "yt-api"
 log = "0.4"
 tauri = "2"
 yamp-media = { path = "../yamp_media" }
+ytm-catalog = { path = "../ytm_catalog" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 async-trait = "0.1"

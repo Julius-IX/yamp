@@ -1,6 +1,6 @@
 use yamp_media::{
-  AudioQuality, Backend, DownloadJob, DownloadQueue, EngineStatus, Playlist, Result, StreamInfo,
-  Track,
+  AlbumPage, ArtistPage, AudioQuality, Backend, DownloadJob, DownloadQueue, EngineStatus, Item,
+  ItemKind, Playlist, Result, StreamInfo, Track,
 };
 
 const DEFAULT_LIMIT: usize = 25;
@@ -25,9 +25,41 @@ impl YtApi {
 
   // SECTION: reading from the provider
 
-  /// `limit` defaults to a page that fits a result list.
+  /// `limit` defaults to a page that fits a result list. The catalog lists songs with their
+  /// artist and cover, the stream extractor is the fallback when the catalog is out of reach.
   pub async fn search(&self, query: &str, limit: Option<usize>) -> Result<Vec<Track>> {
-    logged("search", self.backend.source.search(query, limit.unwrap_or(DEFAULT_LIMIT)).await)
+    let limit = limit.unwrap_or(DEFAULT_LIMIT);
+    match self.backend.catalog.search_songs(query, limit).await {
+      Ok(tracks) => Ok(tracks),
+      Err(e) => {
+        log::warn!("catalog search failed, using the engine: {e}");
+        logged("search", self.backend.source.search(query, limit).await)
+      }
+    }
+  }
+
+  pub async fn search_videos(&self, query: &str, limit: Option<usize>) -> Result<Vec<Track>> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT);
+    logged("video search", self.backend.catalog.search_videos(query, limit).await)
+  }
+
+  /// Artists, albums or playlists, one kind at a time because providers list them apart.
+  pub async fn search_items(
+    &self,
+    query: &str,
+    kind: ItemKind,
+    limit: Option<usize>,
+  ) -> Result<Vec<Item>> {
+    let limit = limit.unwrap_or(DEFAULT_LIMIT);
+    logged("item search", self.backend.catalog.search_items(query, kind, limit).await)
+  }
+
+  pub async fn artist(&self, id: &str) -> Result<ArtistPage> {
+    logged("artist lookup", self.backend.catalog.artist(id).await)
+  }
+
+  pub async fn album(&self, id: &str) -> Result<AlbumPage> {
+    logged("album lookup", self.backend.catalog.album(id).await)
   }
 
   pub async fn track(&self, id: &str) -> Result<Track> {
@@ -35,7 +67,13 @@ impl YtApi {
   }
 
   pub async fn playlist(&self, id: &str) -> Result<Playlist> {
-    logged("playlist lookup", self.backend.source.playlist(id).await)
+    match self.backend.catalog.playlist(id).await {
+      Ok(playlist) => Ok(playlist),
+      Err(e) => {
+        log::warn!("catalog playlist lookup failed, using the engine: {e}");
+        logged("playlist lookup", self.backend.source.playlist(id).await)
+      }
+    }
   }
 
   /// Tracks that fit after `id`, for autoplay.
