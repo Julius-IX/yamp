@@ -12,8 +12,8 @@ import Cover from "@/player/Cover";
 import { player } from "@/player/store";
 import { accentFill, eyebrow, GUTTER, heroTitle, radius, subdued } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
-import TrackTable from "./TrackTable";
-import { useCached } from "./useCached";
+import TrackTable from "@/browse/TrackTable";
+import { useCached } from "@/browse/useCached";
 
 const log = logger("home");
 const COVER = IS_MOBILE ? 140 : 200;

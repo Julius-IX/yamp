@@ -4,7 +4,7 @@ import { logger } from "@/lib/log";
 import type { Artist } from "@/lib/types";
 import { invalidate } from "./useCached";
 
-const log = logger("home");
+const log = logger("browse");
 
 /** The follow state of an artist. `following` is null until the library has answered. */
 export function useFollow(artist: Artist | null) {

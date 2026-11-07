@@ -1,5 +1,5 @@
 import { useHistory } from "@/player/history";
-import TrackShelf from "./TrackShelf";
+import TrackShelf from "@/browse/TrackShelf";
 
 export default function RecentlyPlayed() {
   const history = useHistory();

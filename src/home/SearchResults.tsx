@@ -5,10 +5,10 @@ import { duration } from "@/components/media/format";
 import { COMMANDS } from "@/lib/commands";
 import { player } from "@/player/store";
 import { GUTTER, sectionTitle, subdued } from "@/themes/ui";
-import ItemShelf from "./ItemShelf";
-import TrackShelf from "./TrackShelf";
-import TrackTable from "./TrackTable";
-import { useCached } from "./useCached";
+import ItemShelf from "@/browse/ItemShelf";
+import TrackShelf from "@/browse/TrackShelf";
+import TrackTable from "@/browse/TrackTable";
+import { useCached } from "@/browse/useCached";
 
 const SONGS = 10;
 const ARTISTS = 5;

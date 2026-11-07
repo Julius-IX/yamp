@@ -2,9 +2,9 @@ import { useState } from "react";
 import { COMMANDS } from "@/lib/commands";
 import { readHistory } from "@/player/history";
 import type { Track } from "@/lib/types";
-import { interleave, mapLimit } from "./tracks";
-import TrackShelf from "./TrackShelf";
-import { useCached } from "./useCached";
+import { interleave, mapLimit } from "@/browse/tracks";
+import TrackShelf from "@/browse/TrackShelf";
+import { useCached } from "@/browse/useCached";
 
 const SEEDS = 3;
 const PER_SEED = 10;

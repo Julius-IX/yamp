@@ -10,7 +10,7 @@ import { unique } from "./tracks";
 import Shelf from "./Shelf";
 import { useCached } from "./useCached";
 
-const log = logger("home");
+const log = logger("browse");
 
 const pathOf = (item: Item) =>
   item.kind === "artist" ? Artist.to({ id: item.id }) : item.kind === "album" ? Album.to({ id: item.id }) : Playlist.to({ id: item.id });

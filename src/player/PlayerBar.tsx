@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ArtistLink from "@/home/ArtistLink";
+import ArtistLink from "@/browse/ArtistLink";
 import { subdued } from "@/themes/ui";
 import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";

@@ -3,7 +3,7 @@ import { Box, Dialog, IconButton, Slide, Typography } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
-import ArtistLink from "@/home/ArtistLink";
+import ArtistLink from "@/browse/ArtistLink";
 import { useBackGuard } from "@/router/useBackGuard";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";

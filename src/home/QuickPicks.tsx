@@ -5,7 +5,7 @@ import { useHistory } from "@/player/history";
 import { player } from "@/player/store";
 import { GUTTER, radius, surface } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
-import { unique } from "./tracks";
+import { unique } from "@/browse/tracks";
 
 const COUNT = 6;
 const THUMB = IS_MOBILE ? 48 : 56;

@@ -11,11 +11,11 @@ import Cover from "@/player/Cover";
 import { player } from "@/player/store";
 import { accentFill, accentTonal, eyebrow, GUTTER, heroTitle, radius, sectionTitle, subdued } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
-import ItemShelf from "./ItemShelf";
-import TrackShelf from "./TrackShelf";
-import TrackTable from "./TrackTable";
-import { useCached } from "./useCached";
-import { useFollow } from "./useFollow";
+import ItemShelf from "@/browse/ItemShelf";
+import TrackShelf from "@/browse/TrackShelf";
+import TrackTable from "@/browse/TrackTable";
+import { useCached } from "@/browse/useCached";
+import { useFollow } from "@/browse/useFollow";
 
 const AVATAR = IS_MOBILE ? 112 : 160;
 const BANNER_HEIGHT = 340;

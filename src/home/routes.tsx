@@ -3,7 +3,8 @@ import ArtistPage from "./ArtistPage";
 import CollectionPage from "./CollectionPage";
 import HomeLayout from "./HomeLayout";
 import HomePage from "./HomePage";
-import { Album, Artist, Playlist, Search } from "./paths";
+import { Album, Artist, Playlist } from "@/browse/paths";
+import { Search } from "./paths";
 import SearchResults from "./SearchResults";
 
 export const homeRoutes: RouteObject[] = [

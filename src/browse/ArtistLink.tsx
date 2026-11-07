@@ -5,7 +5,7 @@ import { logger } from "@/lib/log";
 import { useTabs } from "@/router/TabsContext";
 import { Artist } from "./paths";
 
-const log = logger("home");
+const log = logger("browse");
 
 /** Names resolved so far. A track carries its artist as text, so the page is found by searching. */
 const resolved = new Map<string, Promise<string | null>>();

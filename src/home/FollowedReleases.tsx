@@ -1,8 +1,8 @@
 import { COMMANDS } from "@/lib/commands";
 import type { Item } from "@/lib/types";
-import ItemShelf from "./ItemShelf";
-import { interleave, mapLimit } from "./tracks";
-import { useCached } from "./useCached";
+import ItemShelf from "@/browse/ItemShelf";
+import { interleave, mapLimit } from "@/browse/tracks";
+import { useCached } from "@/browse/useCached";
 
 /** Each artist is a provider query, so only the first few followed artists are checked. */
 const MAX_ARTISTS = 8;

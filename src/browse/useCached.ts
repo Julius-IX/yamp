@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@/lib/log";
 
-const log = logger("home");
+const log = logger("browse");
 
 /** Provider queries are slow, so a result is reused for this long when a screen is mounted again. */
 const TTL_MS = 10 * 60_000;
