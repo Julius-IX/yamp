@@ -6,9 +6,14 @@ import QuickPicks from "./QuickPicks";
 import Recommended from "./Recommended";
 import RecentlyPlayed from "./RecentlyPlayed";
 
+/** The small hours still belong to the night, so "morning" only starts once most people are up. */
 const greeting = () => {
   const hour = new Date().getHours();
-  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  if (hour < 5) return "Up late?";
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  if (hour < 22) return "Good evening";
+  return "Good night";
 };
 
 export default function HomePage() {
