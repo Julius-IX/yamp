@@ -8,6 +8,7 @@ mod likes;
 mod media;
 mod playlists;
 mod queue;
+mod session;
 mod sync;
 mod tracks;
 mod wire;

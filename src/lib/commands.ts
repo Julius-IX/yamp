@@ -72,6 +72,9 @@ export const COMMANDS = {
     enqueue: (args: { id: string; quality?: AudioQuality | null }) => invoke<DownloadJob>("queue__enqueue", args),
     list: () => invoke<DownloadJob[]>("queue__list"),
   },
+  session: {
+    update: (args: { title?: string | null; artist: string; album?: string | null; cover?: string | null; durationSecs?: number | null; positionSecs: number; playing: boolean }) => invoke<void>("session__update", args),
+  },
   settings: {
     getSettings: () => invoke<Record<string, unknown>>("settings__get_settings"),
     setSetting: (args: { key: string; value: unknown }) => invoke<void>("settings__set_setting", args),

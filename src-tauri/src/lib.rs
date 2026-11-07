@@ -30,7 +30,8 @@ pub fn run() {
 
   let builder = tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
-    .plugin(yt_api::init());
+    .plugin(yt_api::init())
+    .plugin(yamp_session::init());
   // a sign in on a phone is answered with a link of a scheme of this app, which the system hands over
   #[cfg(any(target_os = "android", target_os = "ios"))]
   let builder = builder.plugin(tauri_plugin_deep_link::init());
