@@ -88,7 +88,9 @@ export default function AppLayout() {
             <Sidebar tabs={tabs} activeId={activeId} onSelect={goTo} />
           )}
 
-          <Box component="main" sx={{ flex: 1, minHeight: 0, position: "relative" }}>
+          {/* minWidth 0 lets the page be narrower than its content. A flex item otherwise grows to fit it,
+              and a row of cards then stretches the whole page instead of scrolling */}
+          <Box component="main" sx={{ flex: 1, minHeight: 0, minWidth: 0, position: "relative" }}>
             {tabs.map((t) => (
               <Box
                 key={`${t.id}-${stacks[t.id].gen}`}
