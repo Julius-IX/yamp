@@ -18,6 +18,7 @@ const SETTINGS: &[&str] = &[
   "animations",
   "prefetch",
   "lastCompact",
+  "country",
   library::SYNC_KEY,
 ];
 
