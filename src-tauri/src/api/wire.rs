@@ -68,54 +68,6 @@ impl From<db::FollowedArtist> for FollowedArtist {
   }
 }
 
-#[derive(Serialize, Deserialize, TsType)]
-#[serde(rename_all = "camelCase")]
-pub struct Album {
-  pub id: String,
-  pub title: String,
-  pub artist: String,
-  pub cover: Option<String>,
-  pub release_year: Option<u32>,
-}
-
-impl From<Album> for db::Album {
-  fn from(a: Album) -> Self {
-    Self {
-      id: a.id,
-      title: a.title,
-      artist: a.artist,
-      cover: a.cover,
-      release_year: a.release_year,
-    }
-  }
-}
-
-#[derive(Serialize, TsType)]
-#[serde(rename_all = "camelCase")]
-pub struct SavedAlbum {
-  pub id: String,
-  pub title: String,
-  pub artist: String,
-  pub cover: Option<String>,
-  pub release_year: Option<u32>,
-  pub track_count: u32,
-  pub added_ms: i64,
-}
-
-impl From<db::SavedAlbum> for SavedAlbum {
-  fn from(a: db::SavedAlbum) -> Self {
-    Self {
-      id: a.id,
-      title: a.title,
-      artist: a.artist,
-      cover: a.cover,
-      release_year: a.release_year,
-      track_count: a.track_count,
-      added_ms: a.added_ms,
-    }
-  }
-}
-
 /// Named apart from the provider `Playlist`, which carries its tracks and has no owner.
 #[derive(Serialize, TsType)]
 #[serde(rename_all = "camelCase")]

@@ -1,6 +1,5 @@
 //! Command groups. Thin wrappers that give the frontend typed access to `YtApi`, which owns all
 //! provider handling, and to the library in `yamp-db`. Nothing here knows which backend runs.
-mod albums;
 mod artists;
 mod downloads;
 mod engine;
