@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT image, updated_ms FROM playlist_covers WHERE playlist_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "image",
+        "ordinal": 0,
+        "type_info": "Blob"
+      },
+      {
+        "name": "updated_ms",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "4d9bb8db38fe95b8bf31fe68854ae0dda2866a94299b1c1ab60655592ad435a9"
+}

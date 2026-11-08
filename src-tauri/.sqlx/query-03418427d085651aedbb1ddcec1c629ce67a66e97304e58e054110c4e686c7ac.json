@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT c.playlist_id AS \"playlist_id!\", c.updated_ms AS \"updated_ms!\"\n         FROM playlist_covers c JOIN playlists p ON p.id = c.playlist_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "playlist_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_ms!",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "03418427d085651aedbb1ddcec1c629ce67a66e97304e58e054110c4e686c7ac"
+}

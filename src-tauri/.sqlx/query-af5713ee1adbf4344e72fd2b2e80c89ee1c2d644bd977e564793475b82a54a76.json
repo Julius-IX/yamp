@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT playlist_id AS \"key!\" FROM playlist_covers",
+  "describe": {
+    "columns": [
+      {
+        "name": "key!",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "af5713ee1adbf4344e72fd2b2e80c89ee1c2d644bd977e564793475b82a54a76"
+}
