@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 async-trait = "0.1"
 log = "0.4"
+serde_json = "1"
 tokio = { version = "1", features = ["macros", "sync"] }
 yamp-media = { path = "../yamp_media" }
 # TLS is chosen to match yamp-media, which also builds reqwest with rustls. reqwest is named here

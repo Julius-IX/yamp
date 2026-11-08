@@ -5,8 +5,8 @@
 //! API paired with a generic HTTP downloader.
 //!
 //! - [`MediaSource`]: search, metadata, playlists, related tracks and playable stream URLs.
-//! - [`Catalog`]: browsing the provider's catalog, which is search by kind of result and the
-//!   pages of artists and albums. It is apart from [`MediaSource`] because many providers split
+//! - [`Catalog`]: browsing the provider's catalog, which is search by kind of result, the pages
+//!   of artists and albums and the explore area. It is apart from [`MediaSource`] because many providers split
 //!   the two, a metadata API on one side and a stream extractor on the other.
 //! - [`Downloader`]: saving a track to disk with progress.
 //! - [`Updater`]: keeping the provider's own tooling current.
@@ -23,7 +23,7 @@ pub mod ytdlp;
 pub use backend::{Backend, Catalog, Downloader, MediaSource, ProgressSink, Updater};
 pub use error::{MediaError, Result};
 pub use model::{
-  AlbumPage, ArtistPage, AudioQuality, DownloadJob, DownloadedFile, EngineStatus, Item, ItemKind,
-  JobState, Playlist, StreamInfo, TopSong, Track,
+  AlbumPage, ArtistPage, AudioQuality, DownloadJob, DownloadedFile, EngineStatus, Explore, Item,
+  ItemKind, JobState, Mood, Playlist, StreamInfo, TopSong, Track,
 };
 pub use queue::{DownloadQueue, JobSink};

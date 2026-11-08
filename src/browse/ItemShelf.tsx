@@ -32,7 +32,8 @@ async function playItem(item: Item) {
   }
 }
 
-function ItemCard({ item, byline, thumbnail }: { item: Item; byline: (item: Item) => ReactNode; thumbnail?: string | null }) {
+/** One card of a listing item. A shelf lays them out in a row and a screen can lay them out any other way. */
+export function ItemCard({ item, byline, thumbnail }: { item: Item; byline: (item: Item) => ReactNode; thumbnail?: string | null }) {
   const navigate = useNavigate();
   return (
     <MediaCard
