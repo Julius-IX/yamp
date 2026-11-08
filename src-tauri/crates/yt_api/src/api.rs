@@ -1,6 +1,6 @@
 use yamp_media::{
-  AlbumPage, ArtistPage, AudioQuality, Backend, DownloadJob, DownloadQueue, EngineStatus, Item,
-  ItemKind, Playlist, Result, StreamInfo, Track,
+  AlbumPage, ArtistPage, AudioQuality, Backend, DownloadJob, DownloadQueue, EngineStatus, Explore,
+  Item, ItemKind, Playlist, Result, StreamInfo, Track,
 };
 
 const DEFAULT_LIMIT: usize = 25;
@@ -60,6 +60,21 @@ impl YtApi {
 
   pub async fn album(&self, id: &str) -> Result<AlbumPage> {
     logged("album lookup", self.backend.catalog.album(id).await)
+  }
+
+  /// New releases, trending songs, new videos and the moods to browse by.
+  pub async fn explore(&self) -> Result<Explore> {
+    logged("explore lookup", self.backend.catalog.explore().await)
+  }
+
+  /// The chart of artists for a country, or worldwide without one.
+  pub async fn top_artists(&self, country: Option<&str>) -> Result<Vec<Item>> {
+    logged("top artists lookup", self.backend.catalog.top_artists(country).await)
+  }
+
+  /// The playlists of a mood. `params` is what [`yamp_media::Mood`] carries.
+  pub async fn mood_playlists(&self, params: &str) -> Result<Vec<Item>> {
+    logged("mood lookup", self.backend.catalog.mood_playlists(params).await)
   }
 
   pub async fn track(&self, id: &str) -> Result<Track> {

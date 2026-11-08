@@ -65,6 +65,13 @@ export type EngineStatus = {
   version: string | null;
 }
 
+export type Explore = {
+  newReleases: Item[];
+  trending: Track[];
+  newVideos: Track[];
+  moods: Mood[];
+}
+
 export type FollowedArtist = {
   id: string;
   name: string;
@@ -108,6 +115,12 @@ export type LogEntry = {
 export type LogLevel = "error" | "warn" | "info" | "debug" | "trace";
 
 export type LogSource = "backend" | "frontend";
+
+export type Mood = {
+  title: string;
+  params: string;
+  color: string | null;
+}
 
 export type Playlist = {
   id: string;

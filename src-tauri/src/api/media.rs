@@ -1,6 +1,8 @@
 use super::err;
 use tauri::State;
-use yt_api::{AlbumPage, ArtistPage, AudioQuality, Item, ItemKind, Playlist, StreamInfo, Track, YtApi};
+use yt_api::{
+  AlbumPage, ArtistPage, AudioQuality, Explore, Item, ItemKind, Playlist, StreamInfo, Track, YtApi,
+};
 
 #[tauri_groups::command(media)]
 pub async fn search(
@@ -38,6 +40,24 @@ pub async fn artist(api: State<'_, YtApi>, id: String) -> Result<ArtistPage, Str
 #[tauri_groups::command(media)]
 pub async fn album(api: State<'_, YtApi>, id: String) -> Result<AlbumPage, String> {
   api.album(&id).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn explore(api: State<'_, YtApi>) -> Result<Explore, String> {
+  api.explore().await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn top_artists(
+  api: State<'_, YtApi>,
+  country: Option<String>,
+) -> Result<Vec<Item>, String> {
+  api.top_artists(country.as_deref()).await.map_err(err)
+}
+
+#[tauri_groups::command(media)]
+pub async fn mood_playlists(api: State<'_, YtApi>, params: String) -> Result<Vec<Item>, String> {
+  api.mood_playlists(&params).await.map_err(err)
 }
 
 #[tauri_groups::command(media)]
