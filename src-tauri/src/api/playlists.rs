@@ -53,13 +53,47 @@ pub async fn delete(db: State<'_, Db>, id: String) -> Result<bool, String> {
 
 #[tauri_groups::command(playlists)]
 pub async fn get(db: State<'_, Db>, id: String) -> Result<Option<LibraryPlaylist>, String> {
-  Ok(db.playlists().get(&id).await.map_err(fail)?.map(Into::into))
+  let Some(playlist) = db.playlists().get(&id).await.map_err(fail)? else {
+    return Ok(None);
+  };
+  let version = db.playlist_covers().versions().await.map_err(fail)?.get(&id).copied();
+  Ok(Some(LibraryPlaylist::from(playlist).with_cover_version(version)))
 }
 
 /// Most recently changed first.
 #[tauri_groups::command(playlists)]
 pub async fn list(db: State<'_, Db>) -> Result<Vec<LibraryPlaylist>, String> {
-  Ok(db.playlists().list().await.map_err(fail)?.into_iter().map(Into::into).collect())
+  let versions = db.playlist_covers().versions().await.map_err(fail)?;
+  let playlists = db.playlists().list().await.map_err(fail)?;
+  Ok(
+    playlists
+      .into_iter()
+      .map(|p| {
+        let version = versions.get(&p.id).copied();
+        LibraryPlaylist::from(p).with_cover_version(version)
+      })
+      .collect(),
+  )
+}
+
+/// The cover that the user set, as a `data:` URL for an image. `None` when there is none, the
+/// playlist then shows the `cover` thumbnail.
+#[tauri_groups::command(playlists)]
+pub async fn cover(db: State<'_, Db>, id: String) -> Result<Option<String>, String> {
+  db.playlist_covers().data_url(&id).await.map_err(fail)
+}
+
+/// Sets the cover of a playlist from the bytes of an image in a common format. The middle square
+/// is cut out and shrunk, so the caller can send a photo as it is. The cover is synced.
+#[tauri_groups::command(playlists)]
+pub async fn set_cover(db: State<'_, Db>, id: String, image: Vec<u8>) -> Result<(), String> {
+  db.playlist_covers().set(&id, image).await.map_err(fail)
+}
+
+/// Goes back to the thumbnail of the first track. Returns whether there was a cover to remove.
+#[tauri_groups::command(playlists)]
+pub async fn remove_cover(db: State<'_, Db>, id: String) -> Result<bool, String> {
+  db.playlist_covers().remove(&id).await.map_err(fail)
 }
 
 /// In playlist order.
