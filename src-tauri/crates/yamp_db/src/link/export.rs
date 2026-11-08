@@ -1,11 +1,12 @@
 //! Reading entities out of the tables as documents.
 
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::Serialize;
 use serde_json::Value;
 use sqlx::SqliteConnection;
 
 use super::{
-  doc::{ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
+  doc::{ArtistDoc, Change, CoverDoc, LikeDoc, PlaylistDoc, TrackDoc},
   kind::Kind,
   state,
 };
@@ -78,6 +79,17 @@ pub(crate) async fn load(
         created_ms: r.created_ms,
         updated_ms: r.updated_ms,
         tracks,
+      })
+    }
+    Kind::Cover => {
+      let row = sqlx::query!(
+        "SELECT image, updated_ms FROM playlist_covers WHERE playlist_id = ?",
+        key
+      )
+      .fetch_optional(&mut *conn)
+      .await?;
+      row.map_or(Ok(None), |r| {
+        to_value(&CoverDoc { image: STANDARD.encode(r.image), updated_ms: r.updated_ms })
       })
     }
   }
@@ -175,6 +187,11 @@ async fn keys(conn: &mut SqliteConnection, kind: Kind) -> Result<Vec<String>> {
     }
     Kind::Playlist => {
       sqlx::query_scalar!(r#"SELECT id AS "key!" FROM playlists"#)
+        .fetch_all(conn)
+        .await?
+    }
+    Kind::Cover => {
+      sqlx::query_scalar!(r#"SELECT playlist_id AS "key!" FROM playlist_covers"#)
         .fetch_all(conn)
         .await?
     }

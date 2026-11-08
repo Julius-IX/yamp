@@ -78,8 +78,18 @@ pub struct LibraryPlaylist {
   pub track_count: u32,
   /// Thumbnail of the first track that has one.
   pub cover: Option<String>,
+  /// When the cover that the user set was set, none without one. `playlists.cover` returns the
+  /// image, and the time tells a reader that holds an image whether it is still the current one.
+  pub cover_version: Option<i64>,
   pub created_ms: i64,
   pub updated_ms: i64,
+}
+
+impl LibraryPlaylist {
+  pub fn with_cover_version(mut self, version: Option<i64>) -> Self {
+    self.cover_version = version;
+    self
+  }
 }
 
 impl From<db::Playlist> for LibraryPlaylist {
@@ -90,6 +100,7 @@ impl From<db::Playlist> for LibraryPlaylist {
       description: p.description,
       track_count: p.track_count,
       cover: p.cover,
+      cover_version: None,
       created_ms: p.created_ms,
       updated_ms: p.updated_ms,
     }

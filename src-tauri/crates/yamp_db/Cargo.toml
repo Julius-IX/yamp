@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+# Only the formats a cover is likely to come in, and no codec that needs a system library. The
+# default features would add every format and the threading of the resize.
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp"] }
+# A cover travels inside the JSON of the link as text
+base64 = "0.22"
 cloud-kit = { path = "../cloud_kit" }
 cloud-sync = { path = "../cloud_sync" }
 serde = { version = "1", features = ["derive"] }

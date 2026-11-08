@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO playlist_covers (playlist_id, image, updated_ms) VALUES (?1, ?2, ?3)\n       ON CONFLICT (playlist_id) DO UPDATE SET image = excluded.image, updated_ms = excluded.updated_ms",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "0adc5efd1e90a1fd82eba32edaa855c594624ea0e73c17c4f93f7989fc003ac2"
+}

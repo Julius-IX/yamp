@@ -1,4 +1,5 @@
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { useIsLiked } from "@/lib/likes";
@@ -7,6 +8,7 @@ import Cover from "@/player/Cover";
 import LikeButton from "@/player/LikeButton";
 import { currentTrack, player, usePlayer } from "@/player/store";
 import { IS_MOBILE } from "@/util/platform";
+import AddToPlaylist from "@/library/AddToPlaylist";
 import ArtistLink from "./ArtistLink";
 import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 
@@ -14,15 +16,30 @@ import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 const columns = (plays: boolean) =>
   IS_MOBILE ? "32px minmax(0, 1fr)" : `40px minmax(0, 1.4fr) minmax(0, 1fr)${plays ? " 96px" : ""}`;
 const BUTTON = 40;
-const ACTIONS_WIDTH = BUTTON * 2;
+/** The queue, playlist and like buttons, and the remove button when the table can remove. */
+const actionsWidth = (removable: boolean) => BUTTON * (removable ? 4 : 3);
 
-type RowProps = { track: Track; index: number; active: boolean; plays?: string | null; showPlays: boolean; onPlay: () => void };
+/**
+ * One slot of the action buttons. Every button sits in the same fixed box, centered on both axes,
+ * so they line up whatever their own size is. The tooltip wraps a button in an inline span, which
+ * would otherwise sit on the text baseline and look higher than a bare button.
+ */
+const cell = (shown: boolean) => ({
+  width: BUTTON, height: BUTTON, display: "flex", alignItems: "center", justifyContent: "center",
+  opacity: shown || IS_MOBILE ? 1 : 0,
+  "& > span": { display: "flex" },
+});
+
+type RowProps = {
+  track: Track; index: number; active: boolean; plays?: string | null; showPlays: boolean; onPlay: () => void;
+  onRemove?: () => void;
+};
 
 /**
  * The row is a div that plays when clicked, not a button. The artist and the actions inside are
  * controls of their own, and a button cannot hold another one.
  */
-function Row({ track, index, active, plays, showPlays, onPlay }: RowProps) {
+function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowProps) {
   const liked = useIsLiked(track.id);
   return (
     <Box
@@ -66,20 +83,33 @@ function Row({ track, index, active, plays, showPlays, onPlay }: RowProps) {
         )}
       </Box>
 
-      <Box onClick={(e) => e.stopPropagation()} sx={{ width: ACTIONS_WIDTH, display: "flex", justifyContent: "flex-end" }}>
+      <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {/* the buttons only show on hover, except a liked heart, and always where there is no hover */}
-        <Tooltip title="Add to queue (Shift: play next)">
-          <IconButton
-            className="row-action" size="small" aria-label="Add to queue"
-            onClick={(e) => player.enqueue([track], e.shiftKey ? "next" : "end")}
-            sx={{ width: BUTTON, height: BUTTON, opacity: IS_MOBILE ? 1 : 0 }}
-          >
-            <PlaylistAddIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
-        <Box className="row-action" sx={{ width: BUTTON, display: "flex", justifyContent: "center", opacity: liked || IS_MOBILE ? 1 : 0 }}>
+        <Box className="row-action" sx={cell(true)}>
+          <Tooltip title="Add to queue (Shift: play next)">
+            <IconButton
+              size="small" aria-label="Add to queue"
+              onClick={(e) => player.enqueue([track], e.shiftKey ? "next" : "end")}
+            >
+              <PlaylistAddIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+        <Box className="row-action" sx={cell(true)}>
+          <AddToPlaylist track={track} />
+        </Box>
+        <Box className="row-action" sx={cell(liked)}>
           <LikeButton track={track} size="small" />
         </Box>
+        {onRemove && (
+          <Box className="row-action" sx={cell(true)}>
+            <Tooltip title="Remove from playlist">
+              <IconButton size="small" aria-label="Remove from playlist" onClick={onRemove}>
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
       </Box>
     </Box>
   );
@@ -87,11 +117,12 @@ function Row({ track, index, active, plays, showPlays, onPlay }: RowProps) {
 
 /**
  * Tracks as numbered rows. The row of the playing track is tinted, and a click plays from that
- * row. `plays` adds a column of play counts, as display text, one entry per track.
+ * row. `plays` adds a column of play counts, as display text, one entry per track. `onRemove`
+ * adds a button that takes a row out of the list the table shows, for a playlist of the library.
  */
 export default function TrackTable({
-  tracks, plays, onPlay,
-}: { tracks: Track[]; plays?: (string | null)[]; onPlay: (index: number) => void }) {
+  tracks, plays, onPlay, onRemove,
+}: { tracks: Track[]; plays?: (string | null)[]; onPlay: (index: number) => void; onRemove?: (index: number) => void }) {
   const activeId = currentTrack(usePlayer())?.id;
   return (
     <Box sx={{ px: GUTTER }}>
@@ -102,10 +133,10 @@ export default function TrackTable({
           {!IS_MOBILE && <Typography sx={columnHead}>ARTIST</Typography>}
           {!IS_MOBILE && plays && <Typography sx={{ ...columnHead, textAlign: "right", pr: 1 }}>PLAYS</Typography>}
         </Box>
-        <Box sx={{ width: ACTIONS_WIDTH }} />
+        <Box sx={{ width: actionsWidth(!!onRemove) }} />
       </Box>
       {tracks.map((t, i) => (
-        <Row key={`${t.id}:${i}`} track={t} index={i} active={t.id === activeId} plays={plays?.[i]} showPlays={!!plays} onPlay={() => onPlay(i)} />
+        <Row key={`${t.id}:${i}`} track={t} index={i} active={t.id === activeId} plays={plays?.[i]} showPlays={!!plays} onPlay={() => onPlay(i)} onRemove={onRemove && (() => onRemove(i))} />
       ))}
     </Box>
   );

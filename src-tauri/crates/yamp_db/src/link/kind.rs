@@ -7,10 +7,12 @@ pub(crate) enum Kind {
   Like,
   Artist,
   Playlist,
+  /// The cover of a playlist, keyed by the id of the playlist.
+  Cover,
 }
 
 impl Kind {
-  pub const ALL: [Kind; 4] = [Kind::Track, Kind::Like, Kind::Artist, Kind::Playlist];
+  pub const ALL: [Kind; 5] = [Kind::Track, Kind::Like, Kind::Artist, Kind::Playlist, Kind::Cover];
 
   pub fn as_str(self) -> &'static str {
     match self {
@@ -18,6 +20,7 @@ impl Kind {
       Kind::Like => "like",
       Kind::Artist => "artist",
       Kind::Playlist => "playlist",
+      Kind::Cover => "cover",
     }
   }
 

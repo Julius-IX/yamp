@@ -60,3 +60,9 @@ export function useIsLiked(trackId: string | undefined) {
   useLoadedOnce();
   return useSyncExternalStore(subscribe, () => trackId !== undefined && liked.has(trackId));
 }
+
+/** How many tracks are liked. A screen that lists them reloads when it changes. */
+export function useLikedCount() {
+  useLoadedOnce();
+  return useSyncExternalStore(subscribe, () => liked.size);
+}

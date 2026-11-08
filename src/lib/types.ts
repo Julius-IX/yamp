@@ -91,6 +91,7 @@ export type LibraryPlaylist = {
   description: string | null;
   trackCount: number;
   cover: string | null;
+  coverVersion: number | null;
   createdMs: number;
   updatedMs: number;
 }

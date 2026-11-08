@@ -4,7 +4,8 @@ import {
 } from "@mui/material";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import type { Tab } from "@/router/types";
-import AlbumList from "./AlbumList";
+import NewPlaylistButton from "./NewPlaylistButton";
+import PlaylistList from "./PlaylistList";
 import SidebarSection from "./SidebarSection";
 
 const WIDTH = 240;
@@ -12,7 +13,7 @@ const WIDTH = 240;
 const WIDTH_COMPACT = 64;
 
 /**
- * Desktop navigation. The tabs stay at the top and the sections below them (the albums for
+ * Desktop navigation. The tabs stay at the top and the sections below them (the playlists for
  * now) scroll on their own, since those lists can get far longer than the window.
  */
 export default function Sidebar({
@@ -53,8 +54,8 @@ export default function Sidebar({
       </List>
 
       <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" } }}>
-        <SidebarSection title="Albums" compact={compact}>
-          <AlbumList compact={compact} />
+        <SidebarSection title="Playlists" compact={compact} action={<NewPlaylistButton />}>
+          <PlaylistList compact={compact} />
         </SidebarSection>
       </Box>
     </Paper>

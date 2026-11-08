@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import { IS_ANDROID, IS_IOS, IS_LINUX, IS_MAC, IS_WINDOWS } from "@/util/platform";
 import { COMMANDS } from "./commands";
+import { refreshPlaylists } from "./library";
 import { refreshLikes } from "./likes";
 import { logger } from "./log";
 import { getSetting, isNumber, setSetting } from "./settings";
@@ -98,7 +99,7 @@ export async function syncNow() {
   try {
     const report = await COMMANDS.sync.now();
     if (report.pulled > 0) {
-      await refreshLikes();
+      await Promise.all([refreshLikes(), refreshPlaylists()]);
       window.dispatchEvent(new Event(SYNCED_EVENT));
     }
     set({ lastSyncMs: Date.now() });

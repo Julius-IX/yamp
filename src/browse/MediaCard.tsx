@@ -29,6 +29,8 @@ const shell = (variant: CardVariant) =>
 
 type Props = {
   thumbnail?: string | null;
+  /** Replaces the cover, for artwork that is drawn and has no image to fetch. It has to size itself. */
+  art?: ReactNode;
   title: string;
   /** Text, or links such as an artist. Clicks on a link must not reach the card. */
   subtitle?: ReactNode;
@@ -44,7 +46,7 @@ type Props = {
  * A cover with a title and a line below. The overlay is a hint that the card plays, so on a
  * touch screen without hover it is left out. Artists have no overlay, they only open.
  */
-export default function MediaCard({ thumbnail, title, subtitle, variant = "square", onClick, onPlay, onQueue }: Props) {
+export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", onClick, onPlay, onQueue }: Props) {
   return (
     <ButtonBase
       onClick={onClick}
@@ -55,11 +57,13 @@ export default function MediaCard({ thumbnail, title, subtitle, variant = "squar
       }}
     >
       <Box sx={{ position: "relative" }}>
-        <Cover
-          src={thumbnail}
-          px={variant === "wide" ? 480 : 320}
-          sx={{ width: "100%", fontSize: 40, ...COVER[variant] }}
-        />
+        {art ?? (
+          <Cover
+            src={thumbnail}
+            px={variant === "wide" ? 480 : 320}
+            sx={{ width: "100%", fontSize: 40, ...COVER[variant] }}
+          />
+        )}
         {variant !== "round" && (
           <Box
             className="card-play"

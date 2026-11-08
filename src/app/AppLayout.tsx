@@ -12,6 +12,24 @@ import VideoModal from "@/video/VideoModal";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
+/**
+ * The tabs share the width of the screen. MUI gives an action a minimum of 80 px, which is wider
+ * than a phone fits with six tabs and makes the whole page scroll sideways. The label is also
+ * bigger while selected by default, which would push the neighbors around.
+ */
+const ACTION = {
+  minWidth: 0,
+  maxWidth: "none",
+  px: 0.5,
+  "& .MuiBottomNavigationAction-label, &.Mui-selected .MuiBottomNavigationAction-label": {
+    fontSize: 11,
+    maxWidth: "100%",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+};
+
 type TabRouter = ReturnType<typeof createMemoryRouter>;
 
 // Every tab has its own router, so its own history stack, independent of the others.
@@ -119,14 +137,14 @@ export default function AppLayout() {
         <Motion />
 
         {IS_MOBILE && !navHidden && (
-          <Paper elevation={3} sx={{ pb: "env(safe-area-inset-bottom)" }}>
+          <Paper elevation={3} sx={{ pb: "env(safe-area-inset-bottom)", overflow: "hidden" }}>
             <BottomNavigation
               showLabels
               value={activeId}
               onChange={(_, id) => goTo(tabs.find((t) => t.id === id)!)}
             >
               {tabs.map((t) => (
-                <BottomNavigationAction key={t.id} value={t.id} label={t.label} icon={t.icon} />
+                <BottomNavigationAction key={t.id} value={t.id} label={t.label} icon={t.icon} sx={ACTION} />
               ))}
             </BottomNavigation>
           </Paper>

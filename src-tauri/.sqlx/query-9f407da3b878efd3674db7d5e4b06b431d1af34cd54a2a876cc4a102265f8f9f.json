@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT t.id AS \"id!\", t.title AS \"title!\", t.artist AS \"artist!\", t.album, t.duration_secs, t.thumbnail, t.release_year AS \"release_year: u32\" FROM likes l JOIN tracks t ON t.id = l.track_id\n           ORDER BY l.liked_ms DESC, l.track_id LIMIT ? OFFSET ?",
+  "query": "SELECT\n            t.id AS \"id!\",\n            t.title AS \"title!\",\n            t.artist AS \"artist!\",\n            t.album,\n            t.duration_secs,\n            t.thumbnail,\n            t.release_year AS \"release_year: u32\"\n        FROM tracks t WHERE t.id = ?",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,7 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 1
     },
     "nullable": [
       false,
@@ -52,5 +52,5 @@
       true
     ]
   },
-  "hash": "54fed88003cb9b68881a86dd07445518ba5a8603d238f85b88e32681a306a5f8"
+  "hash": "9f407da3b878efd3674db7d5e4b06b431d1af34cd54a2a876cc4a102265f8f9f"
 }
