@@ -6,6 +6,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import ShuffleIcon from "@mui/icons-material/Shuffle";
 import { useLocation, useParams } from "react-router-dom";
 import { COMMANDS } from "@/lib/commands";
+import { refreshPlaylists } from "@/lib/library";
 import { logger } from "@/lib/log";
 import type { Item, Track } from "@/lib/types";
 import Cover from "@/player/Cover";
@@ -77,10 +78,12 @@ export default function CollectionPage({ kind }: { kind: "album" | "playlist" })
           await COMMANDS.playlists.saveAs({ id, name: title, description: [artist, year].filter(Boolean).join(" · ") || null, tracks: withCover });
         }
         setSaved(!saved);
+        void refreshPlaylists();
       } else if (!saved) {
         const created = await COMMANDS.playlists.create({ name: title });
         await COMMANDS.playlists.addTracks({ id: created.id, tracks });
         setSaved(true);
+        void refreshPlaylists();
       }
     } catch (e) {
       log.warn(`couldn't save "${title}":`, e);
