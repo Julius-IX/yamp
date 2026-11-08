@@ -64,3 +64,25 @@ pub struct AlbumPage {
   pub thumbnail: Option<String>,
   pub tracks: Vec<Track>,
 }
+
+/// What the explore screen lists, apart from the top artists. A provider fills what it has, so any
+/// list can be empty. Trending songs and new videos are tracks because they play from the screen.
+/// New releases are listing items because they open a page first.
+#[derive(Debug, Clone, Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct Explore {
+  pub new_releases: Vec<Item>,
+  pub trending: Vec<Track>,
+  pub new_videos: Vec<Track>,
+  pub moods: Vec<Mood>,
+}
+
+/// A mood or a genre that playlists can be listed for. `params` is opaque and only the provider
+/// that made it can read it back. `color` is the accent the provider gives it, as `#rrggbb`.
+#[derive(Debug, Clone, Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct Mood {
+  pub title: String,
+  pub params: String,
+  pub color: Option<String>,
+}

@@ -1,6 +1,6 @@
 use crate::{
   error::{MediaError, Result},
-  model::{AlbumPage, ArtistPage, Item, ItemKind, Playlist, Track},
+  model::{AlbumPage, ArtistPage, Explore, Item, ItemKind, Playlist, Track},
 };
 use async_trait::async_trait;
 
@@ -19,6 +19,22 @@ pub trait Catalog: Send + Sync {
   async fn artist(&self, id: &str) -> Result<ArtistPage>;
   async fn album(&self, id: &str) -> Result<AlbumPage>;
   async fn playlist(&self, id: &str) -> Result<Playlist>;
+
+  // The explore area has a default of unsupported. Providers without one are common, and each of
+  // them would otherwise have to say so for every call.
+
+  /// The provider's pages for discovery, new releases and what is trending.
+  async fn explore(&self) -> Result<Explore> {
+    Err(MediaError::Unsupported)
+  }
+  /// The artists on a chart. `country` is an ISO 3166 code, and none or anything else is worldwide.
+  async fn top_artists(&self, _country: Option<&str>) -> Result<Vec<Item>> {
+    Err(MediaError::Unsupported)
+  }
+  /// The playlists of a mood or a genre, `params` is what [`crate::Mood`] carries.
+  async fn mood_playlists(&self, _params: &str) -> Result<Vec<Item>> {
+    Err(MediaError::Unsupported)
+  }
 }
 
 /// For a provider with no catalog of its own. Every call is unsupported, so callers fall back.
