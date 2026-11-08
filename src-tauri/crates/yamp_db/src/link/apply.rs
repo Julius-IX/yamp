@@ -5,12 +5,13 @@
 //! other and its tombstone is kept in `link_versions`, so an older copy of the entity
 //! that arrives late does not bring it back.
 
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use sqlx::{SqliteConnection, SqlitePool};
 
 use super::{
-  doc::{ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
+  doc::{ArtistDoc, Change, CoverDoc, LikeDoc, PlaylistDoc, TrackDoc},
   kind::Kind,
   state,
 };
@@ -152,6 +153,11 @@ async fn delete(conn: &mut SqliteConnection, kind: Kind, key: &str) -> Result<()
         .execute(conn)
         .await?
     }
+    Kind::Cover => {
+      sqlx::query!("DELETE FROM playlist_covers WHERE playlist_id = ?", key)
+        .execute(conn)
+        .await?
+    }
   };
   Ok(())
 }
@@ -229,6 +235,23 @@ async fn put(conn: &mut SqliteConnection, kind: Kind, key: &str, doc: &Value) ->
       .execute(&mut *conn)
       .await?;
       ordered::playlist::replace(conn, key, &d.tracks).await?;
+    }
+    Kind::Cover => {
+      let Some(d) = read::<CoverDoc>(doc) else {
+        return Ok(false);
+      };
+      let Ok(image) = STANDARD.decode(&d.image) else {
+        return Ok(false);
+      };
+      sqlx::query!(
+        "INSERT INTO playlist_covers (playlist_id, image, updated_ms) VALUES (?1, ?2, ?3)
+         ON CONFLICT (playlist_id) DO UPDATE SET image = excluded.image, updated_ms = excluded.updated_ms",
+        key,
+        image,
+        d.updated_ms
+      )
+      .execute(conn)
+      .await?;
     }
   }
   Ok(true)
@@ -313,6 +336,24 @@ mod tests {
     );
     // what arrived is not sent back
     assert_eq!(pending(&b).await, 0);
+  }
+
+  #[tokio::test]
+  async fn a_cover_arrives_and_leaves_with_its_playlist() {
+    let (a, b) = (Db::memory().await.unwrap(), Db::memory().await.unwrap());
+    let p = a.playlists().create("Mix", None).await.unwrap();
+    a.playlist_covers().set(&p.id, crate::store::cover::tests::png(40, 40)).await.unwrap();
+
+    ship(&a, "a", &b, "b").await;
+    assert_eq!(
+      b.playlist_covers().get(&p.id).await.unwrap(),
+      a.playlist_covers().get(&p.id).await.unwrap()
+    );
+    assert_eq!(pending(&b).await, 0);
+
+    a.playlists().delete(&p.id).await.unwrap();
+    ship(&a, "a", &b, "b").await;
+    assert_eq!(b.playlist_covers().get(&p.id).await.unwrap(), None);
   }
 
   #[tokio::test]

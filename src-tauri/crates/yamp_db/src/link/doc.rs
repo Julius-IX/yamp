@@ -74,3 +74,11 @@ pub(crate) struct PlaylistDoc {
   pub updated_ms: i64,
   pub tracks: Vec<String>,
 }
+
+/// The JPEG of a cover as base64, since the log is JSON. A cover is small by design, see
+/// `store::cover`, and it is its own entity so that editing a playlist does not send it again.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct CoverDoc {
+  pub image: String,
+  pub updated_ms: i64,
+}
