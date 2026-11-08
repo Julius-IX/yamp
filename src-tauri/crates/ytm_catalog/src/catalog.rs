@@ -1,10 +1,12 @@
+use crate::browse::{self, Page};
 use crate::convert::{self, TrackParts};
 use async_trait::async_trait;
-use reqwest::header::{HeaderMap, HeaderValue, COOKIE};
-use std::time::Duration;
+use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE, COOKIE, ORIGIN, USER_AGENT};
+use serde_json::Value;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::OnceCell;
 use yamp_media::{
-  AlbumPage, ArtistPage, Catalog, Item, ItemKind, MediaError, Playlist, Result, TopSong, Track,
+  AlbumPage, ArtistPage, Catalog, Explore, Item, ItemKind, MediaError, Playlist, Result, TopSong, Track,
 };
 use ytmapi_rs::{
   auth::noauth::NoAuthToken,
@@ -99,17 +101,31 @@ fn with_tls(builder: reqwest::ClientBuilder) -> Result<reqwest::ClientBuilder> {
   Ok(builder.use_rustls_tls())
 }
 
-async fn connect() -> Result<YtMusic<NoAuthToken>> {
+fn http() -> Result<reqwest::Client> {
   let mut headers = HeaderMap::new();
   headers.insert(COOKIE, HeaderValue::from_static(CONSENT_COOKIE));
-  let http = with_tls(reqwest::Client::builder())?
+  with_tls(reqwest::Client::builder())?
     .connect_timeout(CONNECT_TIMEOUT)
     .timeout(REQUEST_TIMEOUT)
     .default_headers(headers)
     .http2_max_header_list_size(MAX_HEADER_BYTES)
     .build()
-    .map_err(|e| MediaError::Network(format!("couldn't build the http client: {e}")))?;
-  YtMusicBuilder::new_with_client(ytmapi_rs::Client::new_from_reqwest_client(http)).build().await.map_err(failed)
+    .map_err(|e| MediaError::Network(format!("couldn't build the http client: {e}")))
+}
+
+async fn connect() -> Result<YtMusic<NoAuthToken>> {
+  YtMusicBuilder::new_with_client(ytmapi_rs::Client::new_from_reqwest_client(http()?)).build().await.map_err(failed)
+}
+
+/// The same endpoint the web app calls. The key is the public one that is built into that app,
+/// without it the answer is a refusal.
+const BROWSE_URL: &str = "https://music.youtube.com/youtubei/v1/browse?alt=json&key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30";
+
+/// A browser that is not recent enough to be refused, which is how the web app is seen.
+const BROWSER: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0";
+
+fn network(e: reqwest::Error) -> MediaError {
+  MediaError::Network(format!("youtube music: {e}"))
 }
 
 /// Reads YouTube Music's own API, the one its web app uses, without an account.
@@ -119,6 +135,8 @@ async fn connect() -> Result<YtMusic<NoAuthToken>> {
 #[derive(Default)]
 pub struct YtMusicCatalog {
   client: OnceCell<YtMusic<NoAuthToken>>,
+  /// For the pages that ytmapi-rs has no query for, see [`browse`]. Those are plain requests.
+  pages: OnceCell<reqwest::Client>,
 }
 
 impl YtMusicCatalog {
@@ -128,6 +146,27 @@ impl YtMusicCatalog {
 
   async fn api(&self) -> Result<&YtMusic<NoAuthToken>> {
     self.client.get_or_try_init(connect).await
+  }
+
+  /// One page of the explore area as the provider sends it, to be read by [`browse`].
+  async fn page(&self, page: Page<'_>) -> Result<Value> {
+    let client = self.pages.get_or_try_init(|| async { http() }).await?;
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs());
+    let bytes = client
+      .post(BROWSE_URL)
+      .header(USER_AGENT, BROWSER)
+      .header(ORIGIN, "https://music.youtube.com")
+      .header(CONTENT_TYPE, "application/json")
+      .body(page.body(&browse::client_version(now)).to_string())
+      .send()
+      .await
+      .map_err(network)?
+      .error_for_status()
+      .map_err(network)?
+      .bytes()
+      .await
+      .map_err(network)?;
+    serde_json::from_slice(&bytes).map_err(|e| MediaError::Engine(format!("youtube music: unreadable page: {e}")))
   }
 }
 
@@ -360,5 +399,20 @@ impl Catalog for YtMusicCatalog {
       .collect();
 
     Ok(Playlist { id: id.to_owned(), title, tracks })
+  }
+
+  async fn explore(&self) -> Result<Explore> {
+    Ok(browse::explore(&self.page(Page::Explore).await?))
+  }
+
+  async fn top_artists(&self, country: Option<&str>) -> Result<Vec<Item>> {
+    Ok(browse::top_artists(&self.page(Page::Charts(country)).await?))
+  }
+
+  async fn mood_playlists(&self, params: &str) -> Result<Vec<Item>> {
+    if !browse::valid_params(params) {
+      return Err(MediaError::InvalidId);
+    }
+    Ok(browse::mood_playlists(&self.page(Page::Mood(params)).await?))
   }
 }
