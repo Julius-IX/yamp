@@ -5,7 +5,7 @@ use serde_json::Value;
 use sqlx::SqliteConnection;
 
 use super::{
-  doc::{AlbumDoc, ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
+  doc::{ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
   kind::Kind,
   state,
 };
@@ -61,25 +61,6 @@ pub(crate) async fn load(
           thumbnail: r.thumbnail,
           followed_ms: r.followed_ms,
         })
-      })
-    }
-    Kind::Album => {
-      let row = sqlx::query!(
-        r#"SELECT title, artist, cover, release_year AS "release_year: u32", added_ms
-           FROM albums WHERE id = ?"#,
-        key
-      )
-      .fetch_optional(&mut *conn)
-      .await?;
-      let Some(r) = row else { return Ok(None) };
-      let tracks = ordered::album::ids(conn, key).await?;
-      to_value(&AlbumDoc {
-        title: r.title,
-        artist: r.artist,
-        cover: r.cover,
-        release_year: r.release_year,
-        added_ms: r.added_ms,
-        tracks,
       })
     }
     Kind::Playlist => {
@@ -189,11 +170,6 @@ async fn keys(conn: &mut SqliteConnection, kind: Kind) -> Result<Vec<String>> {
     }
     Kind::Artist => {
       sqlx::query_scalar!(r#"SELECT id AS "key!" FROM followed_artists"#)
-        .fetch_all(conn)
-        .await?
-    }
-    Kind::Album => {
-      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM albums"#)
         .fetch_all(conn)
         .await?
     }

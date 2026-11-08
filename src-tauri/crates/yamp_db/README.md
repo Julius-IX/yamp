@@ -20,7 +20,6 @@ A store takes the `Track` it is given and saves its metadata in the same transac
 | `tracks()` | Track metadata, lookup and search |
 | `likes()` | Liked tracks, newest first |
 | `artists()` | Followed artists |
-| `albums()` | Albums saved to the library, with their track order |
 | `playlists()` | Playlists, with reordering |
 | `downloads()` | Records of downloaded audio |
 
@@ -76,7 +75,6 @@ Synced data:
 - Tracks
 - Likes
 - Followed artists
-- Albums
 - Playlists
 
 An entity travels as one document, a playlist with its whole track list. Triggers in `0007_link.sql` note every change in `link_dirty`, so no store has to know about syncing.

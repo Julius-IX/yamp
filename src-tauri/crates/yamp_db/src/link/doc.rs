@@ -67,16 +67,6 @@ pub(crate) struct ArtistDoc {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct AlbumDoc {
-  pub title: String,
-  pub artist: String,
-  pub cover: Option<String>,
-  pub release_year: Option<u32>,
-  pub added_ms: i64,
-  pub tracks: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
 pub(crate) struct PlaylistDoc {
   pub name: String,
   pub description: Option<String>,

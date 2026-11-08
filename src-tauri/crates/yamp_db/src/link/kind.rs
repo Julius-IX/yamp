@@ -6,25 +6,17 @@ pub(crate) enum Kind {
   Track,
   Like,
   Artist,
-  Album,
   Playlist,
 }
 
 impl Kind {
-  pub const ALL: [Kind; 5] = [
-    Kind::Track,
-    Kind::Like,
-    Kind::Artist,
-    Kind::Album,
-    Kind::Playlist,
-  ];
+  pub const ALL: [Kind; 4] = [Kind::Track, Kind::Like, Kind::Artist, Kind::Playlist];
 
   pub fn as_str(self) -> &'static str {
     match self {
       Kind::Track => "track",
       Kind::Like => "like",
       Kind::Artist => "artist",
-      Kind::Album => "album",
       Kind::Playlist => "playlist",
     }
   }

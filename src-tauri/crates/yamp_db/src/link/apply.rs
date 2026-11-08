@@ -10,7 +10,7 @@ use serde_json::Value;
 use sqlx::{SqliteConnection, SqlitePool};
 
 use super::{
-  doc::{AlbumDoc, ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
+  doc::{ArtistDoc, Change, LikeDoc, PlaylistDoc, TrackDoc},
   kind::Kind,
   state,
 };
@@ -147,11 +147,6 @@ async fn delete(conn: &mut SqliteConnection, kind: Kind, key: &str) -> Result<()
         .execute(conn)
         .await?
     }
-    Kind::Album => {
-      sqlx::query!("DELETE FROM albums WHERE id = ?", key)
-        .execute(conn)
-        .await?
-    }
     Kind::Playlist => {
       sqlx::query!("DELETE FROM playlists WHERE id = ?", key)
         .execute(conn)
@@ -215,27 +210,6 @@ async fn put(conn: &mut SqliteConnection, kind: Kind, key: &str, doc: &Value) ->
       .execute(conn)
       .await?;
     }
-    Kind::Album => {
-      let Some(d) = read::<AlbumDoc>(doc) else {
-        return Ok(false);
-      };
-      sqlx::query!(
-        "INSERT INTO albums (id, title, artist, cover, release_year, added_ms)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
-         ON CONFLICT (id) DO UPDATE SET
-           title = excluded.title, artist = excluded.artist, cover = excluded.cover,
-           release_year = excluded.release_year, added_ms = excluded.added_ms",
-        key,
-        d.title,
-        d.artist,
-        d.cover,
-        d.release_year,
-        d.added_ms
-      )
-      .execute(&mut *conn)
-      .await?;
-      ordered::album::replace(conn, key, &d.tracks).await?;
-    }
     Kind::Playlist => {
       let Some(d) = read::<PlaylistDoc>(doc) else {
         return Ok(false);
@@ -263,7 +237,7 @@ async fn put(conn: &mut SqliteConnection, kind: Kind, key: &str, doc: &Value) ->
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{link::export, store::track::tests::track, Album, Artist, Db};
+  use crate::{link::export, store::track::tests::track, Artist, Db};
   use serde_json::json;
 
   fn change(kind: &str, key: &str, ts_ms: i64, device: &str, doc: Option<Value>) -> Change {
@@ -310,17 +284,6 @@ mod tests {
       })
       .await
       .unwrap();
-    let album = Album {
-      id: "al".into(),
-      title: "Album".into(),
-      artist: "Artist".into(),
-      cover: None,
-      release_year: Some(2020),
-    };
-    a.albums()
-      .save(&album, &[track("t3", "Three"), track("t2", "Two")])
-      .await
-      .unwrap();
     let p = a.playlists().create("Mix", Some("d")).await.unwrap();
     a.playlists()
       .add_tracks(
@@ -339,14 +302,6 @@ mod tests {
     assert_eq!(
       b.artists().list().await.unwrap(),
       a.artists().list().await.unwrap()
-    );
-    assert_eq!(
-      b.albums().list().await.unwrap(),
-      a.albums().list().await.unwrap()
-    );
-    assert_eq!(
-      b.albums().tracks("al").await.unwrap(),
-      a.albums().tracks("al").await.unwrap()
     );
     assert_eq!(
       b.playlists().get(&p.id).await.unwrap(),

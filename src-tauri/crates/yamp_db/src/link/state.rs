@@ -47,7 +47,7 @@ pub(crate) async fn set_applying(conn: &mut SqliteConnection, on: bool) -> Resul
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::{store::track::tests::track, Album, Artist, Db};
+  use crate::{store::track::tests::track, Artist, Db};
 
   async fn pending(db: &Db) -> Vec<(String, String)> {
     let mut conn = db.pool().acquire().await.unwrap();
@@ -77,19 +77,6 @@ mod tests {
       })
       .await
       .unwrap();
-    db.albums()
-      .save(
-        &Album {
-          id: "al".into(),
-          title: "Album".into(),
-          artist: "Artist".into(),
-          cover: None,
-          release_year: None,
-        },
-        &[track("t2", "Two")],
-      )
-      .await
-      .unwrap();
     let p = db.playlists().create("Mix", None).await.unwrap();
     db.playlists()
       .add_tracks(&p.id, &[track("t3", "Three")])
@@ -98,11 +85,9 @@ mod tests {
 
     let mut expected = vec![
       pair("track", "t1"),
-      pair("track", "t2"),
       pair("track", "t3"),
       pair("like", "t1"),
       pair("artist", "ar"),
-      pair("album", "al"),
       pair("playlist", &p.id),
     ];
     expected.sort();
