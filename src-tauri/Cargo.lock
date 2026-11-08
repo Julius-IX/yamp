@@ -6850,6 +6850,7 @@ dependencies = [
  "log",
  "reqwest",
  "rustls",
+ "serde_json",
  "tokio",
  "webpki-roots 1.0.11",
  "yamp-media",
