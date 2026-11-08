@@ -64,6 +64,42 @@ impl Playlists {
     })
   }
 
+  /// Creates a playlist under the given id and fills it, unless one with that id exists.
+  /// An album saved to the library takes the album id, so the album can be looked up by it and
+  /// saving it again, also from another device, cannot make a second copy. Returns whether a
+  /// playlist was made. One that already exists is left as it is, since it may have been edited.
+  pub async fn save_as(
+    &self,
+    id: &str,
+    name: &str,
+    description: Option<&str>,
+    tracks: &[Track],
+  ) -> Result<bool> {
+    let mut tx = self.pool.begin().await?;
+    let now = now_ms();
+    let done = sqlx::query!(
+      "INSERT INTO playlists (id, name, description, created_ms, updated_ms)
+       VALUES (?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING",
+      id,
+      name,
+      description,
+      now,
+      now
+    )
+    .execute(&mut *tx)
+    .await?;
+    if done.rows_affected() == 0 {
+      return Ok(false);
+    }
+    for t in tracks {
+      track::upsert(&mut tx, t).await?;
+    }
+    let ids: Vec<String> = tracks.iter().map(|t| t.id.clone()).collect();
+    ordered::playlist::replace(&mut tx, id, &ids).await?;
+    tx.commit().await?;
+    Ok(true)
+  }
+
   /// Replaces the name and description.
   pub async fn update(&self, id: &str, name: &str, description: Option<&str>) -> Result<()> {
     let now = now_ms();
@@ -242,6 +278,23 @@ mod tests {
       playlists.update("nope", "x", None).await,
       Err(Error::NotFound(_))
     ));
+  }
+
+  #[tokio::test]
+  async fn save_as_creates_once_and_keeps_later_edits() {
+    let db = Db::memory().await.unwrap();
+    let playlists = db.playlists();
+    let tracks = [track("a", "a"), track("b", "b")];
+    assert!(playlists.save_as("alb", "Album", Some("Artist"), &tracks).await.unwrap());
+    assert_eq!(ids(&db, "alb").await, ["a", "b"]);
+
+    playlists.update("alb", "Renamed", None).await.unwrap();
+    playlists.remove_at("alb", 0).await.unwrap();
+    assert!(!playlists.save_as("alb", "Album", Some("Artist"), &tracks).await.unwrap());
+
+    let got = playlists.get("alb").await.unwrap().unwrap();
+    assert_eq!(got.name, "Renamed");
+    assert_eq!(ids(&db, "alb").await, ["b"]);
   }
 
   #[tokio::test]
