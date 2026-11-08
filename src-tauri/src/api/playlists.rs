@@ -17,6 +17,23 @@ pub async fn create(
   Ok(db.playlists().create(&name, description.as_deref()).await.map_err(fail)?.into())
 }
 
+/// Creates the playlist under a given id and fills it. An album saved to the library takes the
+/// album id, so the album can be looked up by it and saving it again makes no second copy.
+/// Returns whether a playlist was made, one that already has the id is left as it is.
+#[tauri_groups::command(playlists)]
+pub async fn save_as(
+  db: State<'_, Db>,
+  id: String,
+  name: String,
+  description: Option<String>,
+  tracks: Vec<Track>,
+) -> Result<bool, String> {
+  db.playlists()
+    .save_as(&id, &name, description.as_deref(), &tracks_to_db(tracks))
+    .await
+    .map_err(fail)
+}
+
 /// Replaces the name and the description.
 #[tauri_groups::command(playlists)]
 pub async fn update(
