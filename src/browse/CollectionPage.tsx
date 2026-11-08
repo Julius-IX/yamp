@@ -29,9 +29,10 @@ const shuffled = (tracks: Track[]) => {
 
 /**
  * An album or a playlist from the provider, as opposed to one in the library, so there is
- * nothing to edit. The tracks can be liked, and the collection itself can be saved. A saved
- * album is kept as such. A playlist becomes a library playlist with a copy of its tracks,
- * since the library has no notion of following a provider playlist.
+ * nothing to edit. The tracks can be liked, and the collection itself can be saved. Either one
+ * becomes a library playlist with a copy of its tracks, since the library has no notion of
+ * following a provider collection. An album keeps its own id for the playlist. That is how this
+ * page tells that the album is saved, and saving it twice cannot make two copies.
  */
 export default function CollectionPage({ kind }: { kind: "album" | "playlist" }) {
   const { id = "" } = useParams<{ id: string }>();
@@ -46,7 +47,7 @@ export default function CollectionPage({ kind }: { kind: "album" | "playlist" })
   useEffect(() => {
     if (kind !== "album") return setSaved(false);
     let stale = false;
-    COMMANDS.albums.isSaved({ id }).then((v) => !stale && setSaved(v)).catch(() => {});
+    COMMANDS.playlists.get({ id }).then((p) => !stale && setSaved(p !== null)).catch(() => {});
     return () => {
       stale = true;
     };
@@ -68,8 +69,13 @@ export default function CollectionPage({ kind }: { kind: "album" | "playlist" })
     if (!data || !title) return;
     try {
       if (kind === "album") {
-        if (saved) await COMMANDS.albums.remove({ id });
-        else await COMMANDS.albums.save({ album: { id, title, artist: artist ?? "", cover: cover ?? null, releaseYear: year ?? null }, tracks });
+        if (saved) {
+          await COMMANDS.playlists.delete({ id });
+        } else {
+          // a playlist shows the thumbnail of its first track, and the tracks of an album can come without one
+          const withCover = tracks.map((t) => (t.thumbnail ? t : { ...t, thumbnail: cover ?? null }));
+          await COMMANDS.playlists.saveAs({ id, name: title, description: [artist, year].filter(Boolean).join(" · ") || null, tracks: withCover });
+        }
         setSaved(!saved);
       } else if (!saved) {
         const created = await COMMANDS.playlists.create({ name: title });
