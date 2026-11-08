@@ -1,6 +1,7 @@
 //! One store per area of the library. Each is a thin handle on the shared pool.
 
 mod artist;
+pub(crate) mod cover;
 mod download;
 mod like;
 pub(crate) mod ordered;
@@ -8,6 +9,7 @@ mod playlist;
 pub(crate) mod track;
 
 pub use artist::{Artist, Artists, FollowedArtist};
+pub use cover::{COVER_SIZE, PlaylistCovers};
 pub use download::{Download, Downloads};
 pub use like::Likes;
 pub use playlist::{Playlist, Playlists};
