@@ -103,12 +103,17 @@ impl PlaylistCovers {
 }
 
 fn scale(bytes: &[u8]) -> Result<Vec<u8>> {
+  scale_to(bytes, COVER_SIZE)
+}
+
+/// The middle square of the image as a JPEG, at most `edge` pixels wide.
+pub(crate) fn scale_to(bytes: &[u8], edge: u32) -> Result<Vec<u8>> {
   let image = ImageReader::new(Cursor::new(bytes))
     .with_guessed_format()?
     .decode()
     .map_err(|e| Error::Invalid(format!("the image could not be read: {e}")))?;
 
-  let side = image.width().min(image.height()).min(COVER_SIZE);
+  let side = image.width().min(image.height()).min(edge);
   // JPEG has no alpha, so a transparent picture is flattened here
   let square = image.resize_to_fill(side, side, FilterType::Lanczos3).to_rgb8();
 

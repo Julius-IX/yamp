@@ -22,6 +22,7 @@ A store takes the `Track` it is given and saves its metadata in the same transac
 | `artists()` | Followed artists |
 | `playlists()` | Playlists, with reordering |
 | `downloads()` | Records of downloaded audio |
+| `locals()` | Folders with local audio, the tracks found in them, and the downloads and those tracks listed as one |
 
 Timestamps are milliseconds since the Unix epoch.
 
@@ -59,6 +60,14 @@ Ids are limited to letters, digits, `-` and `_` for that reason.
 
 Downloads belong to one device and are never linked.
 
+## Local files
+
+`locals()` keeps a list of folders. A scan turns every audio file below them into a track, with the tags as metadata and the file name as a fallback. The track sits in `tracks` like a streamed one, so likes, playlists and the queue treat it the same. Its id is `local-` and a hash of the path, which gives the same file the same track on every scan.
+
+A scan reads the tags of a file only when its size or modification time changed. A folder that cannot be read keeps its tracks, since an unplugged drive looks like an empty folder.
+
+The ids with the `local-` prefix are not linked, see `0010_local_files.sql`. A like or a playlist entry of such a track is, and a device without the file skips it until it has one.
+
 ## Linking devices
 
 `Link` converges the library of every device through a private folder on the user's cloud account. It takes any `cloud_sync::CloudStore`, so the provider and its login stay with the app.
@@ -72,7 +81,7 @@ link.compact().await?;  // now and then, for example weekly
 ### What is shared
 
 Synced data:
-- Tracks
+- Tracks, except local ones
 - Likes
 - Followed artists
 - Playlists
