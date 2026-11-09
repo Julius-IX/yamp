@@ -10,7 +10,7 @@ use super::{
   kind::Kind,
   state,
 };
-use crate::{store::ordered, Result};
+use crate::{store::{is_local_id, ordered}, Result};
 
 fn to_value(doc: &impl Serialize) -> Result<Option<Value>> {
   Ok(Some(serde_json::to_value(doc)?))
@@ -171,9 +171,11 @@ async fn version_of(
 async fn keys(conn: &mut SqliteConnection, kind: Kind) -> Result<Vec<String>> {
   Ok(match kind {
     Kind::Track => {
-      sqlx::query_scalar!(r#"SELECT id AS "key!" FROM tracks"#)
+      let ids = sqlx::query_scalar!(r#"SELECT id AS "key!" FROM tracks"#)
         .fetch_all(conn)
-        .await?
+        .await?;
+      // a local track has no file on another device, and the triggers never note it for the log
+      ids.into_iter().filter(|id| !is_local_id(id)).collect()
     }
     Kind::Like => {
       sqlx::query_scalar!(r#"SELECT track_id AS "key!" FROM likes"#)
