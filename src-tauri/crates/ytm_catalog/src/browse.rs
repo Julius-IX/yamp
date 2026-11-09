@@ -25,6 +25,8 @@ pub enum Page<'a> {
   Charts(Option<&'a str>),
   /// The playlists of a mood or a genre. `params` comes from [`Mood`] and is checked by [`valid_params`].
   Mood(&'a str),
+  /// An artist page, or with `params` the full list of one of its shelves, see [`artist_singles`].
+  Artist { id: &'a str, params: Option<&'a str> },
 }
 
 impl Page<'_> {
@@ -42,6 +44,12 @@ impl Page<'_> {
       Page::Mood(params) => {
         body["browseId"] = json!("FEmusic_moods_and_genres_category");
         body["params"] = json!(params);
+      }
+      Page::Artist { id, params } => {
+        body["browseId"] = json!(id);
+        if let Some(params) = params {
+          body["params"] = json!(params);
+        }
       }
     }
     body
@@ -350,6 +358,38 @@ pub fn top_artists(page: &Value) -> Vec<Item> {
     .collect()
 }
 
+/// The releases of a card shelf or of a full listing, once each.
+pub fn releases(node: &Value) -> Vec<Item> {
+  let mut seen = HashSet::new();
+  all(node, &["musicTwoRowItemRenderer"]).into_iter().filter_map(release).filter(|r| seen.insert(r.id.clone())).collect()
+}
+
+/// The singles shelf of an artist page.
+pub struct SinglesShelf {
+  pub items: Vec<Item>,
+  /// The params of the page that lists every single, present when the shelf only shows a part.
+  pub more: Option<String>,
+}
+
+/// Reads the singles of an artist page. ytmapi-rs skips this shelf, which left the singles of
+/// every artist empty. The shelf is told apart by its title, since the request pins the language
+/// to English. A title that starts with "single" also covers the newer "Singles & EPs".
+pub fn artist_singles(page: &Value) -> SinglesShelf {
+  for shelf in all(page, &["musicCarouselShelfRenderer"]) {
+    let title = shelf.pointer("/header/musicCarouselShelfBasicHeaderRenderer/title/runs/0");
+    if !title.is_some_and(|t| run_text(t).to_ascii_lowercase().starts_with("single")) {
+      continue;
+    }
+    let more = title
+      .and_then(|t| t.pointer("/navigationEndpoint/browseEndpoint/params"))
+      .and_then(Value::as_str)
+      .filter(|p| valid_params(p))
+      .map(str::to_owned);
+    return SinglesShelf { items: releases(shelf), more };
+  }
+  SinglesShelf { items: vec![], more: None }
+}
+
 pub fn mood_playlists(page: &Value) -> Vec<Item> {
   let mut seen = HashSet::new();
   all(page, &["musicTwoRowItemRenderer"])
@@ -634,5 +674,53 @@ mod tests {
     assert_eq!(client_version(19_723 * 86_400 + 5), "1.20240101.01.00");
     assert_eq!(client_version(19_782 * 86_400 + 86_399), "1.20240229.01.00");
     assert_eq!(client_version(19_783 * 86_400), "1.20240301.01.00");
+  }
+
+  fn titled_shelf(title: &str, params: Option<&str>, contents: Vec<Value>) -> Value {
+    let mut run = json!({ "text": title, "navigationEndpoint": { "browseEndpoint": { "browseId": "UCartist" } } });
+    if let Some(params) = params {
+      run["navigationEndpoint"]["browseEndpoint"]["params"] = json!(params);
+    }
+    json!({ "musicCarouselShelfRenderer": {
+      "header": { "musicCarouselShelfBasicHeaderRenderer": { "title": { "runs": [run] } } },
+      "contents": contents,
+    } })
+  }
+
+  #[test]
+  fn the_singles_shelf_of_an_artist_is_found_with_its_link_to_the_full_list() {
+    let page = page(vec![
+      titled_shelf("Albums", Some("albumsparams"), vec![album_card("MPREb_album", "Album", "Album", "Band", Some("2020"))]),
+      titled_shelf("Singles & EPs", Some("singlesparams"), vec![
+        album_card("MPREb_one", "One", "Single", "Band", Some("2021")),
+        album_card("MPREb_two", "Two", "EP", "Band", Some("2022")),
+        album_card("MPREb_one", "One", "Single", "Band", Some("2021")),
+      ]),
+    ]);
+    let shelf = artist_singles(&page);
+    assert_eq!(shelf.items.iter().map(|i| i.id.as_str()).collect::<Vec<_>>(), ["MPREb_one", "MPREb_two"]);
+    assert_eq!(shelf.items[1].label.as_deref(), Some("EP"));
+    assert_eq!(shelf.more.as_deref(), Some("singlesparams"));
+  }
+
+  #[test]
+  fn a_singles_shelf_that_shows_everything_has_no_link_to_more() {
+    let page = page(vec![titled_shelf("Singles", None, vec![album_card("MPREb_one", "One", "Single", "Band", None)])]);
+    let shelf = artist_singles(&page);
+    assert_eq!(shelf.items.len(), 1);
+    assert!(shelf.more.is_none());
+  }
+
+  #[test]
+  fn an_artist_without_singles_has_an_empty_shelf() {
+    let page = page(vec![titled_shelf("Albums", None, vec![album_card("MPREb_album", "Album", "Album", "Band", None)])]);
+    let shelf = artist_singles(&page);
+    assert!(shelf.items.is_empty() && shelf.more.is_none());
+  }
+
+  #[test]
+  fn params_that_are_not_safe_to_send_are_not_followed() {
+    let page = page(vec![titled_shelf("Singles", Some("bad params/"), vec![])]);
+    assert!(artist_singles(&page).more.is_none());
   }
 }
