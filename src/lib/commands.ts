@@ -60,7 +60,7 @@ export const COMMANDS = {
     search: (args: { query: string; limit?: number | null }) => invoke<Track[]>("media__search", args),
     searchItems: (args: { query: string; kind: ItemKind; limit?: number | null }) => invoke<Item[]>("media__search_items", args),
     searchVideos: (args: { query: string; limit?: number | null }) => invoke<Track[]>("media__search_videos", args),
-    stream: (args: { id: string; quality?: AudioQuality | null }) => invoke<StreamInfo>("media__stream", args),
+    stream: (args: { id: string; quality?: AudioQuality | null; now?: boolean | null }) => invoke<StreamInfo>("media__stream", args),
     topArtists: (args?: { country?: string | null }) => invoke<Item[]>("media__top_artists", args),
     track: (args: { id: string }) => invoke<Track>("media__track", args),
   },

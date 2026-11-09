@@ -13,9 +13,11 @@ import android.graphics.drawable.Icon
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import app.tauri.plugin.JSObject
 import java.net.HttpURLConnection
@@ -35,6 +37,12 @@ object SessionHost {
     private const val ACTION_NEXT = "com.salad.yamp.session.NEXT"
     private const val SEEK_STEP_SECS = 10.0
 
+    /** How long a pause is waited out before the service lets go. A track change pauses for a moment, and a service that let go cannot always be pinned again from the background. */
+    private const val RELEASE_GRACE_MS = 8_000L
+
+    /** Safety net against a lock that is never released. Every playing update renews it. */
+    private const val LOCK_MAX_MS = 3 * 60 * 60 * 1000L
+
     /** Sends an action to the frontend. Set once the frontend has started listening. */
     var onAction: ((JSObject) -> Unit)? = null
 
@@ -49,6 +57,19 @@ object SessionHost {
     private var coverUrl: String? = null
     private var cover: Bitmap? = null
     private val main = Handler(Looper.getMainLooper())
+    private var wakeLock: PowerManager.WakeLock? = null
+    private var wifiLock: WifiManager.WifiLock? = null
+
+    /** Whether the last update said something is playing. */
+    val isPlaying: Boolean get() = last?.playing == true
+
+    private val release = Runnable {
+        PlaybackService.instance?.stopForeground(Service.STOP_FOREGROUND_DETACH)
+        PlaybackService.pinned = false
+        releaseAwake()
+        // a paused notification can be swiped away once the service let go of it
+        notification?.let { manager().notify(NOTIFICATION_ID, it) }
+    }
 
     @Synchronized
     fun attach(app: Context) {
@@ -137,17 +158,49 @@ object SessionHost {
         val built = buildNotification(session, args)
         notification = built
         if (args.playing) {
-            try {
-                ContextCompat.startForegroundService(context, Intent(context, PlaybackService::class.java))
-            } catch (e: Exception) {
-                // a start from the background can be refused, the plain notification still works
+            main.removeCallbacks(release)
+            holdAwake()
+            if (PlaybackService.pinned) {
+                // already in the foreground, only the notification changes
                 manager().notify(NOTIFICATION_ID, built)
+            } else {
+                try {
+                    ContextCompat.startForegroundService(context, Intent(context, PlaybackService::class.java))
+                } catch (e: Exception) {
+                    // a start from the background can be refused, the plain notification still works
+                    manager().notify(NOTIFICATION_ID, built)
+                }
             }
         } else {
-            // a paused notification can be swiped away, so it is let go of by the service
-            PlaybackService.instance?.stopForeground(Service.STOP_FOREGROUND_DETACH)
             manager().notify(NOTIFICATION_ID, built)
+            main.removeCallbacks(release)
+            main.postDelayed(release, RELEASE_GRACE_MS)
         }
+    }
+
+    /**
+     * A foreground service keeps the process alive but not the cpu or the wifi radio. With the
+     * screen off both go to sleep, the stream stops filling and the next track is never looked up.
+     */
+    @Suppress("DEPRECATION")
+    private fun holdAwake() {
+        val power = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+        val cpu = wakeLock ?: power.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "yamp:playback").also {
+            it.setReferenceCounted(false)
+            wakeLock = it
+        }
+        cpu.acquire(LOCK_MAX_MS)
+        val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val radio = wifiLock ?: wifi.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "yamp:playback").also {
+            it.setReferenceCounted(false)
+            wifiLock = it
+        }
+        if (!radio.isHeld) radio.acquire()
+    }
+
+    private fun releaseAwake() {
+        wakeLock?.takeIf { it.isHeld }?.release()
+        wifiLock?.takeIf { it.isHeld }?.release()
     }
 
     private fun clear(session: MediaSession) {
@@ -156,6 +209,9 @@ object SessionHost {
         coverUrl = null
         cover = null
         session.isActive = false
+        main.removeCallbacks(release)
+        releaseAwake()
+        PlaybackService.pinned = false
         PlaybackService.instance?.stopSelf()
         manager().cancel(NOTIFICATION_ID)
     }

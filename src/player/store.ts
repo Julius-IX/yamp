@@ -50,6 +50,8 @@ const RESTART_AFTER_SECS = 3;
 const SAVE_EVERY_MS = 15_000;
 /** A stream URL stays usable for hours, a prefetched one is dropped after this to be safe. */
 const PREFETCH_MAX_AGE_MS = 20 * 60_000;
+/** How long a failed lookup ahead of time is left alone before it is tried again. */
+const PREFETCH_RETRY_MS = 15_000;
 /** How many related tracks autoplay appends at once. */
 const AUTOPLAY_BATCH = 15;
 
@@ -61,15 +63,15 @@ let time: PlayerTime = { position: 0, duration: 0 };
 let original: Track[] = [];
 /** Bumped by every load, so a stream that resolves after a newer request is dropped. */
 let token = 0;
+/** Bumped by every pick of something to play. See `beginPick`. */
+let picks = 0;
 let extending = false;
 /** Stream URLs resolved ahead of time. Resolving is the slow part of starting a track. */
 const prefetched = new Map<string, { url: string; at: number }>();
 /** Ids whose lookup is under way. The next track can change several times in a row, and a lookup is a whole yt-dlp run. */
 const resolving = new Set<string>();
-/** Fetching the audio itself ahead of time fills the HTTP cache the main element reads from. */
-const warm = new Audio();
-warm.preload = "auto";
-warm.muted = true;
+/** Ids whose last lookup ahead of time failed, and when. A phone loses its network often, so a lookup is tried again after a pause and not only when the playing track changes. */
+const prefetchFailed = new Map<string, number>();
 let lastSave = 0;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
@@ -142,6 +144,14 @@ const shuffled = <T>(list: T[]): T[] => {
   return out;
 };
 
+/**
+ * For a list that has to be loaded before it can play. The list takes a number first and checks
+ * it with `stillWanted` once it has loaded, so a slow one does not replace a song that was
+ * picked in the meantime.
+ */
+export const beginPick = () => ++picks;
+export const stillWanted = (pick: number) => pick === picks;
+
 // SECTION: loading
 
 /** Resolves the stream right before playing, since the URL expires and is never stored. */
@@ -188,7 +198,8 @@ async function streamUrl(track: Track): Promise<string> {
   const hit = prefetched.get(track.id);
   prefetched.delete(track.id);
   if (hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS) return hit.url;
-  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality) })).url;
+  // `now` lets the backend stop the lookup of a track that was picked before this one
+  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality), now: true })).url;
 }
 
 /**
@@ -203,6 +214,7 @@ function prefetchNext() {
   const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
   // a station is live, so there is nothing to warm up and looking it up early would count a listener
   if (!next || isRadio(next.id) || next.id === queue[index]?.id || prefetched.has(next.id) || resolving.has(next.id)) return;
+  if (Date.now() - (prefetchFailed.get(next.id) ?? 0) < PREFETCH_RETRY_MS) return;
   resolving.add(next.id);
   // a file on the device needs no warming up and a stream would only waste bandwidth
   localUrl(next)
@@ -210,12 +222,15 @@ function prefetchNext() {
       if (local) return;
       return COMMANDS.media.stream({ id: next.id, quality: getSetting("quality", "high", isQuality) }).then((info) => {
         prefetched.set(next.id, { url: info.url, at: Date.now() });
+        prefetchFailed.delete(next.id);
         // only the nearest track is worth the bandwidth, older entries are not coming up
         for (const id of [...prefetched.keys()].slice(0, -2)) prefetched.delete(id);
-        warm.src = info.url;
       });
     })
-    .catch((e) => log.warn(`couldn't prefetch ${next.title}:`, e))
+    .catch((e) => {
+      prefetchFailed.set(next.id, Date.now());
+      log.warn(`couldn't prefetch ${next.title}:`, e);
+    })
     .finally(() => resolving.delete(next.id));
 }
 
@@ -270,6 +285,8 @@ audio.addEventListener("pause", () => {
 });
 audio.addEventListener("timeupdate", () => {
   setTime(audio.currentTime);
+  // cheap when there is nothing to do, and it is what retries a lookup that failed
+  prefetchNext();
   if (Date.now() - lastSave > SAVE_EVERY_MS) save();
 });
 // a closed or backgrounded app may be killed without a pause event
@@ -309,6 +326,7 @@ export const player = {
   /** Replaces the queue and starts at `startIndex`. */
   play(tracks: Track[], startIndex = 0) {
     if (tracks.length === 0) return;
+    picks++;
     const first = tracks[startIndex] ?? tracks[0];
     original = tracks;
     if (read().shuffle) {
@@ -323,6 +341,7 @@ export const player = {
 
   /** Plays an entry that is already in the queue. */
   jumpTo(index: number) {
+    picks++;
     void start(index);
   },
 

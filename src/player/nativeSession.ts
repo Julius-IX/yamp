@@ -30,7 +30,8 @@ function publish() {
       // the provider does not always know the length before the stream is open
       durationSecs: time.duration || track?.durationSecs || null,
       positionSecs: time.position,
-      playing: state.playing,
+      // a track change pauses and resolves the next stream for a while, which still counts as playing
+      playing: state.playing || state.loading,
     })
     .catch((e) => log.warn("couldn't publish the playing track:", e));
 }
@@ -70,7 +71,7 @@ export function useNativeSession() {
   useEffect(() => {
     if (IS_IOS) return;
     publish();
-  }, [track?.id, state.playing]);
+  }, [track?.id, state.playing, state.loading]);
 
   useEffect(() => {
     if (IS_IOS) return;

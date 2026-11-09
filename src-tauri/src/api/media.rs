@@ -84,6 +84,13 @@ pub async fn stream(
   api: State<'_, YtApi>,
   id: String,
   quality: Option<AudioQuality>,
+  // set for the track that is about to play, a newer one stops the lookup of the one before it
+  now: Option<bool>,
 ) -> Result<StreamInfo, String> {
-  api.stream(&id, quality.unwrap_or_default()).await.map_err(err)
+  let quality = quality.unwrap_or_default();
+  if now.unwrap_or(false) {
+    api.stream_now(&id, quality).await.map_err(err)
+  } else {
+    api.stream(&id, quality).await.map_err(err)
+  }
 }

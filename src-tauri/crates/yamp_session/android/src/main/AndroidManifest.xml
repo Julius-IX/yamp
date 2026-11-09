@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Wake and wifi locks while playing, see SessionHost. -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Asked for at runtime from Android 13 on, without it the notification is not shown. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

@@ -16,12 +16,14 @@
 
 mod backend;
 mod error;
+mod latest;
 mod model;
 mod queue;
 pub mod ytdlp;
 
 pub use backend::{Backend, Catalog, Downloader, MediaSource, ProgressSink, Updater};
 pub use error::{MediaError, Result};
+pub use latest::Latest;
 pub use model::{
   AlbumPage, ArtistPage, AudioQuality, DownloadJob, DownloadedFile, EngineStatus, Explore, Item,
   ItemKind, JobState, Mood, Playlist, StreamInfo, TopSong, Track,

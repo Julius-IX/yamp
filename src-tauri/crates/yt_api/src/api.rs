@@ -1,6 +1,6 @@
 use yamp_media::{
   AlbumPage, ArtistPage, AudioQuality, Backend, DownloadJob, DownloadQueue, EngineStatus, Explore,
-  Item, ItemKind, Playlist, Result, StreamInfo, Track,
+  Item, ItemKind, Latest, MediaError, Playlist, Result, StreamInfo, Track,
 };
 
 const DEFAULT_LIMIT: usize = 25;
@@ -8,19 +8,24 @@ const DEFAULT_LIMIT: usize = 25;
 pub struct YtApi {
   backend: Backend,
   queue: DownloadQueue,
+  /// The lookup of the track that is wanted now, see [`YtApi::stream_now`].
+  playing: Latest,
 }
 
 /// Failures are logged here once, so every caller gets the same trace without repeating it.
 fn logged<T>(op: &str, result: Result<T>) -> Result<T> {
-  if let Err(e) = &result {
-    log::warn!("{op} failed: {e}");
+  match &result {
+    // a newer lookup took over on purpose, so there is nothing to report
+    Err(MediaError::Cancelled) => log::debug!("{op} cancelled"),
+    Err(e) => log::warn!("{op} failed: {e}"),
+    Ok(_) => {}
   }
   result
 }
 
 impl YtApi {
   pub(crate) fn new(backend: Backend, queue: DownloadQueue) -> Self {
-    Self { backend, queue }
+    Self { backend, queue, playing: Latest::new() }
   }
 
   // SECTION: reading from the provider
@@ -99,6 +104,16 @@ impl YtApi {
   /// A playable URL that expires, so it should be resolved right before playback.
   pub async fn stream(&self, id: &str, quality: AudioQuality) -> Result<StreamInfo> {
     logged("stream lookup", self.backend.source.stream(id, quality).await)
+  }
+
+  /// Like [`YtApi::stream`] for the track that is wanted right now. A newer call stops the one
+  /// still under way, which then fails with [`MediaError::Cancelled`]. Playback only ever waits
+  /// for the newest one. Lookups ahead of time go through `stream`, those must not be stopped by
+  /// a track that is picked and must not stop it either.
+  pub async fn stream_now(&self, id: &str, quality: AudioQuality) -> Result<StreamInfo> {
+    let source = self.backend.source.clone();
+    let id = id.to_owned();
+    logged("stream lookup", self.playing.run(async move { source.stream(&id, quality).await }).await)
   }
 
   // SECTION: download queue

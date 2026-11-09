@@ -168,6 +168,38 @@ impl YtMusicCatalog {
       .map_err(network)?;
     serde_json::from_slice(&bytes).map_err(|e| MediaError::Engine(format!("youtube music: unreadable page: {e}")))
   }
+
+  /// The singles of an artist, which ytmapi-rs does not read, see [`browse::artist_singles`].
+  /// The shelf of the artist page may only show a part of them, then the full list is asked for.
+  /// Without them the rest of the artist is still worth showing, so a failure is logged and not returned.
+  async fn singles(&self, id: &str, artist: &str) -> Vec<Item> {
+    let shelf = match self.page(Page::Artist { id, params: None }).await {
+      Ok(page) => browse::artist_singles(&page),
+      Err(e) => {
+        log::warn!("no singles for artist {id}: {e}");
+        return vec![];
+      }
+    };
+    let items = match shelf.more {
+      Some(params) => match self.page(Page::Artist { id, params: Some(&params) }).await {
+        Ok(full) => Some(browse::releases(&full)).filter(|all| !all.is_empty()).unwrap_or(shelf.items),
+        Err(e) => {
+          log::warn!("partial singles for artist {id}: {e}");
+          shelf.items
+        }
+      },
+      None => shelf.items,
+    };
+    // the cards of an artist page leave out the artist, and the label when the shelf is only singles
+    items
+      .into_iter()
+      .map(|item| Item {
+        subtitle: item.subtitle.or_else(|| Some(artist.to_owned())),
+        label: item.label.or_else(|| Some("Single".to_owned())),
+        ..item
+      })
+      .collect()
+  }
 }
 
 #[async_trait]
@@ -292,7 +324,7 @@ impl Catalog for YtMusicCatalog {
       .collect();
 
     let albums = releases.albums.iter().flat_map(|a| &a.results).map(|a| release_item(a, &name, "Album")).collect();
-    let singles = releases.singles.iter().flat_map(|a| &a.results).map(|a| release_item(a, &name, "Single")).collect();
+    let singles = self.singles(id, &name).await;
     let videos = releases.videos.iter().flat_map(|v| &v.results).filter_map(video_track).collect();
     let related = releases
       .related
