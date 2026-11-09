@@ -4,6 +4,7 @@ mod artists;
 mod downloads;
 mod engine;
 mod likes;
+mod local;
 mod media;
 mod playlists;
 mod queue;
