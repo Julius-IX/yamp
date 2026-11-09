@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import {
   Box,
@@ -108,7 +108,9 @@ export default function LogView() {
     )
     .slice(-MAX_ROWS);
 
-  useEffect(() => {
+  // A layout effect on purpose, since a regular one runs after the paint. The new row is then drawn
+  // below the visible part for one frame before the scroll catches up, which shows as a jitter.
+  useLayoutEffect(() => {
     const el = scroller.current;
     if (follow && el) el.scrollTop = el.scrollHeight;
   }, [visible, follow]);
@@ -169,6 +171,8 @@ export default function LogView() {
           flex: 1,
           minHeight: 0,
           overflow: "auto",
+          // the scroll is positioned by hand, an anchor adjustment on top of it would fight that
+          overflowAnchor: "none",
           fontFamily: "monospace",
           fontSize: 12,
           border: 1,
