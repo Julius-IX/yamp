@@ -31,15 +31,21 @@ class PlaybackService : Service() {
         } else {
             startForeground(SessionHost.NOTIFICATION_ID, notification)
         }
+        pinned = true
         return START_NOT_STICKY
     }
 
     override fun onDestroy() {
         instance = null
+        pinned = false
         super.onDestroy()
     }
 
     companion object {
         var instance: PlaybackService? = null
+
+        /** Whether the service is in the foreground. A start from the background is refused on newer Android, so this is checked before asking for one. */
+        @Volatile
+        var pinned = false
     }
 }
