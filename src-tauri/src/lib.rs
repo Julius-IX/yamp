@@ -31,8 +31,11 @@ pub fn run() {
 
   let builder = tauri::Builder::default()
     .plugin(tauri_plugin_opener::init())
+    // the folder picker for the local music folders of the data settings
+    .plugin(tauri_plugin_dialog::init())
     .plugin(yt_api::init())
-    .plugin(yamp_session::init());
+    .plugin(yamp_session::init())
+    .plugin(yamp_storage::init());
   // a sign in on a phone is answered with a link of a scheme of this app, which the system hands over
   #[cfg(any(target_os = "android", target_os = "ios"))]
   let builder = builder.plugin(tauri_plugin_deep_link::init());

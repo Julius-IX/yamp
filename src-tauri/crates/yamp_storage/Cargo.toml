@@ -1,0 +1,14 @@
+[package]
+name = "yamp-storage"
+version = "0.1.0"
+edition = "2024"
+# required by tauri-plugin, the crate registers itself as a plugin to reach the app handle
+links = "yamp-storage"
+
+[dependencies]
+log = "0.4"
+tauri = "2"
+serde = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

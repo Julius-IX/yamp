@@ -9,7 +9,8 @@
 //! meanwhile do not merge, the later change wins. That is simple to reason about and
 //! right for a library, where nobody edits the same playlist on two devices at once.
 //!
-//! Downloaded audio is not shared. A file exists on one device only.
+//! Downloaded audio and local files are not shared. A file exists on one device only, and so does the
+//! metadata of a local track, see `store::local`.
 //!
 //! The folder has one subfolder per device that only this device writes, which is the
 //! rule `cloud-kit` asks for since no backend has atomic writes:

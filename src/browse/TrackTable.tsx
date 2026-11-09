@@ -3,12 +3,14 @@ import CloseIcon from "@mui/icons-material/Close";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { useIsLiked } from "@/lib/likes";
+import { useDownloadStatus } from "@/lib/local";
 import type { Track } from "@/lib/types";
 import Cover from "@/player/Cover";
 import LikeButton from "@/player/LikeButton";
 import { currentTrack, player, usePlayer } from "@/player/store";
 import { IS_MOBILE } from "@/util/platform";
 import AddToPlaylist from "@/library/AddToPlaylist";
+import DownloadButton from "@/library/DownloadButton";
 import ArtistLink from "./ArtistLink";
 import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 
@@ -16,8 +18,8 @@ import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 const columns = (plays: boolean) =>
   IS_MOBILE ? "32px minmax(0, 1fr)" : `40px minmax(0, 1.4fr) minmax(0, 1fr)${plays ? " 96px" : ""}`;
 const BUTTON = 40;
-/** The queue, playlist and like buttons, and the remove button when the table can remove. */
-const actionsWidth = (removable: boolean) => BUTTON * (removable ? 4 : 3);
+/** The queue, playlist, download and like buttons, and the remove button when the table can remove. */
+const actionsWidth = (removable: boolean) => BUTTON * (removable ? 5 : 4);
 
 /**
  * One slot of the action buttons. Every button sits in the same fixed box, centered on both axes,
@@ -41,6 +43,7 @@ type RowProps = {
  */
 function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowProps) {
   const liked = useIsLiked(track.id);
+  const download = useDownloadStatus(track.id);
   return (
     <Box
       role="button"
@@ -84,7 +87,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
       </Box>
 
       <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-        {/* the buttons only show on hover, except a liked heart, and always where there is no hover */}
+        {/* the buttons only show on hover, except a liked heart or a download, and always where there is no hover */}
         <Box className="row-action" sx={cell(true)}>
           <Tooltip title="Add to queue (Shift: play next)">
             <IconButton
@@ -97,6 +100,10 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
         </Box>
         <Box className="row-action" sx={cell(true)}>
           <AddToPlaylist track={track} />
+        </Box>
+        {/* a download that is under way or done stays visible, like a liked heart */}
+        <Box className="row-action" sx={cell(download !== "none")}>
+          <DownloadButton track={track} />
         </Box>
         <Box className="row-action" sx={cell(liked)}>
           <LikeButton track={track} size="small" />

@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from "react";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
+import { isLocalFile } from "@/lib/local";
 import { getSetting, isBoolean, isNumber, setSetting } from "@/lib/settings";
 import type { AudioQuality, Track } from "@/lib/types";
+import { IS_MOBILE } from "@/util/platform";
 import { recordPlayed } from "./history";
 import { loadPlayback, savePlayback } from "./persist";
 
@@ -59,6 +62,8 @@ let token = 0;
 let extending = false;
 /** Stream URLs resolved ahead of time. Resolving is the slow part of starting a track. */
 const prefetched = new Map<string, { url: string; at: number }>();
+/** Ids whose lookup is under way. The next track can change several times in a row, and a lookup is a whole yt-dlp run. */
+const resolving = new Set<string>();
 /** Fetching the audio itself ahead of time fills the HTTP cache the main element reads from. */
 const warm = new Audio();
 warm.preload = "auto";
@@ -160,28 +165,53 @@ async function start(index: number, resumeAt = 0, retried = false): Promise<void
   }
 }
 
+/**
+ * A file on this device wins over a stream. It plays without a network and its URL does not
+ * expire. Desktop gets a URL of the file server, since not every desktop webview plays from the
+ * asset protocol, a phone gets the asset protocol.
+ */
+async function localUrl(track: Track): Promise<string | null> {
+  if (!IS_MOBILE) return COMMANDS.local.url({ trackId: track.id });
+  const path = await COMMANDS.local.path({ trackId: track.id });
+  return path && convertFileSrc(path);
+}
+
 async function streamUrl(track: Track): Promise<string> {
+  const local = await localUrl(track);
+  if (local) return local;
+  // a track from a folder has no provider to stream from, so a vanished file ends here
+  if (isLocalFile(track.id)) throw new Error("the file of this song is not available");
   const hit = prefetched.get(track.id);
   prefetched.delete(track.id);
   if (hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS) return hit.url;
   return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality) })).url;
 }
 
-/** Resolves and starts loading the track after the playing one, when the setting allows it. */
+/**
+ * Resolves and starts loading the track after the playing one, when the setting allows it. It is
+ * called again whenever the track that comes next may have changed, since a track that was just
+ * queued would otherwise be looked up only when the one before it ends.
+ */
 function prefetchNext() {
   if (!getSetting("prefetch", true, isBoolean)) return;
   const { queue, index, repeat } = read();
+  if (index < 0) return;
   const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
-  if (!next || next.id === queue[index]?.id || prefetched.has(next.id)) return;
-  COMMANDS.media
-    .stream({ id: next.id, quality: getSetting("quality", "high", isQuality) })
-    .then((info) => {
-      prefetched.set(next.id, { url: info.url, at: Date.now() });
-      // only the nearest track is worth the bandwidth, older entries are not coming up
-      for (const id of [...prefetched.keys()].slice(0, -2)) prefetched.delete(id);
-      warm.src = info.url;
+  if (!next || next.id === queue[index]?.id || prefetched.has(next.id) || resolving.has(next.id)) return;
+  resolving.add(next.id);
+  // a file on the device needs no warming up and a stream would only waste bandwidth
+  localUrl(next)
+    .then((local) => {
+      if (local) return;
+      return COMMANDS.media.stream({ id: next.id, quality: getSetting("quality", "high", isQuality) }).then((info) => {
+        prefetched.set(next.id, { url: info.url, at: Date.now() });
+        // only the nearest track is worth the bandwidth, older entries are not coming up
+        for (const id of [...prefetched.keys()].slice(0, -2)) prefetched.delete(id);
+        warm.src = info.url;
+      });
     })
-    .catch((e) => log.warn(`couldn't prefetch ${next.title}:`, e));
+    .catch((e) => log.warn(`couldn't prefetch ${next.title}:`, e))
+    .finally(() => resolving.delete(next.id));
 }
 
 /** A stream URL that expired while paused fails on resume, so it is resolved once more at the same spot. */
@@ -326,6 +356,7 @@ export const player = {
     const playing = original.indexOf(queue[index]);
     const originalAt = where === "next" && playing >= 0 ? playing + 1 : original.length;
     original = [...original.slice(0, originalAt), ...tracks, ...original.slice(originalAt)];
+    prefetchNext();
   },
 
   removeAt(i: number) {
@@ -337,6 +368,7 @@ export const player = {
     if (inOriginal >= 0) original = original.filter((_, n) => n !== inOriginal);
     if (i !== index) {
       set({ queue: next, index: i < index ? index - 1 : index });
+      prefetchNext();
     } else if (next.length === 0) {
       set({ queue: next });
       player.clear();
@@ -389,12 +421,15 @@ export const player = {
     } else {
       set({ shuffle: on, queue: original, index: Math.max(0, original.indexOf(playing)) });
     }
+    prefetchNext();
   },
 
   cycleRepeat() {
     const repeat = REPEATS[(REPEATS.indexOf(read().repeat) + 1) % REPEATS.length];
     setSetting("repeat", repeat);
     set({ repeat });
+    // repeating all makes the first track the one after the last
+    prefetchNext();
   },
 };
 

@@ -128,6 +128,47 @@ impl From<db::Download> for DownloadRecord {
   }
 }
 
+/// A folder of the device with the folders inside it, for choosing one where the system has no
+/// picker for it.
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalFolder {
+  pub path: String,
+  /// None at the top.
+  pub parent: Option<String>,
+  pub dirs: Vec<LocalFolderEntry>,
+}
+
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalFolderEntry {
+  pub name: String,
+  pub path: String,
+}
+
+/// What the local songs take, split by where the files came from.
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalUsage {
+  /// Songs that were downloaded in the app.
+  pub downloaded_songs: u64,
+  pub downloaded_bytes: u64,
+  /// Songs that were found in the folders the user added.
+  pub folder_songs: u64,
+  pub folder_bytes: u64,
+}
+
+impl From<db::LocalUsage> for LocalUsage {
+  fn from(u: db::LocalUsage) -> Self {
+    Self {
+      downloaded_songs: u.downloaded.songs,
+      downloaded_bytes: u.downloaded.bytes,
+      folder_songs: u.folders.songs,
+      folder_bytes: u.folders.bytes,
+    }
+  }
+}
+
 /// A cloud service the library can be linked to in this build.
 #[derive(Serialize, TsType)]
 #[serde(rename_all = "camelCase")]

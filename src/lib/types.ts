@@ -96,6 +96,24 @@ export type LibraryPlaylist = {
   updatedMs: number;
 }
 
+export type LocalFolder = {
+  path: string;
+  parent: string | null;
+  dirs: LocalFolderEntry[];
+}
+
+export type LocalFolderEntry = {
+  name: string;
+  path: string;
+}
+
+export type LocalUsage = {
+  downloadedSongs: number;
+  downloadedBytes: number;
+  folderSongs: number;
+  folderBytes: number;
+}
+
 export type LogEntry = {
   id: number;
   ts: number;

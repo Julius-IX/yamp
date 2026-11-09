@@ -7,10 +7,13 @@ use std::{
     Arc, PoisonError, RwLock,
     atomic::{AtomicBool, Ordering},
   },
+  time::Duration,
 };
 
 use cloud_auth::TokenStore;
 use cloud_sync::{CloudStore, Provider};
+use file_server::FileServer;
+use folder_watch::FolderWatch;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, Listener, Manager};
 use tauri_settings::Settings;
@@ -28,13 +31,24 @@ const TOKENS_FILE: &str = "cloud_tokens.json";
 /// Event with a track id as payload, sent once a finished download is part of the library.
 pub const DOWNLOADED_EVENT: &str = "library:downloaded";
 
+/// Event without payload, sent when the local songs changed because a folder was removed or a scan
+/// found new or deleted files.
+pub const LOCAL_EVENT: &str = "library:local";
+
 /// Opens the library and registers it as managed state. Needs to run inside `setup`.
 pub fn init(app: &AppHandle) -> Result<(), Box<dyn Error>> {
   let data_dir = app.path().app_data_dir()?;
   // The folder sits below the one `yt-api` downloads into, so the asset protocol scope for
   // `$APPDATA/music` covers it. It is a folder of its own because a repair deletes every file
   // that no record names, which would include a download that is still running.
-  let media_dir = data_dir.join("music").join("library");
+  let media_dir = data_dir.join("music").join("downloads");
+  // an earlier version called the folder `library`, which says nothing about what is in it
+  let old_dir = data_dir.join("music").join("library");
+  if old_dir.is_dir() && !media_dir.exists() {
+    if let Err(e) = std::fs::rename(&old_dir, &media_dir) {
+      log::warn!("could not rename the download folder: {e}");
+    }
+  }
 
   let (db, media) = tauri::async_runtime::block_on(async {
     let db = Db::open(data_dir.join(DB_FILE)).await?;
@@ -54,11 +68,26 @@ pub fn init(app: &AppHandle) -> Result<(), Box<dyn Error>> {
     Err(e) => log::warn!("download repair failed: {e}"),
   }
 
+  let watch = start_watch(app);
+  // The asset protocol only serves what its scope names, and the folders of the user are not
+  // below the data folder. Playing a song before the first scan has finished needs them already.
+  for dir in tauri::async_runtime::block_on(db.locals().dirs()).unwrap_or_default() {
+    allow_dir(app, Path::new(&dir));
+    if let Some(watch) = &watch {
+      if let Err(e) = watch.watch(Path::new(&dir)) {
+        log::warn!("could not watch {dir}: {e}");
+      }
+    }
+  }
+  app.manage(Watch(watch));
+  app.manage(Serve(start_server(&db, &media)));
+
   adopt_finished_downloads(app, db.clone(), media.clone());
   app.manage(SyncState::default());
   app.manage(TokenStore::new(data_dir.join(TOKENS_FILE)));
   app.manage(db);
   app.manage(media);
+  scan_all(app);
   restore_link(app);
   log::info!("library ready");
   Ok(())
@@ -97,6 +126,114 @@ async fn adopt(db: &Db, media: &MediaStore, id: &str, path: &Path) -> yamp_db::R
   };
   media.import(&track, path).await?;
   Ok(true)
+}
+
+/// Reports changes below the added folders, so a file that is copied in shows up without a restart.
+/// `None` when the system cannot watch, the scans at the start and at focus still cover that.
+pub struct Watch(pub Option<FolderWatch>);
+
+/// Serves audio files to the webview, on desktop. `None` on a phone, where the asset protocol
+/// plays them and Android refuses plain HTTP requests to a local port.
+pub struct Serve(pub Option<FileServer>);
+
+fn start_watch(app: &AppHandle) -> Option<FolderWatch> {
+  let handle = app.clone();
+  // a copy of an album is over after a moment of quiet, which is when it is worth a scan
+  let watch = FolderWatch::new(Duration::from_secs(2), move |dir| {
+    if let Some(dir) = dir.to_str() {
+      scan_dirs(&handle, vec![dir.to_owned()]);
+    }
+  });
+  watch.map_err(|e| log::warn!("folders cannot be watched: {e}")).ok()
+}
+
+fn start_server(db: &Db, media: &MediaStore) -> Option<FileServer> {
+  if cfg!(any(target_os = "android", target_os = "ios")) {
+    return None;
+  }
+  let (db, media) = (db.clone(), media.clone());
+  let server = FileServer::start(move |id| tauri::async_runtime::block_on(audio_path(&db, &media, id)).ok().flatten());
+  server.map_err(|e| log::warn!("the file server did not start: {e}")).ok()
+}
+
+/// Where the audio of a track is on this device, a download or a file of an added folder.
+pub async fn audio_path(db: &Db, media: &MediaStore, id: &str) -> yamp_db::Result<Option<PathBuf>> {
+  match media.path(id).await? {
+    Some(path) => Ok(Some(path)),
+    None => db.locals().path(id).await,
+  }
+}
+
+/// Where the covers of local songs are cached. It is below the folder that the asset protocol
+/// serves, so the webview can load them.
+pub fn cover_dir(app: &AppHandle) -> PathBuf {
+  app.path().app_data_dir().unwrap_or_default().join("music").join("covers")
+}
+
+/// Starts or stops reporting a folder. Failing to watch is not an error for the caller, the scan
+/// at the start and at focus still find what changed.
+pub fn watch_dir(app: &AppHandle, dir: &Path, on: bool) {
+  let Some(watch) = &app.state::<Watch>().0 else { return };
+  if on {
+    if let Err(e) = watch.watch(dir) {
+      log::warn!("could not watch {}: {e}", dir.display());
+    }
+  } else {
+    watch.unwatch(dir);
+  }
+}
+
+/// Lets the asset protocol serve the audio below a folder that the user added.
+pub fn allow_dir(app: &AppHandle, dir: &Path) {
+  if let Err(e) = app.asset_protocol_scope().allow_directory(dir, true) {
+    log::warn!("could not allow {} for playback: {e}", dir.display());
+  }
+}
+
+/// Scans every added folder in the background, since a large collection takes a while and the
+/// start of the app must not wait for it.
+pub fn scan_all(app: &AppHandle) {
+  let app = app.clone();
+  tauri::async_runtime::spawn(async move {
+    match app.state::<Db>().locals().dirs().await {
+      Ok(dirs) => scan(&app, dirs).await,
+      Err(e) => log::warn!("could not list the local folders: {e}"),
+    }
+  });
+}
+
+/// Scans the given folders in the background.
+pub fn scan_dirs(app: &AppHandle, dirs: Vec<String>) {
+  let app = app.clone();
+  tauri::async_runtime::spawn(async move { scan(&app, dirs).await });
+}
+
+/// Scans run one after another. A change that arrives during a scan waits for it, and then finds
+/// what the scan did not see.
+static SCAN_TURN: tauri::async_runtime::Mutex<()> = tauri::async_runtime::Mutex::const_new(());
+
+async fn scan(app: &AppHandle, dirs: Vec<String>) {
+  let _turn = SCAN_TURN.lock().await;
+  let db = app.state::<Db>();
+  let covers = cover_dir(app);
+  let mut changed = false;
+  for dir in dirs {
+    match db.locals().scan(&dir, &covers).await {
+      Ok(r) if r.unreachable => log::warn!("local folder {dir} is not reachable, its songs stay"),
+      Ok(r) => {
+        changed |= r.added + r.removed > 0;
+        log::debug!("scanned {dir}: {} new or changed, {} gone", r.added, r.removed);
+      }
+      Err(e) => log::warn!("scan of {dir} failed: {e}"),
+    }
+  }
+  if let Err(e) = db.locals().prune_covers(&covers).await {
+    log::warn!("could not prune the covers: {e}");
+  }
+  // a scan that found nothing new is silent, otherwise every return to the app would reload lists
+  if changed {
+    let _ = app.emit(LOCAL_EVENT, ());
+  }
 }
 
 /// Links the library again to what the last run was linked to. It runs in the background since a

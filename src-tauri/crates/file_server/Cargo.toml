@@ -1,0 +1,9 @@
+[package]
+name = "file-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+# Small and synchronous, a request is answered on a thread of its own
+tiny_http = "0.12"
+log = "0.4"

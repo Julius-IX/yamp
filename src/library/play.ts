@@ -20,6 +20,12 @@ export async function loadLiked(): Promise<Track[]> {
   return count > 0 ? COMMANDS.likes.list({ limit: count, offset: 0 }) : [];
 }
 
+/** The local songs, newest first. The count is the limit, since playing needs all of them. */
+export async function loadLocal(): Promise<Track[]> {
+  const count = await COMMANDS.local.count();
+  return count > 0 ? COMMANDS.local.tracks({ limit: count, offset: 0 }) : [];
+}
+
 /** A list that is only loaded when it is played, so a card does not hold its tracks. */
 async function run(load: () => Promise<Track[]>, how: "play" | "queue", what: string) {
   try {
@@ -36,3 +42,5 @@ export const playPlaylist = (id: string) => run(() => COMMANDS.playlists.tracks(
 export const queuePlaylist = (id: string) => run(() => COMMANDS.playlists.tracks({ id }), "queue", "a playlist");
 export const playLiked = () => run(loadLiked, "play", "the liked songs");
 export const queueLiked = () => run(loadLiked, "queue", "the liked songs");
+export const playLocal = () => run(loadLocal, "play", "the local songs");
+export const queueLocal = () => run(loadLocal, "queue", "the local songs");
