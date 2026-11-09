@@ -2,7 +2,6 @@ import HomeIcon from "@mui/icons-material/Home";
 import PublicIcon from "@mui/icons-material/Public";
 import LibraryMusicIcon from "@mui/icons-material/LibraryMusic";
 import RadioIcon from "@mui/icons-material/Radio";
-import DownloadIcon from "@mui/icons-material/Download";
 import SettingsIcon from "@mui/icons-material/Settings";
 import type { Tab } from "@/router/types";
 import { placeholderRoutes } from "./Placeholder";
@@ -17,6 +16,5 @@ export const tabs: Tab[] = [
   { id: "explore", label: "Explore", icon: <PublicIcon />, routes: exploreRoutes, browse: true },
   { id: "library", label: "Library", icon: <LibraryMusicIcon />, routes: libraryRoutes, browse: true },
   { id: "radio", label: "Radio", icon: <RadioIcon />, routes: placeholderRoutes("Radio") },
-  { id: "downloads", label: "Downloads", icon: <DownloadIcon />, routes: placeholderRoutes("Downloads") },
   { id: "settings", label: "Settings", icon: <SettingsIcon />, routes: settingsRoutes },
 ];
