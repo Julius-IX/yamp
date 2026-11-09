@@ -1,0 +1,10 @@
+[package]
+name = "folder-watch"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+notify = "8"
+# Folds the burst of events that copying a file makes into one
+notify-debouncer-mini = "0.6"
+log = "0.4"
