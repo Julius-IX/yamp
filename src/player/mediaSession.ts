@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { resolveArtwork } from "@/lib/artwork";
 import { IS_IOS } from "@/util/platform";
 import { currentTrack, getTime, player, usePlayer } from "./store";
 
@@ -20,7 +21,7 @@ export function usePlayerMediaSession() {
           title: track.title,
           artist: track.artist,
           album: track.album ?? "",
-          artwork: track.thumbnail ? [{ src: track.thumbnail }] : [],
+          artwork: [{ src: resolveArtwork(track.thumbnail) ?? "" }].filter((a) => a.src),
         })
       : null;
   }, [track?.id]);

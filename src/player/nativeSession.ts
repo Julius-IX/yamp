@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { COMMANDS } from "@/lib/commands";
-import { artworkCandidates } from "@/lib/artwork";
+import { artworkCandidates, isLocalCover } from "@/lib/artwork";
 import { logger } from "@/lib/log";
 import { IS_IOS } from "@/util/platform";
 import { currentTrack, getPlayer, getTime, onSeek, player, usePlayer } from "./store";
@@ -25,7 +25,8 @@ function publish() {
       title: track?.title ?? null,
       artist: track?.artist ?? "",
       album: track?.album ?? null,
-      cover: artworkCandidates(track?.thumbnail, COVER_PX)[0] ?? null,
+      // the system fetches the cover itself, a cached file of the app is out of its reach
+      cover: isLocalCover(track?.thumbnail) ? null : (artworkCandidates(track?.thumbnail, COVER_PX)[0] ?? null),
       // the provider does not always know the length before the stream is open
       durationSecs: time.duration || track?.durationSecs || null,
       positionSecs: time.position,
