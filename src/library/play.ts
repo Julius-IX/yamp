@@ -1,7 +1,7 @@
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
 import type { Track } from "@/lib/types";
-import { player } from "@/player/store";
+import { beginPick, player, stillWanted } from "@/player/store";
 
 const log = logger("library");
 
@@ -28,11 +28,16 @@ export async function loadLocal(): Promise<Track[]> {
 
 /** A list that is only loaded when it is played, so a card does not hold its tracks. */
 async function run(load: () => Promise<Track[]>, how: "play" | "queue", what: string) {
+  const pick = how === "play" ? beginPick() : 0;
   try {
     const tracks = await load();
     if (tracks.length === 0) return;
-    if (how === "play") player.play(tracks, 0);
-    else player.enqueue(tracks, "end");
+    if (how === "play") {
+      // something else was picked while this loaded, and that is what should play
+      if (stillWanted(pick)) player.play(tracks, 0);
+    } else {
+      player.enqueue(tracks, "end");
+    }
   } catch (e) {
     log.warn(`couldn't ${how} ${what}:`, e);
   }

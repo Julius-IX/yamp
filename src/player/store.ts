@@ -61,6 +61,8 @@ let time: PlayerTime = { position: 0, duration: 0 };
 let original: Track[] = [];
 /** Bumped by every load, so a stream that resolves after a newer request is dropped. */
 let token = 0;
+/** Bumped by every pick of something to play. See `beginPick`. */
+let picks = 0;
 let extending = false;
 /** Stream URLs resolved ahead of time. Resolving is the slow part of starting a track. */
 const prefetched = new Map<string, { url: string; at: number }>();
@@ -142,6 +144,14 @@ const shuffled = <T>(list: T[]): T[] => {
   return out;
 };
 
+/**
+ * For a list that has to be loaded before it can play. The list takes a number first and checks
+ * it with `stillWanted` once it has loaded, so a slow one does not replace a song that was
+ * picked in the meantime.
+ */
+export const beginPick = () => ++picks;
+export const stillWanted = (pick: number) => pick === picks;
+
 // SECTION: loading
 
 /** Resolves the stream right before playing, since the URL expires and is never stored. */
@@ -188,7 +198,8 @@ async function streamUrl(track: Track): Promise<string> {
   const hit = prefetched.get(track.id);
   prefetched.delete(track.id);
   if (hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS) return hit.url;
-  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality) })).url;
+  // `now` lets the backend stop the lookup of a track that was picked before this one
+  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality), now: true })).url;
 }
 
 /**
@@ -309,6 +320,7 @@ export const player = {
   /** Replaces the queue and starts at `startIndex`. */
   play(tracks: Track[], startIndex = 0) {
     if (tracks.length === 0) return;
+    picks++;
     const first = tracks[startIndex] ?? tracks[0];
     original = tracks;
     if (read().shuffle) {
@@ -323,6 +335,7 @@ export const player = {
 
   /** Plays an entry that is already in the queue. */
   jumpTo(index: number) {
+    picks++;
     void start(index);
   },
 

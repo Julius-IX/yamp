@@ -17,6 +17,8 @@ pub enum MediaError {
   Io(String),
   Network(String),
   Parse(String),
+  /// A newer request took the place of this one, see [`crate::Latest`]. Not a failure.
+  Cancelled,
 }
 
 impl fmt::Display for MediaError {
@@ -26,6 +28,7 @@ impl fmt::Display for MediaError {
       Self::NotFound => f.write_str("nothing found"),
       Self::Unsupported => f.write_str("not supported by this provider"),
       Self::InvalidId => f.write_str("invalid id"),
+      Self::Cancelled => f.write_str("cancelled"),
       Self::Engine(m) | Self::Io(m) | Self::Network(m) | Self::Parse(m) => f.write_str(m),
     }
   }
