@@ -44,7 +44,8 @@ class YtdlpPlugin(private val activity: Activity) : Plugin(activity) {
             try {
                 invoke.resolve(f())
             } catch (e: Throwable) {
-                invoke.reject(e.message ?: e.toString())
+                // the message alone can be a renamed class, the causes tell what actually failed
+                invoke.reject(generateSequence(e) { it.cause }.joinToString(" <- ") { it.toString() })
             }
         }
     }

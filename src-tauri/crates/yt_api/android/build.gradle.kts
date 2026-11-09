@@ -11,6 +11,8 @@ android {
 
     defaultConfig {
         minSdk = 24
+        // applied to the app that includes this plugin, see the file for why
+        consumerProguardFiles("consumer-rules.pro")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
