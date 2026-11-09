@@ -6,13 +6,15 @@ import { Album } from "@/browse/paths";
 import MediaCard, { CardSkeleton } from "@/browse/MediaCard";
 import { coverOf, createPlaylist, isSavedAlbum, usePlaylists } from "@/lib/library";
 import { useLikedCount } from "@/lib/likes";
+import { useLocalCount } from "@/lib/local";
 import type { LibraryPlaylist } from "@/lib/types";
 import { accentTonal, GUTTER, subdued, surface } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
 import LikedArt from "./LikedArt";
-import { LikedSongs, OwnPlaylist } from "./paths";
+import LocalArt from "./LocalArt";
+import { LikedSongs, LocalSongs, OwnPlaylist } from "./paths";
 import PlaylistDialog from "./PlaylistDialog";
-import { playLiked, playPlaylist, queueLiked, queuePlaylist } from "./play";
+import { playLiked, playLocal, playPlaylist, queueLiked, queueLocal, queuePlaylist } from "./play";
 
 type Filter = "all" | "playlists" | "albums";
 
@@ -47,13 +49,14 @@ function PlaylistCard({ playlist }: { playlist: LibraryPlaylist }) {
 }
 
 /**
- * Everything saved in one grid, filtered by kind. The liked songs come first and cannot be
- * removed, which is why they are not part of the playlists the grid lists.
+ * Everything saved in one grid, filtered by kind. The liked songs and the local songs come first
+ * and cannot be removed, which is why they are not part of the playlists the grid lists.
  */
 export default function LibraryPage() {
   const navigate = useNavigate();
   const playlists = usePlaylists();
   const likedCount = useLikedCount();
+  const localCount = useLocalCount();
   const [filter, setFilter] = useState<Filter>("all");
   const [creating, setCreating] = useState(false);
 
@@ -92,6 +95,16 @@ export default function LibraryPage() {
             onClick={() => navigate(LikedSongs.to())}
             onPlay={() => void playLiked()}
             onQueue={() => void queueLiked()}
+          />
+        )}
+        {filter !== "albums" && (
+          <MediaCard
+            art={<LocalArt sx={{ width: "100%", aspectRatio: "1", fontSize: 56 }} />}
+            title="Local"
+            subtitle={`Playlist · ${localCount} songs`}
+            onClick={() => navigate(LocalSongs.to())}
+            onPlay={() => void playLocal()}
+            onQueue={() => void queueLocal()}
           />
         )}
         {shown
