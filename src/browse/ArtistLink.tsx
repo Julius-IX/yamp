@@ -2,6 +2,8 @@ import { Fragment, type KeyboardEvent, type MouseEvent, type ReactNode } from "r
 import { Box } from "@mui/material";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
+import type { Track } from "@/lib/types";
+import { isRadio } from "@/radio/station";
 import { useTabs } from "@/router/TabsContext";
 import { Artist } from "./paths";
 
@@ -72,6 +74,14 @@ export default function ArtistLink({ artist, onOpen }: { artist: string; onOpen?
       ))}
     </>
   );
+}
+
+/**
+ * The artist line of a track. A station carries its country and bitrate there, which is not an
+ * artist that has a page to look up.
+ */
+export function TrackArtist({ track, onOpen }: { track: Track; onOpen?: () => void }) {
+  return isRadio(track.id) ? <>{track.artist}</> : <ArtistLink artist={track.artist} onOpen={onOpen} />;
 }
 
 /**

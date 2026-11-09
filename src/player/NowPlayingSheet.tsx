@@ -3,7 +3,7 @@ import { Box, Dialog, IconButton, Slide, Typography } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
-import ArtistLink from "@/browse/ArtistLink";
+import { TrackArtist } from "@/browse/ArtistLink";
 import { useBackGuard } from "@/router/useBackGuard";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
@@ -65,7 +65,7 @@ export default function NowPlayingSheet({ open, onClose }: { open: boolean; onCl
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography variant="h6" noWrap sx={{ fontWeight: 700 }}>{track?.title}</Typography>
-                  <Typography color="text.secondary" noWrap>{track && <ArtistLink artist={track.artist} onOpen={onClose} />}</Typography>
+                  <Typography color="text.secondary" noWrap>{track && <TrackArtist track={track} onOpen={onClose} />}</Typography>
                 </Box>
                 <LikeButton track={track} />
               </Box>

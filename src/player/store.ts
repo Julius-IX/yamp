@@ -5,6 +5,8 @@ import { logger } from "@/lib/log";
 import { isLocalFile } from "@/lib/local";
 import { getSetting, isBoolean, isNumber, setSetting } from "@/lib/settings";
 import type { AudioQuality, Track } from "@/lib/types";
+import { resolveStream } from "@/radio/api";
+import { isRadio, stationId } from "@/radio/station";
 import { IS_MOBILE } from "@/util/platform";
 import { recordPlayed } from "./history";
 import { loadPlayback, savePlayback } from "./persist";
@@ -153,7 +155,8 @@ async function start(index: number, resumeAt = 0, retried = false): Promise<void
     const url = await streamUrl(track);
     if (mine !== token) return;
     audio.src = url;
-    if (resumeAt > 0) audio.currentTime = resumeAt;
+    // a live stream has no position to return to
+    if (resumeAt > 0 && !isRadio(track.id)) audio.currentTime = resumeAt;
     // a failure after this point reaches the error event
     audio.onerror = () => recover(mine, index, retried);
     await audio.play();
@@ -177,6 +180,7 @@ async function localUrl(track: Track): Promise<string | null> {
 }
 
 async function streamUrl(track: Track): Promise<string> {
+  if (isRadio(track.id)) return resolveStream(stationId(track.id));
   const local = await localUrl(track);
   if (local) return local;
   // a track from a folder has no provider to stream from, so a vanished file ends here
@@ -197,7 +201,8 @@ function prefetchNext() {
   const { queue, index, repeat } = read();
   if (index < 0) return;
   const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
-  if (!next || next.id === queue[index]?.id || prefetched.has(next.id) || resolving.has(next.id)) return;
+  // a station is live, so there is nothing to warm up and looking it up early would count a listener
+  if (!next || isRadio(next.id) || next.id === queue[index]?.id || prefetched.has(next.id) || resolving.has(next.id)) return;
   resolving.add(next.id);
   // a file on the device needs no warming up and a stream would only waste bandwidth
   localUrl(next)
@@ -231,7 +236,8 @@ function recover(mine: number, index: number, retried: boolean) {
 async function extend(): Promise<boolean> {
   const { queue } = read();
   const last = queue[queue.length - 1];
-  if (!last || extending) return false;
+  // related tracks are looked up at the music provider, which does not know a station
+  if (!last || isRadio(last.id) || extending) return false;
   extending = true;
   try {
     const related = await COMMANDS.media.related({ id: last.id, limit: AUTOPLAY_BATCH });
@@ -254,7 +260,8 @@ async function extend(): Promise<boolean> {
 audio.addEventListener("playing", () => {
   set({ playing: true, loading: false });
   const { queue, index } = read();
-  if (queue[index]) recordPlayed(queue[index]);
+  // the history feeds the recommendations, which are made of songs
+  if (queue[index] && !isRadio(queue[index].id)) recordPlayed(queue[index]);
   prefetchNext();
 });
 audio.addEventListener("pause", () => {
@@ -272,6 +279,12 @@ audio.addEventListener("durationchange", () => {
   if (Number.isFinite(audio.duration)) setTime(audio.currentTime, audio.duration);
 });
 audio.addEventListener("ended", () => {
+  const { queue, index } = read();
+  // a live stream only ends when the connection drops, moving on would skip to another station
+  if (queue[index] && isRadio(queue[index].id)) {
+    set({ playing: false, error: "the stream ended" });
+    return;
+  }
   if (read().repeat === "one") {
     audio.currentTime = 0;
     void audio.play();
@@ -316,8 +329,10 @@ export const player = {
   togglePlay() {
     const { index, error } = read();
     if (index < 0) return;
-    // after a failure the element holds a dead source, so the track is loaded again
-    if (error || !audio.src) void start(index, time.position);
+    // after a failure the element holds a dead source, so the track is loaded again. A paused
+    // station is loaded again as well, since the audio that was buffered is no longer live
+    const live = isRadio(read().queue[index]?.id ?? "");
+    if (error || !audio.src || (live && audio.paused)) void start(index, time.position);
     else if (audio.paused) void audio.play();
     else audio.pause();
   },
