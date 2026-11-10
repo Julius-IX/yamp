@@ -4,7 +4,7 @@
 //! account through `cloud-kit` and the library converges through it.
 //!
 //! What is shared is the state of whole entities, keyed by kind and id: tracks, likes,
-//! followed artists and playlists. A playlist travels as one document with its
+//! followed artists, playlists and small key value pairs. A playlist travels as one document with its
 //! track list, not as a series of edits. Two devices that change the same entity
 //! meanwhile do not merge, the later change wins. That is simple to reason about and
 //! right for a library, where nobody edits the same playlist on two devices at once.

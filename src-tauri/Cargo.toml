@@ -27,6 +27,7 @@ file-server = { version = "0.1.0", path = "./crates/file_server" }
 folder-watch = { version = "0.1.0", path = "./crates/folder_watch" }
 cloud-sync = { version = "0.1.0", path = "./crates/cloud_sync" }
 cloud-auth = { version = "0.1.0", path = "./crates/cloud_auth" }
+yamp-discord = { version = "0.1.0", path = "./crates/yamp_discord" }
 tauri = { version = "2", features = ["protocol-asset"] }
 tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"

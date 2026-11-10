@@ -1,0 +1,8 @@
+[package]
+name = "yamp-discord"
+version = "0.1.0"
+edition = "2024"
+
+# Discord is a desktop app, a phone has nothing to connect to
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+discord-rich-presence = "1.1"

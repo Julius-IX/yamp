@@ -2,6 +2,8 @@ mod api;
 mod library;
 mod logging;
 
+use tauri::Manager;
+
 /// Every saved setting. Keys outside this list are dropped when the settings file is loaded.
 const SETTINGS: &[&str] = &[
   "theme",
@@ -16,6 +18,12 @@ const SETTINGS: &[&str] = &[
   "history",
   "recentSearches",
   "animations",
+  "tooltips",
+  "statsEnabled",
+  "statsDevice",
+  "cloudSections",
+  "customThemes",
+  "discordPresence",
   "prefetch",
   "lastCompact",
   "country",
@@ -44,6 +52,7 @@ pub fn run() {
     .setup(|app| {
       tauri_settings::init(app.handle(), SETTINGS)?;
       logging::attach(app.handle().clone());
+      app.manage(api::Presence::default());
       library::init(app.handle())?;
       #[cfg(any(target_os = "android", target_os = "ios"))]
       {

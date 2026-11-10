@@ -5,6 +5,7 @@ import { IS_MOBILE } from "@/util/platform";
 import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
+import { useDiscordPresence } from "@/lib/discord";
 import { useAutoSync } from "@/lib/sync";
 import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
@@ -47,6 +48,7 @@ function useNavHidden(router: TabRouter) {
 
 export default function AppLayout() {
   useAutoSync();
+  useDiscordPresence();
   const [activeId, setActiveId] = useState(tabs[0].id);
   // `gen` changes the key of a tab's view, a reset remounts it with a fresh router.
   const [stacks, setStacks] = useState(() =>

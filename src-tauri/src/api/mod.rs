@@ -1,6 +1,7 @@
 //! Command groups. Thin wrappers that give the frontend typed access to `YtApi`, which owns all
 //! provider handling, and to the library in `yamp-db`. Nothing here knows which backend runs.
 mod artists;
+mod discord;
 mod downloads;
 mod engine;
 mod likes;
@@ -11,7 +12,10 @@ mod queue;
 mod session;
 mod sync;
 mod tracks;
+mod values;
 mod wire;
+
+pub use discord::Presence;
 
 /// Commands report failures as plain strings, the detail is already logged by `yt_api`.
 fn err(e: impl ToString) -> String {

@@ -6,7 +6,7 @@ export default function GeneralPage() {
   const [country, setCountry] = useCountry();
 
   return (
-    <Section title="General">
+    <Section title="General" cloud="general">
       <ChoiceRow
         title="Country"
         summary="Charts and recommendations follow it"

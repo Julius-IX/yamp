@@ -14,9 +14,20 @@ const log = logger("settings");
 
 export const isNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 export const isBoolean = (v: unknown): v is boolean => typeof v === "boolean";
+export const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
 let cache: Record<string, unknown> = {};
 const listeners = new Set<() => void>();
+const changeListeners = new Set<(key: string, value: unknown) => void>();
+
+/**
+ * What is saved under the key as it is, or `undefined` when it was never set. `getSetting` cannot
+ * tell that from a saved value that equals its fallback.
+ */
+export const rawSetting = (key: string): unknown => cache[key];
+
+/** Called for a setting that was changed on this device. A value that came from the cloud is not reported. */
+export const onSettingChange = (cb: (key: string, value: unknown) => void) => (changeListeners.add(cb), () => void changeListeners.delete(cb));
 
 export async function loadSettings() {
   try {
@@ -36,10 +47,14 @@ export function getSetting<T>(key: string, fallback: T, valid?: (v: unknown) => 
   return !valid || valid(v) ? (v as T) : fallback;
 }
 
-/** Applies right away and saves in the background. A failed save is logged and not rolled back. */
-export function setSetting<T>(key: string, value: T) {
+/**
+ * Applies right away and saves in the background. A failed save is logged and not rolled back.
+ * `fromCloud` marks a value that was taken over from another device, which must not be sent back.
+ */
+export function setSetting<T>(key: string, value: T, fromCloud = false) {
   cache = { ...cache, [key]: value };
   listeners.forEach((l) => l());
+  if (!fromCloud) changeListeners.forEach((l) => l(key, value));
   COMMANDS.settings
     .setSetting({ key, value })
     .catch((e) => log.error(`couldn't save "${key}":`, e));

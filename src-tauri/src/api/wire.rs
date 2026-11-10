@@ -177,6 +177,14 @@ pub struct SyncProvider {
   pub name: String,
 }
 
+/// One pair of the shared key value store.
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct StoredValue {
+  pub key: String,
+  pub value: String,
+}
+
 /// Another device that shares the library, or this one.
 #[derive(Serialize, TsType)]
 #[serde(rename_all = "camelCase")]

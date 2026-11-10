@@ -1,32 +1,46 @@
-import { createContext, useContext, useLayoutEffect, type ReactNode } from "react";
+import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } from "react";
 import { CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
-import { useSetting } from "@/lib/settings";
-import { DEFAULT_MODE, DEFAULT_THEME, modePrefs, themes, type ModePref, type ThemeName } from "./themes";
+import { createTheme } from "@mui/material/styles";
+import { isBoolean, useSetting } from "@/lib/settings";
+import { useResolvedTheme } from "./custom";
+import { DEFAULT_MODE, DEFAULT_THEME, modePrefs, type ModePref } from "./themes";
 
 type Ctx = {
-  name: ThemeName;
-  setName: (n: ThemeName) => void;
+  /** A built-in theme name or the id of a custom one, see `custom.ts`. */
+  name: string;
+  setName: (n: string) => void;
   mode: ModePref;
   setMode: (m: ModePref) => void;
 };
 const ThemeCtx = createContext<Ctx | null>(null);
 
-const isThemeName = (v: unknown): v is ThemeName => typeof v === "string" && v in themes;
+const isThemeName = (v: unknown): v is string => typeof v === "string";
 const isModePref = (v: unknown): v is ModePref => modePrefs.includes(v as ModePref);
+
+/**
+ * With tooltips off every tooltip in the app stays closed, which is done once here and not per
+ * usage. The listeners are what open a tooltip, so removing them keeps the wrapped control as is.
+ */
+const noTooltips = {
+  MuiTooltip: { defaultProps: { disableHoverListener: true, disableFocusListener: true, disableTouchListener: true } },
+};
 
 /** Read by the inline script in `index.html`. */
 const BOOT_BG_KEY = "yamp-boot-bg";
 
 export function AppThemeProvider({ children }: { children: ReactNode }) {
-  const [name, setName] = useSetting<ThemeName>("theme", DEFAULT_THEME, isThemeName);
+  const [name, setName] = useSetting<string>("theme", DEFAULT_THEME, isThemeName);
   const [mode, setMode] = useSetting<ModePref>("mode", DEFAULT_MODE, isModePref);
+  const [tooltips] = useSetting("tooltips", true, isBoolean);
 
   const systemDark = useMediaQuery("(prefers-color-scheme: dark)");
   const resolved = mode === "system" ? (systemDark ? "dark" : "light") : mode;
 
   // index.html paints the page before any script runs. Keeping that color in step with the theme
   // and remembering it means the next launch starts on the right one instead of flashing.
-  const bg = themes[name][resolved].palette.background.default;
+  const base = useResolvedTheme(name, resolved);
+  const theme = useMemo(() => (tooltips ? base : createTheme(base, { components: noTooltips })), [base, tooltips]);
+  const bg = base.palette.background.default;
   useLayoutEffect(() => {
     document.documentElement.style.background = bg;
     try {
@@ -38,7 +52,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
 
   return (
     <ThemeCtx.Provider value={{ name, setName, mode, setMode }}>
-      <ThemeProvider theme={themes[name][resolved]}>
+      <ThemeProvider theme={theme}>
         <CssBaseline />
         {children}
       </ThemeProvider>
