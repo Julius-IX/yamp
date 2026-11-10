@@ -5,6 +5,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import HideImageIcon from "@mui/icons-material/HideImage";
 import { useLocation, useNavigate } from "react-router-dom";
 import TrackTable from "@/browse/TrackTable";
+import { playtime } from "@/components/media/format";
 import { COMMANDS } from "@/lib/commands";
 import { editPlaylist, moveInPlaylist, removeFromPlaylist, removePlaylistCover, usePlaylists } from "@/lib/library";
 import { logger } from "@/lib/log";
@@ -84,7 +85,7 @@ export default function OwnPlaylistPage() {
   };
 
   const sorted = sort.key !== "order";
-  const meta = playlist && [playlist.description, `${playlist.trackCount} songs`].filter(Boolean).join(" · ");
+  const meta = playlist && [playlist.description, `${playlist.trackCount} songs`, tracks && playtime(tracks)].filter(Boolean).join(" · ");
 
   return (
     <Box sx={{ pt: IS_MOBILE ? 10 : 9, pb: 2 }}>
