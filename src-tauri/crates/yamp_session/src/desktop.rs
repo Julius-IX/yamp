@@ -23,30 +23,50 @@ struct Shown {
 }
 
 pub fn start(app: &AppHandle<Wry>, _api: PluginApi<Wry, ()>) -> Result<Sender<Update>, Box<dyn std::error::Error>> {
-  // a raw pointer cannot cross threads, so the handle travels as a number
-  let hwnd = window_handle(app);
   let (tx, rx) = channel();
   let app = app.clone();
-  // the controls are created on this thread and never leave it, some platforms are not Send
+  // the controls are created on this thread and never leave it, some platforms are not Send.
+  // the window handle is also looked up on this thread, because the main window may not exist
+  // yet when the plugin starts
   std::thread::Builder::new()
     .name("media-session".into())
-    .spawn(move || run(app, hwnd, rx))?;
+    .spawn(move || run(app, rx))?;
   Ok(tx)
 }
 
+/// Waits for the main window and returns its handle as a number (a raw pointer cannot cross
+/// threads). Gives up after about ten seconds.
 #[cfg(windows)]
-fn window_handle(app: &AppHandle<Wry>) -> Option<usize> {
+fn wait_for_hwnd(app: &AppHandle<Wry>) -> Option<usize> {
   use tauri::Manager;
-  // the system transport controls are bound to a window on Windows
-  app.get_webview_window("main")?.hwnd().ok().map(|h| h.0 as usize)
-}
-
-#[cfg(not(windows))]
-fn window_handle(_app: &AppHandle<Wry>) -> Option<usize> {
+  for _ in 0..100 {
+    if let Some(h) = app.get_webview_window("main").and_then(|w| w.hwnd().ok()) {
+      return Some(h.0 as usize);
+    }
+    std::thread::sleep(Duration::from_millis(100));
+  }
+  let labels: Vec<_> = app.webview_windows().into_keys().collect();
+  log::warn!("media controls: no usable \"main\" window, existing windows: {labels:?}");
   None
 }
 
-fn run(app: AppHandle<Wry>, hwnd: Option<usize>, rx: Receiver<Update>) {
+fn run(app: AppHandle<Wry>, rx: Receiver<Update>) {
+  // the system transport controls are bound to a window on Windows, and souvlaki panics
+  // instead of returning an error if it does not get one, so skip the controls entirely
+  let hwnd = {
+    #[cfg(windows)]
+    {
+      match wait_for_hwnd(&app) {
+        Some(h) => Some(h),
+        None => return log::warn!("media controls are unavailable: no window handle"),
+      }
+    }
+    #[cfg(not(windows))]
+    {
+      None::<usize>
+    }
+  };
+
   let config = PlatformConfig {
     display_name: "yamp",
     dbus_name: "yamp",
