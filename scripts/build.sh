@@ -7,8 +7,14 @@
 #   yamp_v1.0.1_Windows_x86-64_alpha_setup.exe
 #   yamp_v1.0.1_Android_universal_alpha.apk
 #
-# The files go to builds/v[version]-[descriptor]/release/ in the repo root, for example
-# builds/v1.0.1-alpha/release/. That folder holds only what is uploaded to the GitHub release.
+# Everything goes to <builds root>/v[version]-[descriptor]/, where the builds root is builds/ in
+# the repo root, or the folder given with -o. For example builds/v1.0.1-alpha/:
+#
+#   release/      what is uploaded to the GitHub release: the artifacts and latest.json
+#   signatures/   the .sig files, not uploaded
+#   SHA256SUMS    not uploaded
+#
+# scripts/build.sh -o ~/Downloads makes ~/Downloads/v1.0.1-alpha/ with the same layout.
 # The version comes from src-tauri/tauri.conf.json.
 #
 # One command for a full release:   scripts/build.sh --release -d alpha -y
@@ -25,6 +31,7 @@
 
 set -uo pipefail
 
+START_DIR="$PWD"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 
@@ -34,7 +41,6 @@ CARGO_CONF="src-tauri/.cargo/config.toml"
 DISCORD_CONF="src-tauri/crates/yamp_discord/config.toml"
 CLOUD_CONF="src-tauri/crates/cloud_auth/config.toml"
 BUILDS_ROOT="${YAMP_BUILDS_DIR:-$ROOT/builds}"
-OUT="${YAMP_OUT_DIR:-}"
 SIGN_KEY_FILE="${YAMP_SIGNING_KEY:-$HOME/.tauri/yamp.key}"
 ANDROID_TARGETS=(aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android)
 
@@ -71,7 +77,7 @@ Usage: scripts/build.sh [options]
   -r, --release             build every target for a release, same as --targets all
   -t, --targets <list>      linux, windows, android or all, comma separated
   -d, --descriptor <text>   release tag in the folder and file names, such as alpha. May be empty
-  -o, --out <dir>           where the artifacts go, default builds/v<version>[-<descriptor>]/release
+  -o, --out <dir>           folder that gets the v<version>[-<descriptor>] folder, default builds in the repo root
   -y, --yes                 do not ask for confirmation
       --tag <tag>           GitHub release the files are uploaded to, default v<version>[-<descriptor>]
       --notes <text>        release notes shown by the updater, goes into latest.json
@@ -83,8 +89,7 @@ Anything not given as a flag is asked for. The environment is read as well:
   YAMP_*_CLIENT_ID, YAMP_*_CLIENT_SECRET, YAMP_DISCORD_APP_ID   win over the config files
   TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]  signs the update bundles, only used when the updater is on
   YAMP_SIGNING_KEY                      path of the key file, default ~/.tauri/yamp.key
-  YAMP_BUILDS_DIR                       parent of the version folders, default builds in the repo root
-  YAMP_OUT_DIR                          exact output folder, overrides the two above
+  YAMP_BUILDS_DIR                       same as -o, which wins over it
   SQLX_OFFLINE                          defaults to true, the committed .sqlx data is used
 USAGE
 }
@@ -96,7 +101,13 @@ while [[ $# -gt 0 ]]; do
     -r|--release) TARGETS=all; shift ;;
     -t|--targets) needval "$1" $#; TARGETS="$2"; shift 2 ;;
     -d|--descriptor) needval "$1" $#; DESCRIPTOR="$2"; DESC_GIVEN=1; shift 2 ;;
-    -o|--out) needval "$1" $#; OUT="$2"; shift 2 ;;
+    -o|--out)
+      needval "$1" $#
+      # the folder that holds the version folders, a relative path is relative to where the script was started
+      BUILDS_ROOT="$2"
+      [[ "$BUILDS_ROOT" == /* ]] || BUILDS_ROOT="$START_DIR/$BUILDS_ROOT"
+      BUILDS_ROOT="${BUILDS_ROOT%/}"
+      shift 2 ;;
     -y|--yes) ASSUME_YES=1; shift ;;
     --tag) needval "$1" $#; TAG="$2"; shift 2 ;;
     --notes) needval "$1" $#; NOTES="$2"; shift 2 ;;
@@ -306,9 +317,16 @@ if [[ $DESC_GIVEN -eq 0 ]]; then
 fi
 [[ -z "$DESCRIPTOR" || "$DESCRIPTOR" =~ ^[A-Za-z0-9.-]+$ ]] || die "descriptor may only hold letters, digits, dots and dashes"
 
-# builds/v1.0.1-alpha/release, or builds/v1.0.1/release without a descriptor
-[[ -n "$OUT" ]] || OUT="$BUILDS_ROOT/v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}/release"
 [[ -n "$TAG" ]] || TAG="v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}"
+
+# <builds root>/v1.0.1-alpha, or <builds root>/v1.0.1 without a descriptor. The builds root is
+# builds/ in the repo root, or the folder given with -o.
+#   release/      what is uploaded to the GitHub release
+#   signatures/   the .sig files, latest.json is made from them, not uploaded
+#   SHA256SUMS    not uploaded
+META="$BUILDS_ROOT/v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}"
+OUT="$META/release"
+SIGS="$META/signatures"
 
 # Name of a release file. The target is one piece, the descriptor and the extra are left out when empty.
 artifact() { # target descriptor extra extension
@@ -512,7 +530,7 @@ if [[ $DRY -eq 0 && ! -d node_modules ]]; then
   step "Installing the frontend dependencies"
   npm ci || die "npm ci failed"
 fi
-[[ $DRY -eq 1 ]] || mkdir -p "$OUT"
+[[ $DRY -eq 1 ]] || mkdir -p "$OUT" "$SIGS"
 
 # The newest file below src-tauri that matches, preferably one written by this run.
 find_new() { # path glob
@@ -534,7 +552,8 @@ collect() { # source name
     return 1
   fi
   cp -f "$1" "$OUT/$2" || return 1
-  [[ -f "$1.sig" ]] && cp -f "$1.sig" "$OUT/$2.sig"
+  # the signature is not uploaded, latest.json carries it, so it is kept outside release/
+  [[ -f "$1.sig" ]] && cp -f "$1.sig" "$SIGS/$2.sig"
   BUILT+=("$2")
 }
 
@@ -641,7 +660,7 @@ write_manifest() {
     key="${pair%%|*}"; file="${pair#*|}"
     if [[ $DRY -eq 1 ]]; then
       [[ " ${SELECTED[*]} " == *" ${key%%-*} "* ]] && args+=("$key" "$file") || missing+=("$key")
-    elif [[ -f "$OUT/$file" && -f "$OUT/$file.sig" ]]; then
+    elif [[ -f "$OUT/$file" && -f "$SIGS/$file.sig" ]]; then
       args+=("$key" "$file")
     else
       missing+=("$key")
@@ -665,7 +684,7 @@ write_manifest() {
     const manifest = { version, pub_date: new Date().toISOString().replace(/\.\d+Z$/, "Z"), platforms };
     if (notes) manifest.notes = notes;
     console.log(JSON.stringify(manifest, null, 2));
-  ' "$OUT" "$VERSION" "$NOTES" "$base" "${args[@]}" >"$OUT/latest.json" || { warn "could not write latest.json"; return 1; }
+  ' "$SIGS" "$VERSION" "$NOTES" "$base" "${args[@]}" >"$OUT/latest.json" || { warn "could not write latest.json"; return 1; }
   say "Wrote $OUT/latest.json"
 }
 
@@ -678,19 +697,14 @@ sha() { if command -v sha256sum >/dev/null; then sha256sum "$@"; else shasum -a 
 
 step "Result"
 if [[ ${#BUILT[@]} -gt 0 && $DRY -eq 0 ]]; then
-  (
-    cd "$OUT" || exit 1
-    # every file of the folder, so a later partial run keeps the earlier entries
-    # shellcheck disable=SC2046
-    sha $(ls -1 | grep -v '^SHA256SUMS$') >SHA256SUMS
-    for f in $(ls -1 | grep -v '^SHA256SUMS$'); do
-      printf '  %s  %s\n' "$(du -h "$f" | cut -f1)" "$f"
-    done
-  )
+  # every file of the folder, so a later partial run keeps the earlier entries
+  ( cd "$OUT" && sha * ) >"$META/SHA256SUMS"
+  ( cd "$OUT" && for f in *; do printf '  %s  %s\n' "$(du -h "$f" | cut -f1)" "$f"; done )
   say ""
   say "Release files are in ${B}$OUT${N}"
+  say "Signatures and SHA256SUMS are in ${B}$META${N}, they are not uploaded."
   say ""
-  say "Upload everything in that folder to the GitHub release ${B}$TAG${N}:"
+  say "Upload everything in release/ to the GitHub release ${B}$TAG${N}:"
   for f in $(ls -1 "$OUT"); do say "  $f"; done
   if [[ $UPDATER_ON -eq 1 || " ${SELECTED[*]} " == *" android "* ]]; then
     say "${Y}Publish it as the latest release, not as a pre-release.${N} GitHub's /releases/latest skips pre-releases,"
