@@ -55,9 +55,13 @@ const PREFETCH_MAX_AGE_MS = 20 * 60_000;
 const PREFETCH_RETRY_MS = 15_000;
 /** How many related tracks autoplay appends at once. */
 const AUTOPLAY_BATCH = 15;
+/** The next track is loaded into a second element once this little of the playing one is left. */
+const WARM_AHEAD_SECS = 20;
 
-const audio = new Audio();
-audio.preload = "auto";
+let audio = new Audio();
+// "auto" lets WebKitGTK buffer ahead in its GStreamer pipeline, which is held in the web process.
+// Next-track warm-up is done by resolving URLs (see prefetchNext), not by the element.
+audio.preload = "metadata";
 
 let current: PlayerState | undefined;
 let time: PlayerTime = { position: 0, duration: 0 };
@@ -67,6 +71,10 @@ let token = 0;
 /** Bumped by every pick of something to play. See `beginPick`. */
 let picks = 0;
 let extending = false;
+/** The next track, already loading in an element of its own so the switch needs no network. */
+let standby: { id: string; el: HTMLAudioElement } | null = null;
+let warming = "";
+const warmFailed = new Map<string, number>();
 /** Stream URLs resolved ahead of time. Resolving is the slow part of starting a track. */
 const prefetched = new Map<string, { url: string; at: number }>();
 /** Ids whose lookup is under way. The next track can change several times in a row, and a lookup is a whole yt-dlp run. */
@@ -163,14 +171,40 @@ async function start(index: number, resumeAt = 0, retried = false): Promise<void
   set({ index, loading: true, error: null });
   setTime(resumeAt, track.durationSecs ?? 0);
   try {
-    const url = await streamUrl(track);
-    if (mine !== token) return;
-    audio.src = url;
-    // a live stream has no position to return to
-    if (resumeAt > 0 && !isRadio(track.id)) audio.currentTime = resumeAt;
-    // a failure after this point reaches the error event
-    audio.onerror = () => recover(mine, index, retried);
-    await audio.play();
+    // a track that was loaded ahead of time starts at once, see `warmNext`
+    let warm: HTMLAudioElement | null = null;
+    if (resumeAt === 0) warm = takeStandby(track.id);
+    else dropStandby();
+    const url = warm ? "" : await streamUrl(track);
+    if (mine !== token) {
+      if (warm) release(warm);
+      return;
+    }
+    if (warm) {
+      const old = audio;
+      // events of the old element are ignored from here on, see `wire`
+      audio = warm;
+      old.pause();
+      audio.volume = read().volume;
+      audio.muted = read().muted;
+      audio.preload = "metadata";
+      // its duration was announced while it was still ignored
+      if (Number.isFinite(audio.duration)) setTime(0, audio.duration);
+      audio.onerror = () => recover(mine, index, retried);
+      // the finished element is torn down once the next one is audible, not before
+      await audio.play().finally(() => release(old));
+    } else {
+      // Tear the previous media pipeline down before building the next one. Swapping `src` alone
+      // can leave the old GStreamer pipeline and its buffers alive in WebKitGTK.
+      audio.removeAttribute("src");
+      audio.load();
+      audio.src = url;
+      // a live stream has no position to return to
+      if (resumeAt > 0 && !isRadio(track.id)) audio.currentTime = resumeAt;
+      // a failure after this point reaches the error event
+      audio.onerror = () => recover(mine, index, retried);
+      await audio.play();
+    }
   } catch (e) {
     // AbortError is expected when a newer load replaced this one mid-flight
     if (mine !== token || (e as DOMException)?.name === "AbortError") return;
@@ -190,7 +224,7 @@ async function localUrl(track: Track): Promise<string | null> {
   return path && convertFileSrc(path);
 }
 
-async function streamUrl(track: Track): Promise<string> {
+async function streamUrl(track: Track, now = true): Promise<string> {
   if (isRadio(track.id)) return resolveStream(stationId(track.id));
   const local = await localUrl(track);
   if (local) return local;
@@ -200,7 +234,7 @@ async function streamUrl(track: Track): Promise<string> {
   prefetched.delete(track.id);
   if (hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS) return hit.url;
   // `now` lets the backend stop the lookup of a track that was picked before this one
-  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality), now: true })).url;
+  return (await COMMANDS.media.stream({ id: track.id, quality: getSetting("quality", "high", isQuality), now })).url;
 }
 
 /**
@@ -271,48 +305,119 @@ async function extend(): Promise<boolean> {
   }
 }
 
+/** Frees an element's media pipeline. Pausing alone keeps the buffers of the source. */
+function release(el: HTMLAudioElement) {
+  el.pause();
+  el.removeAttribute("src");
+  el.load();
+}
+
+function dropStandby() {
+  if (standby) release(standby.el);
+  standby = null;
+}
+
+/** The loaded-ahead element when it holds this track and is healthy, otherwise nothing and it is dropped. */
+function takeStandby(id: string): HTMLAudioElement | null {
+  const held = standby;
+  standby = null;
+  if (!held) return null;
+  if (held.id !== id || held.el.error) {
+    release(held.el);
+    return null;
+  }
+  return held.el;
+}
+
+/** Loads the next track into a second element, so that the switch does not wait for a connection. */
+async function warm(next: Track) {
+  warming = next.id;
+  try {
+    const url = await streamUrl(next, false);
+    // the queue may have moved on while the address was being resolved
+    const { queue, index } = read();
+    if ((queue[index + 1] ?? queue[0])?.id !== next.id) return;
+    dropStandby();
+    const el = new Audio();
+    el.preload = "auto";
+    wire(el);
+    el.src = url;
+    el.load();
+    standby = { id: next.id, el };
+  } catch (e) {
+    warmFailed.set(next.id, Date.now());
+    log.warn(`couldn't load ${next.title} ahead of time:`, e);
+  } finally {
+    warming = "";
+  }
+}
+
+/** Called by every time update. Cheap when there is nothing to do. */
+function warmNext() {
+  if (!getSetting("prefetch", true, isBoolean)) return;
+  if (!Number.isFinite(audio.duration) || audio.duration - audio.currentTime > WARM_AHEAD_SECS) return;
+  const { queue, index, repeat } = read();
+  const now = queue[index];
+  if (!now || isRadio(now.id) || repeat === "one") return;
+  const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
+  if (!next || isRadio(next.id) || next.id === now.id) return;
+  if (standby?.id === next.id || warming === next.id) return;
+  if (Date.now() - (warmFailed.get(next.id) ?? 0) < PREFETCH_RETRY_MS) return;
+  void warm(next);
+}
+
 // SECTION: audio events
 
-audio.addEventListener("playing", () => {
-  set({ playing: true, loading: false });
-  const { queue, index } = read();
-  // the history feeds the recommendations, which are made of songs
-  if (queue[index] && !isRadio(queue[index].id)) recordPlayed(queue[index]);
-  prefetchNext();
-});
-audio.addEventListener("pause", () => {
-  set({ playing: false });
-  save();
-  void flushStats();
-});
-audio.addEventListener("timeupdate", () => {
-  setTime(audio.currentTime);
-  const { queue, index } = read();
-  if (queue[index]) trackListen(queue[index], audio.currentTime);
-  // cheap when there is nothing to do, and it is what retries a lookup that failed
-  prefetchNext();
-  if (Date.now() - lastSave > SAVE_EVERY_MS) save();
-});
+/** Only the audible element drives the state, a standby or a released one is ignored. */
+function wire(el: HTMLAudioElement) {
+  el.addEventListener("playing", () => {
+    if (el !== audio) return;
+    set({ playing: true, loading: false });
+    const { queue, index } = read();
+    // the history feeds the recommendations, which are made of songs
+    if (queue[index] && !isRadio(queue[index].id)) recordPlayed(queue[index]);
+    prefetchNext();
+  });
+  el.addEventListener("pause", () => {
+    if (el !== audio) return;
+    set({ playing: false });
+    save();
+    void flushStats();
+  });
+  el.addEventListener("timeupdate", () => {
+    if (el !== audio) return;
+    setTime(el.currentTime);
+    const { queue, index } = read();
+    if (queue[index]) trackListen(queue[index], el.currentTime);
+    // cheap when there is nothing to do, and it is what retries a lookup that failed
+    prefetchNext();
+    warmNext();
+    if (Date.now() - lastSave > SAVE_EVERY_MS) save();
+  });
+  el.addEventListener("durationchange", () => {
+    if (el !== audio) return;
+    if (Number.isFinite(el.duration)) setTime(el.currentTime, el.duration);
+  });
+  el.addEventListener("ended", () => {
+    if (el !== audio) return;
+    const { queue, index } = read();
+    // a live stream only ends when the connection drops, moving on would skip to another station
+    if (queue[index] && isRadio(queue[index].id)) {
+      set({ playing: false, error: "the stream ended" });
+      return;
+    }
+    if (read().repeat === "one") {
+      el.currentTime = 0;
+      void el.play();
+    } else {
+      void advance(true);
+    }
+  });
+}
+wire(audio);
 // a closed or backgrounded app may be killed without a pause event
 document.addEventListener("visibilitychange", () => document.hidden && current && save());
 window.addEventListener("pagehide", () => current && save());
-audio.addEventListener("durationchange", () => {
-  if (Number.isFinite(audio.duration)) setTime(audio.currentTime, audio.duration);
-});
-audio.addEventListener("ended", () => {
-  const { queue, index } = read();
-  // a live stream only ends when the connection drops, moving on would skip to another station
-  if (queue[index] && isRadio(queue[index].id)) {
-    set({ playing: false, error: "the stream ended" });
-    return;
-  }
-  if (read().repeat === "one") {
-    audio.currentTime = 0;
-    void audio.play();
-  } else {
-    void advance(true);
-  }
-});
 
 async function advance(auto: boolean) {
   const { queue, index, repeat } = read();
@@ -418,6 +523,7 @@ export const player = {
 
   clear() {
     token++;
+    dropStandby();
     audio.pause();
     audio.removeAttribute("src");
     audio.load();

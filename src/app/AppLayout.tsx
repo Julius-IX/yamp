@@ -50,6 +50,13 @@ export default function AppLayout() {
   useAutoSync();
   useDiscordPresence();
   const [activeId, setActiveId] = useState(tabs[0].id);
+  // A tab is only rendered once it was opened. Mounting all of them at launch put every hidden
+  // tab's DOM, images and provider queries in memory for screens nobody had looked at. After the
+  // first visit a tab stays mounted, so it keeps its scroll position and loaded content.
+  const [visited, setVisited] = useState<Set<string>>(() => new Set([tabs[0].id]));
+  useEffect(() => {
+    setVisited((v) => (v.has(activeId) ? v : new Set(v).add(activeId)));
+  }, [activeId]);
   // `gen` changes the key of a tab's view, a reset remounts it with a fresh router.
   const [stacks, setStacks] = useState(() =>
     Object.fromEntries(tabs.map((t) => [t.id, { router: makeRouter(t), gen: 0 }])),
@@ -127,7 +134,7 @@ export default function AppLayout() {
                   "&::-webkit-scrollbar": { display: "none" },
                 }}
               >
-                <RouterProvider router={stacks[t.id].router} />
+                {(t.id === activeId || visited.has(t.id)) && <RouterProvider router={stacks[t.id].router} />}
               </Box>
             ))}
           </Box>
