@@ -25,6 +25,7 @@ const SETTINGS: &[&str] = &[
   "customThemes",
   "discordPresence",
   "prefetch",
+  "prefetchAmount",
   "engineAutoUpdate",
   "engineUpdatedMs",
   "updateCheck",
