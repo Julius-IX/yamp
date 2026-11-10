@@ -1,6 +1,11 @@
 //! Discord Rich Presence, the "listening to" card on the Discord profile of the user. It has no
 //! Tauri dependency, so `cargo test` here builds only this crate.
 //!
+//! The card is set up like the one of a music service. The status reads "Listening to" and the
+//! artist, since the person listens on yamp to something and not to yamp itself, and the card
+//! names yamp where Discord allows it, in the hover text of the cover and in a button. The title,
+//! the artist and the cover link to the track when it has a web page.
+//!
 //! Only a desktop can talk to Discord, over a local socket. On a phone every call does nothing
 //! and `available` is false. The Discord application that owns the card is made in the developer
 //! portal. Its id is baked in when the crate is compiled, see `build.rs`, and a build without it
@@ -9,6 +14,9 @@ use std::{
   fmt,
   sync::{Arc, Mutex},
 };
+
+/// Where the button that names the app leads.
+const APP_URL: &str = "https://github.com/Julius-IX/yamp";
 
 const APP_ID: Option<&str> = option_env!("YAMP_DISCORD_APP_ID");
 
@@ -54,6 +62,9 @@ pub struct Track<'a> {
   /// Set when the length is known, which makes Discord draw a progress bar. Without it the card
   /// only counts up.
   pub end_ms: Option<i64>,
+  /// The web page of the track and of its artist. Local files and live streams have none.
+  pub url: Option<&'a str>,
+  pub artist_url: Option<&'a str>,
 }
 
 /// The connection to Discord, opened by the first `show`. It is dropped when a send fails, which
@@ -68,10 +79,11 @@ fn field(text: &str) -> String {
   if cut.chars().count() < 2 { format!("{cut}\u{200B}") } else { cut }
 }
 
-/// Discord only loads an image from a web address, and a cached local cover has none.
+/// Discord only loads an image or a link from a web address, and a cached local cover has none.
+/// A longer one is refused as well.
 #[cfg_attr(any(target_os = "android", target_os = "ios"), allow(dead_code))]
-fn cover_url(cover: Option<&str>) -> Option<&str> {
-  cover.filter(|u| u.starts_with("http") && u.len() <= 256)
+fn web_url(url: Option<&str>) -> Option<&str> {
+  url.filter(|u| u.starts_with("http") && u.len() <= 256)
 }
 
 impl Presence {
@@ -79,7 +91,7 @@ impl Presence {
   pub fn show(&self, track: &Track) -> Result<(), Error> {
     use discord_rich_presence::{
       DiscordIpc, DiscordIpcClient,
-      activity::{Activity, ActivityType, Assets, StatusDisplayType, Timestamps},
+      activity::{Activity, ActivityType, Assets, Button, StatusDisplayType, Timestamps},
     };
 
     let id = app_id().ok_or(Error::NotSetUp)?;
@@ -88,15 +100,36 @@ impl Presence {
       None => Timestamps::new().start(track.start_ms),
     };
     let (details, state) = (field(track.title), field(track.artist));
+    let (url, artist_url) = (web_url(track.url), web_url(track.artist_url));
+    // the name is what the status shows after "Listening to", so it carries the artist
     let mut activity = Activity::new()
+      .name(&state)
       .activity_type(ActivityType::Listening)
-      .status_display_type(StatusDisplayType::State)
+      .status_display_type(StatusDisplayType::Name)
       .details(&details)
       .state(&state)
       .timestamps(stamps);
-    if let Some(url) = cover_url(track.cover) {
-      activity = activity.assets(Assets::new().large_image(url));
+    if let Some(url) = url {
+      activity = activity.details_url(url);
     }
+    if let Some(url) = artist_url {
+      activity = activity.state_url(url);
+    }
+    // the cover is the only place that can say where the music plays, as its hover text
+    let mut assets = Assets::new().large_text("Listening on yamp");
+    if let Some(cover) = web_url(track.cover) {
+      assets = assets.large_image(cover);
+    }
+    if let Some(url) = url {
+      assets = assets.large_url(url);
+    }
+    activity = activity.assets(assets);
+    let mut buttons = Vec::new();
+    if let Some(url) = url {
+      buttons.push(Button::new("Listen on YouTube Music", url));
+    }
+    buttons.push(Button::new("Get yamp", APP_URL));
+    activity = activity.buttons(buttons);
 
     let ipc = |e: discord_rich_presence::error::Error| Error::Ipc(e.to_string());
     let mut slot = self.0.lock().unwrap_or_else(|e| e.into_inner());
@@ -160,10 +193,10 @@ mod tests {
   }
 
   #[test]
-  fn only_web_covers_are_used() {
-    assert_eq!(cover_url(Some("https://i.example/a.jpg")), Some("https://i.example/a.jpg"));
-    assert_eq!(cover_url(Some("/home/user/cover.jpg")), None);
-    assert_eq!(cover_url(Some(&format!("https://{}", "a".repeat(300)))), None);
-    assert_eq!(cover_url(None), None);
+  fn only_web_addresses_are_used() {
+    assert_eq!(web_url(Some("https://i.example/a.jpg")), Some("https://i.example/a.jpg"));
+    assert_eq!(web_url(Some("/home/user/cover.jpg")), None);
+    assert_eq!(web_url(Some(&format!("https://{}", "a".repeat(300)))), None);
+    assert_eq!(web_url(None), None);
   }
 }
