@@ -6,6 +6,7 @@ import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
 import { useDiscordPresence } from "@/lib/discord";
+import { useAutoEngineUpdate } from "@/lib/engine";
 import { useAutoSync } from "@/lib/sync";
 import { useAutoUpdateCheck } from "@/lib/updater";
 import Player from "@/player/Player";
@@ -52,6 +53,7 @@ export default function AppLayout() {
   useAutoSync();
   useDiscordPresence();
   useAutoUpdateCheck();
+  useAutoEngineUpdate();
   const [activeId, setActiveId] = useState(tabs[0].id);
   // A tab is only rendered once it was opened. Mounting all of them at launch put every hidden
   // tab's DOM, images and provider queries in memory for screens nobody had looked at. After the
