@@ -7,7 +7,8 @@
 #   yamp_v1.0.1_Windows_x86-64_alpha_setup.exe
 #   yamp_v1.0.1_Android_universal_alpha.apk
 #
-# The folder is ../builds/v[version]-[descriptor]/ next to the repo, for example ../builds/v1.0.1-alpha/.
+# The files go to builds/v[version]-[descriptor]/release/ in the repo root, for example
+# builds/v1.0.1-alpha/release/. That folder holds only what is uploaded to the GitHub release.
 # The version comes from src-tauri/tauri.conf.json.
 #
 # One command for a full release:   scripts/build.sh --release -d alpha -y
@@ -32,7 +33,7 @@ ANDROID_DIR="src-tauri/gen/android"
 CARGO_CONF="src-tauri/.cargo/config.toml"
 DISCORD_CONF="src-tauri/crates/yamp_discord/config.toml"
 CLOUD_CONF="src-tauri/crates/cloud_auth/config.toml"
-BUILDS_ROOT="${YAMP_BUILDS_DIR:-$(cd "$ROOT/.." && pwd)/builds}"
+BUILDS_ROOT="${YAMP_BUILDS_DIR:-$ROOT/builds}"
 OUT="${YAMP_OUT_DIR:-}"
 SIGN_KEY_FILE="${YAMP_SIGNING_KEY:-$HOME/.tauri/yamp.key}"
 ANDROID_TARGETS=(aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android)
@@ -70,7 +71,7 @@ Usage: scripts/build.sh [options]
   -r, --release             build every target for a release, same as --targets all
   -t, --targets <list>      linux, windows, android or all, comma separated
   -d, --descriptor <text>   release tag in the folder and file names, such as alpha. May be empty
-  -o, --out <dir>           where the artifacts go, default ../builds/v<version>[-<descriptor>]
+  -o, --out <dir>           where the artifacts go, default builds/v<version>[-<descriptor>]/release
   -y, --yes                 do not ask for confirmation
       --tag <tag>           GitHub release the files are uploaded to, default v<version>[-<descriptor>]
       --notes <text>        release notes shown by the updater, goes into latest.json
@@ -82,7 +83,7 @@ Anything not given as a flag is asked for. The environment is read as well:
   YAMP_*_CLIENT_ID, YAMP_*_CLIENT_SECRET, YAMP_DISCORD_APP_ID   win over the config files
   TAURI_SIGNING_PRIVATE_KEY[_PASSWORD]  signs the update bundles, only used when the updater is on
   YAMP_SIGNING_KEY                      path of the key file, default ~/.tauri/yamp.key
-  YAMP_BUILDS_DIR                       parent of the version folders, default ../builds
+  YAMP_BUILDS_DIR                       parent of the version folders, default builds in the repo root
   YAMP_OUT_DIR                          exact output folder, overrides the two above
   SQLX_OFFLINE                          defaults to true, the committed .sqlx data is used
 USAGE
@@ -305,8 +306,8 @@ if [[ $DESC_GIVEN -eq 0 ]]; then
 fi
 [[ -z "$DESCRIPTOR" || "$DESCRIPTOR" =~ ^[A-Za-z0-9.-]+$ ]] || die "descriptor may only hold letters, digits, dots and dashes"
 
-# ../builds/v1.0.1-alpha, or ../builds/v1.0.1 without a descriptor
-[[ -n "$OUT" ]] || OUT="$BUILDS_ROOT/v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}"
+# builds/v1.0.1-alpha/release, or builds/v1.0.1/release without a descriptor
+[[ -n "$OUT" ]] || OUT="$BUILDS_ROOT/v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}/release"
 [[ -n "$TAG" ]] || TAG="v${VERSION}${DESCRIPTOR:+-$DESCRIPTOR}"
 
 # Name of a release file. The target is one piece, the descriptor and the extra are left out when empty.
@@ -687,10 +688,10 @@ if [[ ${#BUILT[@]} -gt 0 && $DRY -eq 0 ]]; then
     done
   )
   say ""
-  say "Written to $OUT, with SHA256SUMS."
+  say "Release files are in ${B}$OUT${N}"
   say ""
-  say "Upload to the GitHub release ${B}$TAG${N}:"
-  for f in $(ls -1 "$OUT" | grep -v '^SHA256SUMS$'); do say "  $f"; done
+  say "Upload everything in that folder to the GitHub release ${B}$TAG${N}:"
+  for f in $(ls -1 "$OUT"); do say "  $f"; done
   if [[ $UPDATER_ON -eq 1 || " ${SELECTED[*]} " == *" android "* ]]; then
     say "${Y}Publish it as the latest release, not as a pre-release.${N} GitHub's /releases/latest skips pre-releases,"
     say "and both the desktop updater (latest.json) and the Android check read it."
