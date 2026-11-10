@@ -65,6 +65,54 @@ const defs = {
     dark: { accent: "#7b7bda", base: "#08080f", surface: "#0c0c15", text: "#e4e4f5", textSecondary: "#9898b8", textSubdued: "#55557a" },
     light: { ...LIGHT, accent: "#6767d4" },
   },
+  ember: {
+    dark: { accent: "#f28c45", base: "#100b08", surface: "#17100c", text: "#fff0e5", textSecondary: "#c9a995", textSubdued: "#80695b" },
+    light: { ...LIGHT, accent: "#bd571c" },
+  },
+  arctic: {
+    dark: { accent: "#55c9e8", base: "#080f14", surface: "#0d171e", text: "#e6faff", textSecondary: "#9bbac6", textSubdued: "#526f7c" },
+    light: { ...LIGHT, accent: "#167c9b" },
+  },
+  amethyst: {
+    dark: { accent: "#b18aff", base: "#0e0a16", surface: "#15101f", text: "#f0eaff", textSecondary: "#b2a4cc", textSubdued: "#706080" },
+    light: { ...LIGHT, accent: "#7545bd" },
+  },
+  sakura: {
+    dark: { accent: "#f08caf", base: "#140a10", surface: "#1c1017", text: "#ffeaf1", textSecondary: "#c9a0b0", textSubdued: "#80596b" },
+    light: { ...LIGHT, accent: "#bd456f" },
+  },
+  emerald: {
+    dark: { accent: "#34d399", base: "#07120e", surface: "#0c1913", text: "#e2fff1", textSecondary: "#91bca5", textSubdued: "#4d7861" },
+    light: { ...LIGHT, accent: "#16764e" },
+  },
+  cobalt: {
+    dark: { accent: "#528bff", base: "#080d18", surface: "#0e1422", text: "#e8efff", textSecondary: "#a0afd0", textSubdued: "#596b91" },
+    light: { ...LIGHT, accent: "#285ac0" },
+  },
+  gold: {
+    dark: { accent: "#e8bd55", base: "#110e08", surface: "#19150c", text: "#fff8e5", textSecondary: "#c5b58c", textSubdued: "#796b4d" },
+    light: { ...LIGHT, accent: "#936b13" },
+  },
+  mint: {
+    dark: { accent: "#5eead4", base: "#071210", surface: "#0c1916", text: "#e5fffa", textSecondary: "#99c9c0", textSubdued: "#557e76" },
+    light: { ...LIGHT, accent: "#167e70" },
+  },
+  crimson: {
+    dark: { accent: "#ef5350", base: "#130809", surface: "#1b0e10", text: "#ffe9e9", textSecondary: "#c49b9e", textSubdued: "#80585c" },
+    light: { ...LIGHT, accent: "#bd3030" },
+  },
+  lavender: {
+    dark: { accent: "#aaa4ff", base: "#0d0c16", surface: "#141321", text: "#f0efff", textSecondary: "#aaa8c9", textSubdued: "#696783" },
+    light: { ...LIGHT, accent: "#6258c2" },
+  },
+  copper: {
+    dark: { accent: "#d98b65", base: "#120c09", surface: "#1a120e", text: "#fff0e7", textSecondary: "#c1a18e", textSubdued: "#806657" },
+    light: { ...LIGHT, accent: "#a4512e" },
+  },
+  monochrome: {
+    dark: { accent: "#b0b0b0", base: "#090909", surface: "#121212", text: "#f5f5f5", textSecondary: "#aaaaaa", textSubdued: "#666666" },
+    light: { ...LIGHT, accent: "#555555" },
+  },
 } satisfies Record<string, Record<Mode, Colors>>;
 
 export type ThemeName = keyof typeof defs;
