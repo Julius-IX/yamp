@@ -7081,7 +7081,6 @@ dependencies = [
  "android_logger",
  "cloud-auth",
  "cloud-sync",
- "discord-rich-presence",
  "file-server",
  "folder-watch",
  "log",
@@ -7097,6 +7096,7 @@ dependencies = [
  "tauri-settings",
  "ts-types",
  "yamp-db",
+ "yamp-discord",
  "yamp-session",
  "yamp-storage",
  "yt-api",
@@ -7117,6 +7117,13 @@ dependencies = [
  "sqlx",
  "tokio",
  "uuid 1.29.0",
+]
+
+[[package]]
+name = "yamp-discord"
+version = "0.1.0"
+dependencies = [
+ "discord-rich-presence",
 ]
 
 [[package]]
