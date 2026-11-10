@@ -13,6 +13,7 @@ import { ActionButton, ActionRow } from "./controls";
 import FolderPicker from "./FolderPicker";
 import { providerIcon } from "./icons";
 import { PrefRow, Section } from "./rows";
+import StatsRows from "./StatsRows";
 
 const log = logger("settings");
 
@@ -224,7 +225,7 @@ export default function DataPage() {
   }, []);
 
   return (
-    <Section title="Data">
+    <Section title="Data" cloud="data">
       <PrefRow
         title="Downloaded Songs"
         summary={
@@ -251,6 +252,7 @@ export default function DataPage() {
       {sync.loaded && sync.providers.length === 0 && (
         <PrefRow title="Cloud sync" summary="No cloud services are set up in this build" />
       )}
+      <StatsRows />
     </Section>
   );
 }
