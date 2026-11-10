@@ -13,6 +13,8 @@ presence.show(&Track {
   cover: Some("https://example.com/cover.jpg"),
   start_ms,
   end_ms: Some(end_ms),
+  url: Some("https://music.youtube.com/watch?v=abc"),
+  artist_url: None,
 })?;
 
 presence.hide();
@@ -30,8 +32,8 @@ nothing, and the dependency on `discord-rich-presence` is not compiled in at all
 The Discord application that owns the card is made once in the
 [developer portal](https://discord.com/developers/applications). Its id is read when the crate is
 compiled, and **a build without an id has no presence**. `available()` returns false, and the
-settings do not show the option. The name of the application is what the card shows after
-"Listening to".
+settings do not show the option. The name of the application is shown by Discord in the
+places the card does not override.
 
 Copy `config.toml.example` to `config.toml` in this folder and fill in `YAMP_DISCORD_APP_ID`. The
 build script reads it from there, so it does not matter which folder cargo, `tauri dev` or
@@ -49,12 +51,19 @@ The `.gitignore` of this folder keeps the file out, and only the `.example` file
 
 ## The card
 
-| Part      | Shows                                                                        |
-| --------- | ---------------------------------------------------------------------------- |
-| Details   | the title                                                                    |
-| State     | the artist, which is also the line Discord uses for the status of the user   |
-| Cover     | the large image, only when it is a web address of at most 256 characters     |
-| Timestamps | a progress bar when `end_ms` is set, otherwise a time that counts up        |
+| Part       | Shows                                                                         |
+| ---------- | ----------------------------------------------------------------------------- |
+| Name       | the artist, which is what the status of the user reads after "Listening to"   |
+| Details    | the title, a link when `url` is set                                           |
+| State      | the artist, a link when `artist_url` is set                                   |
+| Cover      | the large image when it is a web address, linked to `url`, and the hover text "Listening on yamp" |
+| Timestamps | a progress bar when `end_ms` is set, otherwise a time that counts up          |
+| Buttons    | "Listen on YouTube Music" when `url` is set, and "Get yamp", which leads to the repository |
+
+The name of the application would make the status read "Listening to yamp", but the person
+listens on yamp to something, so the activity overrides the name with the artist. The cover hover
+text and the button are where yamp is named. Only addresses of a web page are linked, a local file
+or a live station has none, and then the card has only the "Get yamp" button.
 
 Discord refuses a line of less than 2 characters or of more than 128, so shorter lines are padded
 with an invisible character and longer ones are cut. A cover that is a local file is left out,
