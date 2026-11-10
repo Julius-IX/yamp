@@ -35,7 +35,8 @@ const SWITCHES = "cloudSections";
 
 // a stable fallback, a new object on every read would make the hook render forever
 const NONE: Record<string, unknown> = {};
-const isOn = (section: CloudSection) => getSetting(SWITCHES, NONE, isRecord)[section] === true;
+// a section that was never switched counts as on
+const isOn = (section: CloudSection) => getSetting(SWITCHES, NONE, isRecord)[section] !== false;
 
 const sectionOf = (key: string) => (Object.keys(CLOUD_SECTIONS) as CloudSection[]).find((s) => CLOUD_SECTIONS[s].keys.includes(key));
 
@@ -109,5 +110,5 @@ export function useCloudSection(section: CloudSection) {
     setSwitches({ ...switches, [section]: next });
     if (next) void join(section);
   };
-  return [switches[section] === true, set] as const;
+  return [switches[section] !== false, set] as const;
 }
