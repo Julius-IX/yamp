@@ -1,0 +1,13 @@
+# Copy this file to config.toml in this folder and fill in the id of the Discord application. The
+# real config.toml is ignored by git, see README.md next to this file.
+#
+# The build script of this crate reads it and bakes the id into the app, also when the build is
+# started from Android Studio or Xcode. The same name set in the environment wins over the file,
+# which is how a CI build does it. An empty value counts as not set. A build without an id has no
+# Discord presence and the settings do not show the option.
+
+[env]
+# The application id from https://discord.com/developers/applications, the "Application ID" on
+# the General Information page. The name of that application is what the card shows after
+# "Listening to".
+YAMP_DISCORD_APP_ID = ""
