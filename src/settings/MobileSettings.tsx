@@ -12,7 +12,7 @@ export default function MobileSettings() {
     <Box>
       <Typography variant="h5" sx={{ px: 2, pt: 3, pb: 1.5, fontWeight: 600 }}>Settings</Typography>
       {settingsPages.map(({ id, Content }) => (
-        <Box key={id}>
+        <Box key={id} id={`settings-${id}`}>
           <Divider sx={{ mx: 2 }} />
           <Content />
         </Box>

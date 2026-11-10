@@ -1,5 +1,6 @@
 import { Box } from "@mui/material";
 import { IS_MOBILE } from "@/util/platform";
+import ErrorNotice from "./ErrorNotice";
 import UpdateNotice from "./UpdateNotice";
 
 /**
@@ -20,6 +21,7 @@ export default function NoticeStack() {
           "& > *": { pointerEvents: "auto", width: IS_MOBILE ? "auto" : 400, maxWidth: "100%" },
         }}
       >
+        <ErrorNotice />
         <UpdateNotice />
       </Box>
     </Box>

@@ -7,7 +7,10 @@ export default function DesktopSettings() {
     <Box sx={{ maxWidth: 700, mx: "auto", px: 3, py: 4 }}>
       <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>Settings</Typography>
       {settingsPages.map(({ id, Content }) => (
-        <Content key={id} />
+        // the id lets a notice scroll to a section
+        <Box key={id} id={`settings-${id}`}>
+          <Content />
+        </Box>
       ))}
     </Box>
   );
