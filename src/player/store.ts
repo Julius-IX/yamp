@@ -8,6 +8,7 @@ import type { AudioQuality, Track } from "@/lib/types";
 import { resolveStream } from "@/radio/api";
 import { isRadio, stationId } from "@/radio/station";
 import { IS_MOBILE } from "@/util/platform";
+import { flushStats, trackListen } from "@/stats/record";
 import { recordPlayed } from "./history";
 import { loadPlayback, savePlayback } from "./persist";
 
@@ -282,9 +283,12 @@ audio.addEventListener("playing", () => {
 audio.addEventListener("pause", () => {
   set({ playing: false });
   save();
+  void flushStats();
 });
 audio.addEventListener("timeupdate", () => {
   setTime(audio.currentTime);
+  const { queue, index } = read();
+  if (queue[index]) trackListen(queue[index], audio.currentTime);
   // cheap when there is nothing to do, and it is what retries a lookup that failed
   prefetchNext();
   if (Date.now() - lastSave > SAVE_EVERY_MS) save();
