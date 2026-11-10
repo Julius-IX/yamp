@@ -545,21 +545,17 @@ check_appimage_icon() { # path
   local app tmp root desktop name found
   app="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
   tmp="$(mktemp -d)"; root="$tmp/squashfs-root"
-  (
-    cd "$tmp" || exit 1
-    "$app" --appimage-extract '.DirIcon' >/dev/null 2>&1
-    "$app" --appimage-extract '*.desktop' >/dev/null 2>&1
-  )
+  # extract everything, partial extraction leaves symlinks dangling
+  ( cd "$tmp" && "$app" --appimage-extract >/dev/null 2>&1 )
   desktop="$(find "$root" -maxdepth 1 -name '*.desktop' 2>/dev/null | head -n1)"
-  if [[ -z "$desktop" && ! -e "$root/.DirIcon" && ! -L "$root/.DirIcon" ]]; then
-    warn "could not look into the AppImage, its icon is not checked"
+  if [[ -z "$desktop" || ! -r "$desktop" ]]; then
+    warn "could not read a desktop file from the AppImage, its icon is not checked"
     rm -rf "$tmp"; return 0
   fi
-  name="$(sed -n 's/^Icon=//p' "$desktop" 2>/dev/null | head -n1)"
+  name="$(sed -n 's/^Icon=//p' "$desktop" | head -n1)"
   if [[ -z "$name" ]]; then
-    warn "the AppImage has no Icon= in its desktop file"; rm -rf "$tmp"; return 1
+    warn "the AppImage has no Icon= in $(basename "$desktop")"; rm -rf "$tmp"; return 1
   fi
-  ( cd "$tmp" && "$app" --appimage-extract "$name.png" >/dev/null 2>&1; "$app" --appimage-extract 'usr/share/icons/*' >/dev/null 2>&1 )
   found="$(find "$root" -name "$name.png" 2>/dev/null | head -n1)"
   if [[ -z "$found" ]]; then
     warn "the AppImage names the icon \"$name\" but contains no $name.png"; rm -rf "$tmp"; return 1
@@ -567,7 +563,8 @@ check_appimage_icon() { # path
   if [[ ! -e "$root/.DirIcon" ]]; then
     warn "the AppImage has no working .DirIcon, file managers show a generic icon"; rm -rf "$tmp"; return 1
   fi
-  local sizes; sizes="$(find "$root/usr/share/icons" -name "$name.png" 2>/dev/null | sed -n 's#.*/hicolor/\([^/]*\)/apps/.*#\1#p' | sort -V | tr '\n' ' ')"
+  local sizes
+  sizes="$(find "$root/usr/share/icons" -name "$name.png" 2>/dev/null | sed -n 's#.*/hicolor/\([^/]*\)/apps/.*#\1#p' | sort -V | tr '\n' ' ')"
   say "AppImage icon ok, ${name}.png${sizes:+ in $sizes}"
   rm -rf "$tmp"
 }
