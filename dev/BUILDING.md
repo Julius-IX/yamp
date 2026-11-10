@@ -4,6 +4,7 @@ How to run and package the app. Each crate under `src-tauri/crates` has its own 
 details of its part, this file only shows the minimal setup and points there.
 
 For running tests see [TESTING.md](TESTING.md).
+Use [build.sh](../scripts/build.sh) to create release builds with ease.
 
 ## Layout
 
@@ -135,12 +136,15 @@ npx tauri signer generate -w ~/.tauri/yamp.key
 ```
 
 Put the content of `yamp.key.pub` in `plugins.updater.pubkey` of
-[`src-tauri/tauri.conf.json`](../src-tauri/tauri.conf.json). It
-is not a secret. The private key signs the bundles, so a release build needs it in the environment:
+[`src-tauri/tauri.conf.json`](../src-tauri/tauri.conf.json). It is not a secret.
+The private key signs the bundles, so a release build needs it in the environment. It cannot go in
+`src-tauri/.cargo/config.toml`: the Tauri CLI does the signing, and cargo's `[env]` only reaches
+the processes cargo starts. `scripts/build.sh` reads `~/.tauri/yamp.key` (or `YAMP_SIGNING_KEY`)
+itself. Without the script:
 
 ```sh
-export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/yamp.key)"
-export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="..."   # only when the key has one
+export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/yamp.key)"   # the content or the path of the file
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="..."               # only when the key has one
 ```
 
 Losing the private key means every installed copy has to be replaced by hand once, since an app
