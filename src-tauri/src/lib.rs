@@ -25,6 +25,8 @@ const SETTINGS: &[&str] = &[
   "customThemes",
   "discordPresence",
   "prefetch",
+  "updateCheck",
+  "updateSkipped",
   "lastCompact",
   "country",
   library::SYNC_KEY,
@@ -53,6 +55,7 @@ pub fn run() {
       tauri_settings::init(app.handle(), SETTINGS)?;
       logging::attach(app.handle().clone());
       app.manage(api::Presence::default());
+      api::init_updater(app)?;
       library::init(app.handle())?;
       #[cfg(any(target_os = "android", target_os = "ios"))]
       {

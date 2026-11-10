@@ -7,9 +7,11 @@ import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
 import { useDiscordPresence } from "@/lib/discord";
 import { useAutoSync } from "@/lib/sync";
+import { useAutoUpdateCheck } from "@/lib/updater";
 import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
 import VideoModal from "@/video/VideoModal";
+import NoticeStack from "./notices/NoticeStack";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -49,6 +51,7 @@ function useNavHidden(router: TabRouter) {
 export default function AppLayout() {
   useAutoSync();
   useDiscordPresence();
+  useAutoUpdateCheck();
   const [activeId, setActiveId] = useState(tabs[0].id);
   // A tab is only rendered once it was opened. Mounting all of them at launch put every hidden
   // tab's DOM, images and provider queries in memory for screens nobody had looked at. After the
@@ -139,6 +142,8 @@ export default function AppLayout() {
             ))}
           </Box>
         </Box>
+
+        <NoticeStack />
 
         {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
         <Player />

@@ -192,3 +192,13 @@ export type Track = {
   thumbnail: string | null;
   releaseYear: number | null;
 }
+
+export type UpdateInfo = {
+  version: string;
+  notes: string | null;
+}
+
+export type UpdateProgress = {
+  downloaded: number;
+  total: number | null;
+}

@@ -35,6 +35,10 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 log = "0.4"
 
+# a phone is updated through its store or by the user, there the plugin has nothing to replace
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2"
+
 [target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 tauri-plugin-deep-link = "2"
 

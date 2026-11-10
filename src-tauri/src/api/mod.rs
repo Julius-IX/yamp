@@ -12,10 +12,12 @@ mod queue;
 mod session;
 mod sync;
 mod tracks;
+mod updater;
 mod values;
 mod wire;
 
 pub use discord::Presence;
+pub use updater::init as init_updater;
 
 /// Commands report failures as plain strings, the detail is already logged by `yt_api`.
 fn err(e: impl ToString) -> String {
