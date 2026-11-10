@@ -28,7 +28,7 @@
   "plugins": {
     "updater": {
       "endpoints": ["https://github.com/Julius-IX/yamp/releases/latest/download/latest.json"],
-      "pubkey": ""
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkzODRFQTFGRDE0MUFCOUUKUldTZXEwSFJIK3FFa3hPcG1mbm0rVUNZdDJRQmI5N3lyK2JENTNSTko3eS8xWHZFZERRVURJVlgK"
     },
     "deep-link": {
       "mobile": [
