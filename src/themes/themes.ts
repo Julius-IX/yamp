@@ -7,7 +7,8 @@ export const modePrefs = ["system", "dark", "light"] as const;
 export type ModePref = (typeof modePrefs)[number];
 export const DEFAULT_MODE: ModePref = "dark";
 
-type Colors = {
+/** What a theme is made of, for a built-in one and for one the user defines alike. */
+export type Colors = {
   accent: string;
   base: string;
   surface: string;
@@ -70,7 +71,7 @@ export type ThemeName = keyof typeof defs;
 export const themeNames = Object.keys(defs) as ThemeName[];
 export const DEFAULT_THEME: ThemeName = "violet";
 
-const make = (mode: Mode, colors: Colors) =>
+export const buildTheme = (mode: Mode, colors: Colors) =>
   createTheme({
     shape: { borderRadius: 10 },
     typography: { fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
@@ -81,9 +82,12 @@ const make = (mode: Mode, colors: Colors) =>
   });
 
 export const themes = Object.fromEntries(
-  themeNames.map((n) => [n, { light: make("light", defs[n].light), dark: make("dark", defs[n].dark) }]),
+  themeNames.map((n) => [n, { light: buildTheme("light", defs[n].light), dark: buildTheme("dark", defs[n].dark) }]),
 ) as Record<ThemeName, Record<Mode, Theme>>;
 
 const capitalize = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
+/** The colors of a built-in theme, which is where a custom one can start from. */
+export const builtinColors = (name: ThemeName, mode: Mode): Colors => defs[name][mode];
+
 export const themeLabel = (n: ThemeName) => capitalize(n);
 export const modeLabel = (m: ModePref) => capitalize(m);
