@@ -68,6 +68,9 @@ export const addToPlaylist = async (id: string, tracks: Track[]) =>
 export const removeFromPlaylist = async (id: string, position: number) =>
   (await change("remove from a playlist", () => COMMANDS.playlists.removeAt({ id, position }))) !== null;
 
+export const moveInPlaylist = async (id: string, from: number, to: number) =>
+  (await change("move in a playlist", () => COMMANDS.playlists.moveTrack({ id, from, to }))) !== null;
+
 /**
  * The covers that the user set, as data URLs. They are read with the list, before it is shown,
  * so a card never draws the thumbnail first and swaps it a moment later. Each is kept with the

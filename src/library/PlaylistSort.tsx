@@ -21,6 +21,8 @@ const OPTIONS: { key: SortKey; label: string }[] = [
   { key: "year", label: "Release year" },
 ];
 
+export const sortLabel = (key: SortKey) => OPTIONS.find((o) => o.key === key)!.label;
+
 const value = (t: Track, key: SortKey): string | number | null => {
   switch (key) {
     case "title": return t.title;
