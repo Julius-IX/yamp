@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT key AS \"key!\", value AS \"value!\" FROM synced_values\n         WHERE substr(key, 1, length(?)) = ? ORDER BY key",
+  "describe": {
+    "columns": [
+      {
+        "name": "key!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "value!",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a685572b356f5bda31bffe0813041c10d5bc7a543b155d801e4fcb5dc939249d"
+}

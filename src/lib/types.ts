@@ -139,6 +139,11 @@ export type Playlist = {
   tracks: Track[];
 }
 
+export type StoredValue = {
+  key: string;
+  value: string;
+}
+
 export type StreamInfo = {
   url: string;
   ext: string;

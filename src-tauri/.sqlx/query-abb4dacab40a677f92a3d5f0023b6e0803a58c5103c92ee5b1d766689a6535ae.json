@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM synced_values WHERE substr(key, 1, length(?)) = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "abb4dacab40a677f92a3d5f0023b6e0803a58c5103c92ee5b1d766689a6535ae"
+}

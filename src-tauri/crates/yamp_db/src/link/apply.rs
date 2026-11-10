@@ -11,7 +11,7 @@ use serde_json::Value;
 use sqlx::{SqliteConnection, SqlitePool};
 
 use super::{
-  doc::{ArtistDoc, Change, CoverDoc, LikeDoc, PlaylistDoc, TrackDoc},
+  doc::{ArtistDoc, Change, CoverDoc, LikeDoc, PlaylistDoc, TrackDoc, ValueDoc},
   kind::Kind,
   state,
 };
@@ -158,6 +158,11 @@ async fn delete(conn: &mut SqliteConnection, kind: Kind, key: &str) -> Result<()
         .execute(conn)
         .await?
     }
+    Kind::Value => {
+      sqlx::query!("DELETE FROM synced_values WHERE key = ?", key)
+        .execute(conn)
+        .await?
+    }
   };
   Ok(())
 }
@@ -248,6 +253,20 @@ async fn put(conn: &mut SqliteConnection, kind: Kind, key: &str, doc: &Value) ->
          ON CONFLICT (playlist_id) DO UPDATE SET image = excluded.image, updated_ms = excluded.updated_ms",
         key,
         image,
+        d.updated_ms
+      )
+      .execute(conn)
+      .await?;
+    }
+    Kind::Value => {
+      let Some(d) = read::<ValueDoc>(doc) else {
+        return Ok(false);
+      };
+      sqlx::query!(
+        "INSERT INTO synced_values (key, value, updated_ms) VALUES (?1, ?2, ?3)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_ms = excluded.updated_ms",
+        key,
+        d.value,
         d.updated_ms
       )
       .execute(conn)

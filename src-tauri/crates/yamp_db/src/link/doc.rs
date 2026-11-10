@@ -82,3 +82,10 @@ pub(crate) struct CoverDoc {
   pub image: String,
   pub updated_ms: i64,
 }
+
+/// A key value pair. The key is the key of the entity, so only the value travels here.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct ValueDoc {
+  pub value: String,
+  pub updated_ms: i64,
+}

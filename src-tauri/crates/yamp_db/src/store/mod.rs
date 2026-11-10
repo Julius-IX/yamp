@@ -8,6 +8,7 @@ mod local;
 pub(crate) mod ordered;
 mod playlist;
 pub(crate) mod track;
+mod value;
 
 pub use artist::{Artist, Artists, FollowedArtist};
 pub use cover::{COVER_SIZE, PlaylistCovers};
@@ -18,5 +19,6 @@ pub use local::{
 };
 pub use playlist::{Playlist, Playlists};
 pub use track::{Track, Tracks};
+pub use value::Values;
 
 pub(crate) use download::check_name as download_name_check;
