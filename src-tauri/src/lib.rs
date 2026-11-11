@@ -35,8 +35,26 @@ const SETTINGS: &[&str] = &[
   library::SYNC_KEY,
 ];
 
+/// The AppImage bundles GStreamer, but the helper that scans plugins is not always found at the
+/// path GStreamer expects. The web process then warns on every media element it creates. Without
+/// the helper the scan runs in process, which is slower only on the first start.
+#[cfg(target_os = "linux")]
+fn scan_gstreamer_plugins_in_process() {
+  use std::{env::var_os, path::Path};
+  if var_os("APPDIR").is_none() || var_os("GST_REGISTRY_FORK").is_some() {
+    return;
+  }
+  if var_os("GST_PLUGIN_SCANNER").is_some_and(|p| Path::new(&p).is_file()) {
+    return;
+  }
+  // SAFETY: runs first in `run`, before the web view or any thread of the app exists.
+  unsafe { std::env::set_var("GST_REGISTRY_FORK", "no") };
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  #[cfg(target_os = "linux")]
+  scan_gstreamer_plugins_in_process();
   logging::init();
 
   #[cfg(all(debug_assertions, desktop))]
