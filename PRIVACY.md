@@ -2,17 +2,24 @@
 
 **Effective date:** November 11, 2026
 
-YAMP ("the app") is an open source application available at
+YAMP ("Yamp", "the app") is a free, open source music player available at
 <https://github.com/Julius-IX/yamp>. This policy explains what data the app handles, where it
 goes, and how you can remove it.
 
 **In short:** YAMP has no server and no developer-run backend. Nothing is sent to the developer.
-Your data stays on your device, and goes to a cloud service only if you choose to connect one.
+Your library stays on your device, and goes to a cloud service only if you choose to connect one.
+Features such as streaming, downloads and radio contact third-party services directly from your
+device, see "Other services YAMP connects to" below.
 
 ## Data stored on your device
 
-YAMP stores its data in the app data folder of your device. This data stays there unless you
-turn on cloud sync, described below. The developer cannot see it.
+YAMP stores its data in the app data folder of your device, in a local database. This includes
+your library (likes, playlists and followed artists), your settings, your downloaded songs, the
+folders you add as local music, and your listening statistics. Listening statistics stay on your
+devices and can be turned off in the settings.
+
+This data stays on your device unless you turn on cloud sync, described below. The developer
+cannot see it.
 
 ## Optional cloud sync (Google Drive and OneDrive)
 
@@ -24,7 +31,8 @@ Cloud sync is off until you sign in to a service yourself. If you do, the follow
   `https://www.googleapis.com/auth/drive.appdata`. This gives access to a hidden folder
   in your Google Drive that only YAMP can see. YAMP cannot see, read, or change any of your other
   Drive files.
-- **What is stored there:** the app's own data that you choose to sync.
+- **What is stored there:** your YAMP library (likes, playlists and followed artists) and the
+  sections of your settings that you choose to sync.
 - **What is stored on your device:** a refresh token and your account name, in the file
   `cloud_tokens.json` in the app data folder. Access tokens are kept in memory only and are
   discarded when the app closes.
@@ -36,6 +44,19 @@ Cloud sync is off until you sign in to a service yourself. If you do, the follow
   in your OneDrive and does not give access to your other files.
 - **What is stored on your device:** the same as for Google Drive: a refresh token and your
   account name in `cloud_tokens.json`.
+
+## Other services YAMP connects to
+
+Some features work by your device contacting a third-party service directly. The developer does
+not receive these requests, and each service handles them under its own privacy policy:
+
+- **YouTube and YouTube Music:** searching, streaming and downloading music, using the tools
+  yt-dlp (desktop) and youtubedl-android (Android). Your search terms and the songs you play
+  are sent to YouTube.
+- **Radio Browser:** finding internet radio stations by search or tag.
+- **GitHub:** checking for and downloading updates to the app and to yt-dlp.
+- **Discord:** if you enable Rich Presence on desktop, what you are listening to is passed to
+  the Discord app running on your own computer.
 
 ## Data collection and sharing
 
