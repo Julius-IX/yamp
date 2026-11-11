@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
-import { Box, IconButton, Tooltip, Typography } from "@mui/material";
+import { alpha, Box, Checkbox, IconButton, Tooltip, Typography, type Theme } from "@mui/material";
+import ChecklistIcon from "@mui/icons-material/Checklist";
 import CloseIcon from "@mui/icons-material/Close";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import OndemandVideoIcon from "@mui/icons-material/OndemandVideo";
@@ -16,7 +17,9 @@ import { IS_MOBILE } from "@/util/platform";
 import AddToPlaylist from "@/library/AddToPlaylist";
 import DownloadButton from "@/library/DownloadButton";
 import ArtistLink from "./ArtistLink";
+import SelectionBar from "./SelectionBar";
 import { TrackMenuButton } from "./TrackMenu";
+import { unique } from "./tracks";
 import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 
 // The header and the rows share these so the columns line up. The buttons sit after them.
@@ -62,6 +65,10 @@ type RowProps = {
   /** Mobile only. The handles are showing, and the menu offers to show them. */
   reordering?: boolean;
   onReorder?: () => void;
+  /** While picking, the row shows a checkbox and a click picks it and does not play. */
+  selecting?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
 };
 
 /**
@@ -86,33 +93,42 @@ function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
  * The row is a div that plays when clicked, not a button. The artist and the actions inside are
  * controls of their own, and a button cannot hold another one.
  */
-function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging, reordering, onReorder }: RowProps) {
+function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging, reordering, onReorder, selecting, selected, onToggle }: RowProps) {
   const watchable = !isRadio(track.id) && !isLocalFile(track.id);
   return (
     <Box
       role="button"
       tabIndex={0}
       data-row
-      onClick={onPlay}
+      onClick={selecting ? onToggle : onPlay}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
         e.preventDefault();
-        onPlay();
+        (selecting ? onToggle : onPlay)?.();
       }}
       sx={{
         display: "flex", alignItems: "center", py: 0.75, borderRadius: radius.row, cursor: "pointer",
         opacity: dragging ? 0.5 : 1,
         boxShadow: (t) => (drop ? `inset 0 ${drop === "above" ? 2 : -2}px 0 ${t.palette.primary.main}` : "none"),
         "&:hover, &:focus-visible": { bgcolor: "action.hover", outline: "none" },
-        "&:hover .row-index": { display: "none" },
-        "&:hover .row-play": { display: "flex" },
-        "&:hover .row-action": { opacity: 1 },
+        ...(!selecting && {
+          "&:hover .row-index": { display: "none" },
+          "&:hover .row-play": { display: "flex" },
+          "&:hover .row-action": { opacity: 1 },
+        }),
+        ...(selected && { bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.12) }),
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: columns(showPlays), alignItems: "center" }}>
-        <Typography className="row-index" variant="body2" sx={{ ...(active ? { color: "primary.main" } : faint), textAlign: "center" }}>
-          {index + 1}
-        </Typography>
+        {selecting ? (
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Checkbox size="small" checked={!!selected} disableRipple tabIndex={-1} sx={{ p: 0 }} />
+          </Box>
+        ) : (
+          <Typography className="row-index" variant="body2" sx={{ ...(active ? { color: "primary.main" } : faint), textAlign: "center" }}>
+            {index + 1}
+          </Typography>
+        )}
         <Box className="row-play" sx={{ display: "none", justifyContent: "center", color: "text.primary" }}>
           <PlayArrowIcon fontSize="small" />
         </Box>
@@ -134,7 +150,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
       </Box>
 
       <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove, !!handle), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
-        {IS_MOBILE ? (
+        {selecting ? null : IS_MOBILE ? (
           <>
             <Box sx={cell(true)}><LikeButton track={track} size="small" /></Box>
             <Box sx={cell(true)}>
@@ -215,6 +231,16 @@ export default function TrackTable({
   const [drag, setDrag] = useState<Drag | null>(null);
   // Mobile has no room for a handle on every row, so the handles are a mode the menu of a row starts
   const [reordering, setReordering] = useState(false);
+  // the ids of the picked tracks while picking, null when not
+  const [picked, setPicked] = useState<ReadonlySet<string> | null>(null);
+  const everyone = unique(tracks);
+  const chosen = picked ? everyone.filter((t) => picked.has(t.id)) : [];
+  const toggle = (id: string) =>
+    setPicked((p) => {
+      const next = new Set(p);
+      if (!next.delete(id)) next.add(id);
+      return next;
+    });
   // the latest pointer height, read by the scroll loop which runs between pointer events
   const pointerY = useRef(0);
 
@@ -310,15 +336,32 @@ export default function TrackTable({
 
   return (
     <Box sx={{ px: GUTTER }}>
-      <Box sx={{ display: "flex", borderBottom: 1, borderColor: "divider", pb: 1, mb: 0.5 }}>
-        <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: columns(!!plays) }}>
-          <Typography sx={{ ...columnHead, textAlign: "center" }}>#</Typography>
-          <Typography sx={columnHead}>TITLE</Typography>
-          {!IS_MOBILE && <Typography sx={columnHead}>ARTIST</Typography>}
-          {!IS_MOBILE && plays && <Typography sx={{ ...columnHead, textAlign: "right", pr: 1 }}>PLAYS</Typography>}
+      {picked ? (
+        <SelectionBar
+          picked={chosen} total={everyone.length}
+          onToggleAll={() => setPicked(chosen.length === everyone.length ? new Set() : new Set(everyone.map((t) => t.id)))}
+          onDone={() => setPicked(null)}
+        />
+      ) : (
+        <Box sx={{ display: "flex", alignItems: "center", borderBottom: 1, borderColor: "divider", pb: 1, mb: 0.5 }}>
+          <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: columns(!!plays) }}>
+            <Typography sx={{ ...columnHead, textAlign: "center" }}>#</Typography>
+            <Typography sx={columnHead}>TITLE</Typography>
+            {!IS_MOBILE && <Typography sx={columnHead}>ARTIST</Typography>}
+            {!IS_MOBILE && plays && <Typography sx={{ ...columnHead, textAlign: "right", pr: 1 }}>PLAYS</Typography>}
+          </Box>
+          <Box sx={{ width: actionsWidth(!!onRemove, !!onMove), display: "flex", justifyContent: "flex-end" }}>
+            {/* in the column of the heart, which is the last button of a row on both platforms */}
+            <Box sx={{ width: BUTTON, display: "flex", justifyContent: "center" }}>
+              <Tooltip title="Select tracks">
+                <IconButton size="small" aria-label="Select tracks" onClick={() => { setReordering(false); setPicked(new Set()); }}>
+                  <ChecklistIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Box>
         </Box>
-        <Box sx={{ width: actionsWidth(!!onRemove, !!onMove) }} />
-      </Box>
+      )}
       {reordering && (
         <Typography variant="caption" sx={{ ...subdued, display: "block", py: 0.5 }}>
           Drag the handles to reorder. Tap anywhere else when done.
@@ -332,6 +375,7 @@ export default function TrackTable({
             handle={onMove && (!IS_MOBILE || reordering) ? { onStart: start(i) } : undefined}
             reordering={reordering}
             onReorder={onMove && IS_MOBILE ? () => setReordering(true) : undefined}
+            selecting={!!picked} selected={!!picked?.has(t.id)} onToggle={() => toggle(t.id)}
             dragging={drag?.from === i}
             drop={drag && drag.from !== drag.to && drag.to === i ? (drag.to > drag.from ? "below" : "above") : null}
           />
