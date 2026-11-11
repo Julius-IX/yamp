@@ -1,0 +1,32 @@
+---
+---
+@import "{{ site.theme }}";
+
+body { background: #0f1115; }
+
+.page-header {
+  background-image: linear-gradient(120deg, #0b3d2e, #14705a);
+}
+
+.main-content { color: #d7dae0; }
+.main-content h1,
+.main-content h2,
+.main-content h3,
+.main-content h4 { color: #eef0f3; }
+.main-content a { color: #5ee6b0; }
+.main-content hr { background-color: #2a2f3a; }
+
+.main-content table th,
+.main-content table td { border-color: #2a2f3a; }
+.main-content table th { background: #181c23; }
+
+.main-content code { background: #1b1f27; color: #e6e9ef; }
+.main-content pre { background: #1b1f27; border-color: #2a2f3a; }
+
+.main-content details {
+  background: #151920;
+  border: 1px solid #2a2f3a;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.75rem;
+}
