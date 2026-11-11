@@ -64,11 +64,30 @@ export type Explore = {
   moods: Mood[];
 }
 
+export type FailedEntry = {
+  row: number;
+  kind: string;
+  collection: string | null;
+  title: string;
+  artist: string;
+  reason: string;
+}
+
 export type FollowedArtist = {
   id: string;
   name: string;
   thumbnail: string | null;
   followedMs: number;
+}
+
+export type ImportReport = {
+  source: string;
+  total: number;
+  liked: number;
+  playlists: number;
+  albums: number;
+  failures: FailedEntry[];
+  failedCsv: string;
 }
 
 export type Item = {

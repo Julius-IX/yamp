@@ -12,6 +12,7 @@ mod queue;
 mod session;
 mod sync;
 mod tracks;
+mod transfer;
 mod updater;
 mod values;
 mod wire;

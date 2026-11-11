@@ -7247,6 +7247,7 @@ dependencies = [
  "yamp-discord",
  "yamp-session",
  "yamp-storage",
+ "yamp-transfer",
  "yt-api",
 ]
 
@@ -7308,6 +7309,13 @@ dependencies = [
  "serde",
  "tauri",
  "tauri-plugin",
+]
+
+[[package]]
+name = "yamp-transfer"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

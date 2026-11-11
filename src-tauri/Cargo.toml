@@ -21,6 +21,7 @@ ts-types = { version = "0.2.0", path = "./crates/ts_types" }
 yt-api = { version = "0.1.0", path = "./crates/yt_api" }
 tauri-settings = { version = "0.1.0", path = "./crates/tauri_settings" }
 yamp-session = { version = "0.1.0", path = "./crates/yamp_session" }
+yamp-transfer = { version = "0.1.0", path = "./crates/yamp_transfer" }
 yamp-db = { version = "0.1.0", path = "./crates/yamp_db" }
 yamp-storage = { version = "0.1.0", path = "./crates/yamp_storage" }
 file-server = { version = "0.1.0", path = "./crates/file_server" }
