@@ -172,6 +172,20 @@ const shuffled = <T>(list: T[]): T[] => {
 };
 
 /**
+ * A new order for another pass through a shuffled queue. Replaying the order of the last pass
+ * would make shuffle with repeat all a fixed loop. The track that just ended is kept off the
+ * front so it does not play twice in a row.
+ */
+const nextPass = (list: Track[], ended: Track | undefined): Track[] => {
+  const out = shuffled(list);
+  if (out.length > 1 && out[0].id === ended?.id) {
+    const j = 1 + Math.floor(Math.random() * (out.length - 1));
+    [out[0], out[j]] = [out[j], out[0]];
+  }
+  return out;
+};
+
+/**
  * For a list that has to be loaded before it can play. The list takes a number first and checks
  * it with `stillWanted` once it has loaded, so a slow one does not replace a song that was
  * picked in the meantime.
@@ -478,7 +492,10 @@ async function advance(auto: boolean) {
   const { queue, index, repeat } = read();
   const autoplay = getSetting("autoplay", true, isBoolean);
   if (index < queue.length - 1) return start(index + 1);
-  if (repeat === "all" && queue.length > 0) return start(0);
+  if (repeat === "all" && queue.length > 0) {
+    if (read().shuffle) set({ queue: nextPass(queue, queue[index]) });
+    return start(0);
+  }
   if (autoplay && queue.length > 0 && (await extend())) return start(index + 1);
   // the end of the queue, a finished track is left as it is
   if (auto) set({ playing: false });
