@@ -39,7 +39,7 @@ export default function TrackShelf({
           variant={variant}
           onClick={() => (videos ? video.watch(list, i) : player.play(list, i))}
           onPlay={videos ? () => player.play(list, i) : undefined}
-          onQueue={() => player.enqueue([t], "end")}
+          track={t}
         />
       ))}
     </Shelf>

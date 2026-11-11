@@ -4,7 +4,9 @@ import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import Cover from "@/player/Cover";
+import type { Track } from "@/lib/types";
 import { IS_MOBILE } from "@/util/platform";
+import { TrackMenuButton } from "./TrackMenu";
 import { accentFill, faint, radius, scrim, subdued, surface } from "@/themes/ui";
 
 /** Square for tracks, albums and playlists, round for artists, 16:9 for videos. */
@@ -38,17 +40,25 @@ type Props = {
   onClick: () => void;
   /** Plays without opening. Without it a click on the overlay is a click on the card. */
   onPlay?: () => void;
-  /** Adds to the end of the queue. Shown on hover, or always where there is no hover. */
+  /** Adds a collection to the end of the queue. Shown on hover, or always where there is no hover. */
   onQueue?: () => void;
+  /**
+   * The track the card stands for, which gives it a menu of actions. Shown on hover, or always
+   * where there is no hover. With `onPlay` the menu gets a "Play" entry of its own too, since a
+   * click on such a card may do something else than play.
+   */
+  track?: Track;
 };
 
 /**
  * A cover with a title and a line below. The overlay is a hint that the card plays, so on a
  * touch screen without hover it is left out. Artists have no overlay, they only open.
  */
-export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", onClick, onPlay, onQueue }: Props) {
+export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", onClick, onPlay, onQueue, track }: Props) {
   return (
     <ButtonBase
+      // a div and not a button, the menu of the card holds a button and a button cannot contain one
+      component="div"
       onClick={onClick}
       sx={{
         ...shell(variant), transition: "background-color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
@@ -95,7 +105,7 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
             <PlayArrowIcon />
           </Box>
         )}
-        {onQueue && variant !== "round" && (
+        {onQueue && !track && variant !== "round" && (
           <Box
             className="card-play"
             component="span"
@@ -115,6 +125,20 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
             }}
           >
             <PlaylistAddIcon fontSize="small" />
+          </Box>
+        )}
+        {track && variant !== "round" && (
+          <Box
+            className="card-play"
+            component="span"
+            sx={{
+              position: "absolute", right: 6, top: 6, display: "flex",
+              opacity: 0, transform: "translateY(-4px)", transition: "opacity 0.2s, transform 0.2s",
+              // no hover on a touch screen, so it is there all the time
+              "@media (hover: none)": { opacity: 1, transform: "none" },
+            }}
+          >
+            <TrackMenuButton track={track} onPlay={onPlay} like sx={{ ...scrim, p: 0.5 }} />
           </Box>
         )}
       </Box>
