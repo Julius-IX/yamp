@@ -13,7 +13,7 @@ pub(crate) fn records(text: &str) -> Vec<Vec<String>> {
   let mut chars = text.chars().peekable();
 
   let mut end_row = |row: &mut Vec<String>, field: &mut String| {
-    row.push(std::mem::take(field));
+    row.push(unguard(std::mem::take(field)));
     let blank = row.len() == 1 && row[0].is_empty();
     let done = std::mem::take(row);
     if !blank {
@@ -34,7 +34,7 @@ pub(crate) fn records(text: &str) -> Vec<Vec<String>> {
     } else if c == '"' && field.is_empty() {
       quoted = true;
     } else if c == sep {
-      row.push(std::mem::take(&mut field));
+      row.push(unguard(std::mem::take(&mut field)));
     } else if c == '\n' || c == '\r' {
       if c == '\r' && chars.peek() == Some(&'\n') {
         chars.next();
@@ -69,6 +69,39 @@ fn separator(text: &str) -> char {
   }
   // the comma wins a tie, being the usual one
   counts.iter().fold((',', 0), |best, &(s, n)| if n > best.1 { (s, n) } else { best }).0
+}
+
+/// A cell that starts like this is run as a formula by spreadsheets. It is written with a
+/// leading apostrophe, which they show as plain text, and [`records`] takes it off again.
+const FORMULA_START: [char; 4] = ['=', '+', '-', '@'];
+
+/// Appends one record. A field is quoted only when it has to be.
+pub(crate) fn write_record(out: &mut String, fields: &[&str]) {
+  for (i, field) in fields.iter().enumerate() {
+    if i > 0 {
+      out.push(',');
+    }
+    let guarded = field.starts_with(FORMULA_START);
+    let field = if guarded { format!("'{field}") } else { (*field).to_owned() };
+    if field.contains([',', '"', '\n', '\r']) {
+      out.push('"');
+      out.push_str(&field.replace('"', "\"\""));
+      out.push('"');
+    } else {
+      out.push_str(&field);
+    }
+  }
+  // a spreadsheet expects this line ending
+  out.push_str("\r\n");
+}
+
+/// Undoes the apostrophe of [`write_record`]. An apostrophe that is not followed by a formula
+/// character belongs to the text.
+fn unguard(field: String) -> String {
+  match field.strip_prefix('\'') {
+    Some(rest) if rest.starts_with(FORMULA_START) => rest.to_owned(),
+    _ => field,
+  }
 }
 
 #[cfg(test)]
@@ -109,5 +142,23 @@ mod tests {
     assert_eq!(view(&rows), [vec!["a", "b"], vec!["1", "2,5"]]);
     let rows = records("a\tb\n1\t2");
     assert_eq!(view(&rows), [vec!["a", "b"], vec!["1", "2"]]);
+  }
+
+  #[test]
+  fn written_records_read_back_the_same() {
+    let fields = ["plain", "with, comma", "say \"hi\"", "two\nlines", "", "=1+1", "+", "'quoted"];
+    let mut out = String::new();
+    write_record(&mut out, &fields);
+    write_record(&mut out, &fields);
+    let rows = records(&out);
+    assert_eq!(rows.len(), 2);
+    assert_eq!(view(&rows)[0], fields);
+  }
+
+  #[test]
+  fn formulas_are_written_as_text() {
+    let mut out = String::new();
+    write_record(&mut out, &["=SUM(A1)", "-5"]);
+    assert_eq!(out, "'=SUM(A1),'-5\r\n");
   }
 }

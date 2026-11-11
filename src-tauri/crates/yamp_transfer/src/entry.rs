@@ -82,6 +82,8 @@ pub enum Reason {
   NoMatch,
   /// The provider did not answer. Another attempt can work.
   LookupFailed,
+  /// The song was found, but the library refused it.
+  SaveFailed,
 }
 
 impl Reason {
@@ -90,6 +92,7 @@ impl Reason {
       Self::Unreadable => "no title",
       Self::NoMatch => "no match found",
       Self::LookupFailed => "lookup failed",
+      Self::SaveFailed => "could not be saved",
     }
   }
 }

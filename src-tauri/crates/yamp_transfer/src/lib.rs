@@ -6,6 +6,7 @@
 //!
 //! - [`parse`] turns the file of Spotify, SoundCloud or Yamp itself into [`Entry`] values.
 //! - [`query`] and [`pick`] find the Yamp track or album that an entry stands for.
+//! - [`library_csv`] and [`failures_csv`] write the files that leave the app.
 //!
 //! Services word their columns differently and none of them promises a format. Columns are
 //! therefore found by name, with several names for the same thing, instead of by position.
@@ -14,7 +15,9 @@ mod entry;
 mod matching;
 mod read;
 mod text;
+mod write;
 
 pub use entry::{Entry, Failure, Kind, Reason, Source};
 pub use matching::{Candidate, pick, query};
 pub use read::{ReadError, Parsed, parse};
+pub use write::{failures_csv, library_csv};
