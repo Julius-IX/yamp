@@ -555,6 +555,21 @@ export const player = {
     }
   },
 
+  /**
+   * Plays a list in a fresh random order with shuffle turned on. The order is built once and
+   * played from the front, so pressing it again is what builds a new one. The list is kept as
+   * `original` and `source`, which is what turning shuffle off and the next pass draw from.
+   */
+  playShuffled(tracks: Track[]) {
+    if (tracks.length === 0) return;
+    picks++;
+    original = tracks;
+    source = tracks;
+    setSetting("shuffle", true);
+    set({ shuffle: true, queue: shuffled(tracks) });
+    void start(0);
+  },
+
   /** Plays an entry that is already in the queue. */
   jumpTo(index: number) {
     picks++;
