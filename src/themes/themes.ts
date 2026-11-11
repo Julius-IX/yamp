@@ -144,6 +144,13 @@ export const buildTheme = (mode: Mode, colors: Colors) => {
           },
         },
       },
+      MuiSlider: {
+        styleOverrides: {
+          // a seek bar or a volume bar fills with a run of the accent, and its knob has a halo
+          track: { border: "none", backgroundImage: `linear-gradient(90deg, ${primary.dark}, ${primary.light})` },
+          thumb: { boxShadow: `0 0 0 4px ${alpha(primary.main, 0.2)}` },
+        },
+      },
       MuiButton: {
         styleOverrides: {
           containedPrimary: {
