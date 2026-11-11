@@ -59,6 +59,9 @@ type RowProps = {
   /** Where the dragged row would land relative to this one, for the line that shows it. */
   drop?: "above" | "below" | null;
   dragging?: boolean;
+  /** Mobile only. The handles are showing, and the menu offers to show them. */
+  reordering?: boolean;
+  onReorder?: () => void;
 };
 
 /**
@@ -69,6 +72,7 @@ function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
   return (
     <Box
       aria-label="Drag to move"
+      data-handle
       onPointerDown={onStart}
       onClick={(e) => e.stopPropagation()}
       sx={{ display: "flex", cursor: "grab", touchAction: "none", color: "text.secondary", p: 1 }}
@@ -82,7 +86,7 @@ function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
  * The row is a div that plays when clicked, not a button. The artist and the actions inside are
  * controls of their own, and a button cannot hold another one.
  */
-function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging }: RowProps) {
+function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging, reordering, onReorder }: RowProps) {
   const watchable = !isRadio(track.id) && !isLocalFile(track.id);
   return (
     <Box
@@ -133,7 +137,13 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
         {IS_MOBILE ? (
           <>
             <Box sx={cell(true)}><LikeButton track={track} size="small" /></Box>
-            <Box sx={cell(true)}><TrackMenuButton track={track} onWatch={onWatch} onRemove={onRemove} /></Box>
+            <Box sx={cell(true)}>
+              {reordering && handle ? (
+                <Handle onStart={handle.onStart} />
+              ) : (
+                <TrackMenuButton track={track} onWatch={onWatch} onRemove={onRemove} onReorder={onReorder} />
+              )}
+            </Box>
           </>
         ) : (
           <>
@@ -203,6 +213,8 @@ export default function TrackTable({
   const activeId = currentTrack(usePlayer())?.id;
   const body = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState<Drag | null>(null);
+  // Mobile has no room for a handle on every row, so the handles are a mode the menu of a row starts
+  const [reordering, setReordering] = useState(false);
   // the latest pointer height, read by the scroll loop which runs between pointer events
   const pointerY = useRef(0);
 
@@ -274,6 +286,28 @@ export default function TrackTable({
     // the handlers only read refs, so one set of them serves the whole drag
   }, [dragging]);
 
+  // A tap anywhere but on a handle ends the mode. It is caught before it reaches the row under
+  // it, which would otherwise start playing. Scrolling is no tap, so the list can be scrolled
+  // to bring the target row into view.
+  useEffect(() => {
+    if (!reordering) return;
+    const leave = (e: MouseEvent) => {
+      if ((e.target as Element | null)?.closest("[data-handle]")) return;
+      e.stopPropagation();
+      e.preventDefault();
+      setReordering(false);
+    };
+    // not while the tap that started the mode is still being delivered
+    const timer = setTimeout(() => window.addEventListener("click", leave, true));
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("click", leave, true);
+    };
+  }, [reordering]);
+  useEffect(() => {
+    if (!onMove) setReordering(false);
+  }, [onMove]);
+
   return (
     <Box sx={{ px: GUTTER }}>
       <Box sx={{ display: "flex", borderBottom: 1, borderColor: "divider", pb: 1, mb: 0.5 }}>
@@ -285,12 +319,19 @@ export default function TrackTable({
         </Box>
         <Box sx={{ width: actionsWidth(!!onRemove, !!onMove) }} />
       </Box>
+      {reordering && (
+        <Typography variant="caption" sx={{ ...subdued, display: "block", py: 0.5 }}>
+          Drag the handles to reorder. Tap anywhere else when done.
+        </Typography>
+      )}
       <Box ref={body} sx={{ userSelect: drag ? "none" : "auto" }}>
         {tracks.map((t, i) => (
           <Row
             key={`${t.id}:${i}`} track={t} index={i} active={t.id === activeId} plays={plays?.[i]} showPlays={!!plays}
             onPlay={() => onPlay(i)} onWatch={() => video.watch(tracks, i)} onRemove={onRemove && (() => onRemove(i))}
-            handle={onMove && !IS_MOBILE ? { onStart: start(i) } : undefined}
+            handle={onMove && (!IS_MOBILE || reordering) ? { onStart: start(i) } : undefined}
+            reordering={reordering}
+            onReorder={onMove && IS_MOBILE ? () => setReordering(true) : undefined}
             dragging={drag?.from === i}
             drop={drag && drag.from !== drag.to && drag.to === i ? (drag.to > drag.from ? "below" : "above") : null}
           />
