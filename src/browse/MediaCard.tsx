@@ -1,5 +1,5 @@
 import type { MouseEvent, ReactNode } from "react";
-import { Box, ButtonBase, Skeleton, Typography } from "@mui/material";
+import { alpha, Box, ButtonBase, Skeleton, Typography } from "@mui/material";
 import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
@@ -51,8 +51,16 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
     <ButtonBase
       onClick={onClick}
       sx={{
-        ...shell(variant), transition: "background-color 0.2s, border-color 0.2s",
-        "&:hover": { bgcolor: "action.hover", ...(variant !== "round" && { borderColor: "text.disabled" }) },
+        ...shell(variant), transition: "background-color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+        "&:hover": {
+          bgcolor: "action.hover",
+          ...(variant !== "round" && { borderColor: "text.disabled" }),
+          // a small lift and a shadow tinted by the accent, only where there is a hover to cause it
+          "@media (hover: hover)": {
+            transform: "translateY(-2px)",
+            boxShadow: (t) => `0 8px 20px -10px ${alpha(t.palette.primary.main, 0.55)}`,
+          },
+        },
         "&:hover .card-play": { opacity: 1, transform: "none" },
       }}
     >
