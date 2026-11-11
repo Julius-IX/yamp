@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GitHubIcon from "@mui/icons-material/GitHub";
+import PrivacyTipOutlinedIcon from "@mui/icons-material/PrivacyTipOutlined";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { TERMS_URL } from "@/lib/legal";
+import { PRIVACY_URL, TERMS_URL } from "@/lib/legal";
 import { logger } from "@/lib/log";
 import { isBoolean, useSetting } from "@/lib/settings";
 import {
@@ -82,6 +83,13 @@ export default function AboutPage() {
         summary="TERMS.md in the repository"
         label="Open"
         onAction={() => openUrl(TERMS_URL).catch((e) => log.error("couldn't open the terms:", e))}
+      />
+      <ActionRow
+        title="Privacy Policy"
+        icon={<PrivacyTipOutlinedIcon />}
+        summary="What is stored and where it goes"
+        label="Open"
+        onAction={() => openUrl(PRIVACY_URL).catch((e) => log.error("couldn't open the privacy policy:", e))}
       />
     </Section>
   );
