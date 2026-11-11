@@ -21,7 +21,7 @@ Stream, download and sync your music on desktop and Android.
 <img src="/assets/previews/home_desktop.png" alt="Yamp home on desktop" width="620" style="max-width:100%;height:auto">
 <img src="/assets/previews/home_mobile.png" alt="Yamp home on Android" width="190" style="max-width:100%;height:auto">
 
-[Download](https://github.com/Julius-IX/yamp/releases/latest) | [Features](#features) | [Screenshots](#screenshots) | [Installing](#installing) | [Cloud sync](#cloud-sync) | [Building](#building) | [Terms](https://github.com/Julius-IX/yamp/blob/main/TERMS.md) | [Privacy](/PRIVACY)
+[Download](https://github.com/Julius-IX/yamp/releases/latest) | [Features](#features) | [Screenshots](#screenshots) | [Installing](#installing) | [Cloud sync](#cloud-sync) | [Building](#building) | [Terms](https://yamp.cc/TERMS) | [Privacy](/PRIVACY)
 
 </div>
 
@@ -31,7 +31,7 @@ Yamp is a free music player whose interface follows [Snowify](https://github.com
 It is a personal project built for educational purposes and it is MIT licensed.
 There is no Yamp server and no account to make. Everything runs on your own device and, if you choose to sync, in your own cloud storage.
 
-The official builds are covered by the [Terms of Service](https://github.com/Julius-IX/yamp/blob/main/TERMS.md), which also explain how Yamp relates to the third-party services it uses.
+The official builds are covered by the [Terms of Service](https://yamp.cc/TERMS), which also explain how Yamp relates to the third-party services it uses.
 How Yamp handles your data is described in the [Privacy Policy](https://yamp.cc/PRIVACY).
 Please read both before using the app.
 
@@ -172,4 +172,4 @@ Each crate under [`src-tauri/crates`](https://github.com/Julius-IX/yamp/tree/mai
 ## License
 
 Yamp is released under the [MIT License](https://github.com/Julius-IX/yamp/blob/main/LICENSE).
-Forks and builds that are not published in the [releases](https://github.com/Julius-IX/yamp/releases) of this repository are not covered by the [Terms of Service](https://github.com/Julius-IX/yamp/blob/main/TERMS.md).
+Forks and builds that are not published in the [releases](https://github.com/Julius-IX/yamp/releases) of this repository are not covered by the [Terms of Service](https://yamp.cc/TERMS).
