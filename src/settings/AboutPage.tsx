@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
@@ -14,6 +15,7 @@ import { PrefRow, Section } from "./rows";
 const log = logger("settings");
 
 const REPO = "https://github.com/Julius-IX/yamp";
+const TERMS = `${REPO}/blob/main/TERMS.md`;
 
 /** What the update row says and does for each state of the updater. */
 function updateRow(status: UpdateStatus) {
@@ -73,6 +75,13 @@ export default function AboutPage() {
         summary="github.com/Julius-IX/yamp"
         label="Open"
         onAction={() => openUrl(REPO).catch((e) => log.error("couldn't open the repository:", e))}
+      />
+      <ActionRow
+        title="Terms of Service"
+        icon={<DescriptionOutlinedIcon />}
+        summary="TERMS.md in the repository"
+        label="Open"
+        onAction={() => openUrl(TERMS).catch((e) => log.error("couldn't open the terms:", e))}
       />
     </Section>
   );
