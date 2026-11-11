@@ -116,7 +116,9 @@ export const COMMANDS = {
     search: (args: { text: string; limit?: number | null }) => invoke<Track[]>("tracks__search", args),
   },
   transfer: {
+    exportCsv: () => invoke<string>("transfer__export_csv"),
     importFile: (args: { name: string; text: string }) => invoke<ImportReport>("transfer__import_file", args),
+    saveCsv: (args: { fileName: string; csv: string }) => invoke<string | null>("transfer__save_csv", args),
   },
   updater: {
     available: () => invoke<boolean>("updater__available"),

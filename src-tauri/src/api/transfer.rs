@@ -10,7 +10,11 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use ts_types::TsType;
 use yamp_transfer::{Candidate, Entry, Failure, Kind, Reason};
 use yamp_db::Db;
+use tauri_plugin_dialog::DialogExt;
 use yt_api::{AlbumPage, ItemKind, Track, YtApi};
+
+/// Rows of likes read per query when the library is exported.
+const PAGE: u32 = 500;
 
 /// Emitted while an import looks songs up, with a [`Progress`] as payload.
 const PROGRESS_EVENT: &str = "transfer:progress";
@@ -221,4 +225,77 @@ async fn look_up(app: AppHandle, entry: Entry) -> Found {
     Some(at) => Found::Song(tracks.into_iter().nth(at).expect("pick returns an index of the candidates")),
     None => Found::Missed(Reason::NoMatch),
   }
+}
+
+/// The likes, the playlists and the saved albums as one file in the columns of `yamp-transfer`.
+/// Nothing in it ties the library to the provider, so any other service or tool can read it.
+/// Downloads and local folders are left out, they are files of this device and not part of
+/// the library.
+#[tauri_groups::command(transfer)]
+pub async fn export_csv(db: State<'_, Db>) -> Result<String, String> {
+  let mut entries = Vec::new();
+
+  let mut offset = 0;
+  loop {
+    let page = db.likes().list(PAGE, offset).await.map_err(fail)?;
+    let more = page.len() == PAGE as usize;
+    offset += PAGE;
+    entries.extend(page.iter().map(|t| entry(Kind::Like, None, None, t)));
+    if !more {
+      break;
+    }
+  }
+
+  for playlist in db.playlists().list().await.map_err(fail)? {
+    let tracks = db.playlists().tracks(&playlist.id).await.map_err(fail)?;
+    if is_uuid(&playlist.id) {
+      entries.extend(tracks.iter().map(|t| entry(Kind::Playlist, Some(&playlist.name), None, t)));
+    } else {
+      // the description of a saved album starts with its artist, which is the one artist all
+      // of its songs share, so the import looks the album up once
+      let artist = playlist.description.as_deref().and_then(|d| d.split(" · ").next());
+      entries.extend(tracks.iter().map(|t| entry(Kind::Album, Some(&playlist.name), artist, t)));
+    }
+  }
+  Ok(yamp_transfer::library_csv(&entries))
+}
+
+fn entry(kind: Kind, collection: Option<&str>, artist: Option<&str>, t: &yamp_db::Track) -> Entry {
+  Entry {
+    row: 0,
+    kind,
+    collection: collection.map(Into::into),
+    title: t.title.clone(),
+    artist: artist.unwrap_or(&t.artist).into(),
+    // the saved album that a song is listed under is the album it is looked up by
+    album: if kind == Kind::Album { collection.map(Into::into) } else { t.album.clone() },
+    duration_secs: t.duration_secs.map(|d| d.round() as u32),
+    year: t.release_year,
+  }
+}
+
+/// Playlists made in the app have a random id, saved albums have the id of the provider. This
+/// is the same rule as `isSavedAlbum` in the frontend.
+fn is_uuid(id: &str) -> bool {
+  id.len() == 36
+    && id.char_indices().all(|(i, c)| if matches!(i, 8 | 13 | 18 | 23) { c == '-' } else { c.is_ascii_hexdigit() })
+}
+
+/// Asks where to save and writes the file there. Returns the path, or None when the dialog was
+/// closed without choosing. The dialog is the only thing that picks the path, so the frontend
+/// cannot write anywhere on its own.
+#[tauri_groups::command(transfer)]
+pub async fn save_csv(app: AppHandle, file_name: String, csv: String) -> Result<Option<String>, String> {
+  // the dialog blocks until it is answered
+  tauri::async_runtime::spawn_blocking(move || -> Result<Option<String>, String> {
+    let Some(chosen) = app.dialog().file().add_filter("CSV", &["csv"]).set_file_name(file_name).blocking_save_file()
+    else {
+      return Ok(None);
+    };
+    let path = chosen.into_path().map_err(|e| e.to_string())?;
+    std::fs::write(&path, csv).map_err(|e| format!("{}: {e}", path.display()))?;
+    Ok(Some(path.to_string_lossy().into_owned()))
+  })
+  .await
+  .map_err(|e| e.to_string())?
 }
