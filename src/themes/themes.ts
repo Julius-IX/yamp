@@ -1,4 +1,4 @@
-import { createTheme, type PaletteOptions, type Theme } from "@mui/material/styles";
+import { alpha, createTheme, type PaletteOptions, type Theme } from "@mui/material/styles";
 
 export type Mode = "light" | "dark";
 
@@ -119,8 +119,8 @@ export type ThemeName = keyof typeof defs;
 export const themeNames = Object.keys(defs) as ThemeName[];
 export const DEFAULT_THEME: ThemeName = "violet";
 
-export const buildTheme = (mode: Mode, colors: Colors) =>
-  createTheme({
+export const buildTheme = (mode: Mode, colors: Colors) => {
+  const base = createTheme({
     shape: { borderRadius: 10 },
     typography: { fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
     palette: {
@@ -128,6 +128,33 @@ export const buildTheme = (mode: Mode, colors: Colors) =>
       mode,
     },
   });
+  const { primary } = base.palette;
+  // Flat fills read as dead on a near black page. The depth comes from the accent itself, as an
+  // even tint over the page and a short gradient on what is filled with it, kept low so the
+  // themes stay calm.
+  return createTheme(base, {
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          // A tint that is the same across the whole window and only deepens toward a corner. A
+          // spot of light in one place pulls the eye to it and leaves the rest of the page dull.
+          body: {
+            backgroundImage: `linear-gradient(160deg, ${alpha(primary.main, mode === "dark" ? 0.1 : 0.07)}, ${alpha(primary.main, mode === "dark" ? 0.03 : 0.02)} 60%, ${alpha(primary.main, mode === "dark" ? 0.07 : 0.05)})`,
+            backgroundAttachment: "fixed",
+          },
+        },
+      },
+      MuiButton: {
+        styleOverrides: {
+          containedPrimary: {
+            backgroundImage: `linear-gradient(135deg, ${primary.light}, ${primary.main})`,
+            "&:hover": { backgroundImage: `linear-gradient(135deg, ${primary.main}, ${primary.dark})` },
+          },
+        },
+      },
+    },
+  });
+};
 
 export const themes = Object.fromEntries(
   themeNames.map((n) => [n, { light: buildTheme("light", defs[n].light), dark: buildTheme("dark", defs[n].dark) }]),
