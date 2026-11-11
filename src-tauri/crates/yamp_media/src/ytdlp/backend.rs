@@ -61,6 +61,13 @@ fn selector(q: AudioQuality) -> &'static str {
   }
 }
 
+/// The embedded web client is left out of the lookups that resolve a stream. YouTube serves it
+/// SABR-only formats without a URL on some accounts, so yt-dlp skips them and warns on every
+/// call. The remaining default clients still return playable audio.
+fn resolving(args: YtDlpArgs) -> YtDlpArgs {
+  args.opt("--extractor-args", "youtube:player_client=default,-web_embedded")
+}
+
 fn flat_listing(target: String, limit: usize) -> YtDlpArgs {
   YtDlpArgs::new(target)
     .flag("--flat-playlist")
@@ -108,9 +115,7 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
 
   async fn track(&self, id: &str) -> Result<Track> {
     check_id(id)?;
-    let args = YtDlpArgs::new(watch_url(id))
-      .flag("--dump-json")
-      .flag("--no-playlist");
+    let args = resolving(YtDlpArgs::new(watch_url(id)).flag("--dump-json").flag("--no-playlist"));
     parse::track(&self.engine.run(&args, None).await?)
   }
 
@@ -139,10 +144,9 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
     check_id(id)?;
     // `--dump-json` with a format selector prints the chosen format at the top level, which
     // gives the container and bitrate along with the URL.
-    let args = YtDlpArgs::new(watch_url(id))
-      .opt("-f", selector(quality))
-      .flag("--dump-json")
-      .flag("--no-playlist");
+    let args = resolving(
+      YtDlpArgs::new(watch_url(id)).opt("-f", selector(quality)).flag("--dump-json").flag("--no-playlist"),
+    );
     let out = self.engine.run(&args, None).await?;
     // The URL answers 403 until `available_at`. The webview would request it right away, so
     // the wait happens here and the caller only ever sees a URL that already works.
@@ -198,11 +202,13 @@ impl<E: YtDlpEngine> Downloader for YtDlpBackend<E> {
       .to_owned();
     // No ffmpeg step on purpose. The raw container is kept so nothing but yt-dlp is needed
     // on any platform.
-    let args = YtDlpArgs::new(watch_url(id))
-      .opt("-f", selector(quality))
-      .opt("-o", template)
-      .flag("--no-playlist")
-      .flag("--no-mtime");
+    let args = resolving(
+      YtDlpArgs::new(watch_url(id))
+        .opt("-f", selector(quality))
+        .opt("-o", template)
+        .flag("--no-playlist")
+        .flag("--no-mtime"),
+    );
     self.engine.run(&args, progress).await?;
 
     let (path, size_bytes) = find_download(dir, id).await?;
@@ -264,6 +270,14 @@ mod tests {
     assert_eq!(availability_wait(100, 100), 0);
     assert_eq!(availability_wait(90, 100), 0);
     assert_eq!(availability_wait(10_000, 100), MAX_AVAILABILITY_WAIT_SECS);
+  }
+
+  #[tokio::test]
+  async fn lookups_that_resolve_a_stream_skip_the_embedded_client() {
+    let b = YtDlpBackend::new(Mock::new(vec![Ok(SONG.into())]));
+    b.track("aaaaaaaaaaa").await.unwrap();
+    let calls = b.engine.calls.lock().unwrap();
+    assert!(calls[0].opts.iter().any(|o| o.k == "--extractor-args" && o.v.ends_with("-web_embedded")));
   }
 
   #[tokio::test]
