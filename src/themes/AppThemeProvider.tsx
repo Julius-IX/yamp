@@ -1,7 +1,8 @@
 import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } from "react";
-import { CssBaseline, ThemeProvider, useMediaQuery } from "@mui/material";
+import { CssBaseline, GlobalStyles, ThemeProvider, useMediaQuery } from "@mui/material";
 import { createTheme } from "@mui/material/styles";
 import { isBoolean, useSetting } from "@/lib/settings";
+import { IS_WINDOWS } from "@/util/platform";
 import { useResolvedTheme } from "./custom";
 import { DEFAULT_MODE, DEFAULT_THEME, modePrefs, type ModePref } from "./themes";
 
@@ -24,6 +25,17 @@ const isModePref = (v: unknown): v is ModePref => modePrefs.includes(v as ModePr
 const noTooltips = {
   MuiTooltip: { defaultProps: { disableHoverListener: true, disableFocusListener: true, disableTouchListener: true } },
 };
+
+/**
+ * The webview on Windows draws classic scrollbars at the sides of every scrolling element, which
+ * no other platform does. The layout is sized to the window and scrolls with wheel and touch, so
+ * the bars only take space and add a horizontal one when something is a pixel too wide.
+ */
+const noScrollbars = {
+  "*": { scrollbarWidth: "none" },
+  "*::-webkit-scrollbar": { display: "none" },
+  "html, body": { overflow: "hidden" },
+} as const;
 
 /** Read by the inline script in `index.html`. */
 const BOOT_BG_KEY = "yamp-boot-bg";
@@ -54,6 +66,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     <ThemeCtx.Provider value={{ name, setName, mode, setMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        {IS_WINDOWS && <GlobalStyles styles={noScrollbars} />}
         {children}
       </ThemeProvider>
     </ThemeCtx.Provider>

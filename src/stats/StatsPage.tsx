@@ -18,7 +18,7 @@ const SHOWN_MAX = 25;
 
 function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, ...panel }}>
+    <Paper variant="outlined" sx={{ p: { xs: 2, md: 3 }, minWidth: 0, ...panel }}>
       <Typography sx={{ ...sectionTitle, fontSize: "1.15rem", mb: 2 }}>{title}</Typography>
       {children}
     </Paper>
@@ -27,7 +27,7 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
 
 function StatCard({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
-    <Paper variant="outlined" sx={{ p: 2, ...panel }}>
+    <Paper variant="outlined" sx={{ p: 2, minWidth: 0, ...panel }}>
       <Typography sx={{ fontSize: 12, letterSpacing: 1.2, textTransform: "uppercase", ...faint }}>{label}</Typography>
       <Typography sx={{ fontSize: { xs: 26, md: 32 }, fontWeight: 800, lineHeight: 1.2, color: "primary.main" }}>{value}</Typography>
       {note && <Typography variant="body2" sx={subdued}>{note}</Typography>}
@@ -71,7 +71,7 @@ function BarChart({ buckets, height = 150, empty }: { buckets: Bucket[]; height?
           </Box>
         ))}
       </Box>
-      <Box sx={{ display: "flex", gap: dense ? 0.25 : 1, mt: 0.75 }}>
+      <Box sx={{ display: "flex", gap: dense ? 0.25 : 1, mt: 0.75, overflow: "hidden" }}>
         {buckets.map((b, i) => (
           // the label may be wider than its bar, so it is centered on the bar and left to spill over
           <Box key={i} sx={{ flex: 1, minWidth: 0, display: "flex", justifyContent: "center" }}>
@@ -162,7 +162,9 @@ export default function StatsPage() {
   );
 
   return (
-    <Box sx={{ maxWidth: 960, mx: "auto", px: IS_MOBILE ? GUTTER : 3, py: IS_MOBILE ? 2 : 4, display: "flex", flexDirection: "column", gap: 2.5 }}>
+    // a grid track is as wide as its content by default, so one long title or label made the whole page
+    // wider than the screen and swipeable. The tracks are bounded with minmax and the page clips what is left
+    <Box sx={{ maxWidth: 960, mx: "auto", overflowX: "clip", px: IS_MOBILE ? GUTTER : 3, py: IS_MOBILE ? 2 : 4, display: "flex", flexDirection: "column", gap: 2.5 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
         <IconButton aria-label="Back" onClick={() => navigate(-1)} edge="start">
           <ArrowBackIcon />
@@ -196,7 +198,7 @@ export default function StatsPage() {
         <Typography sx={subdued}>Loading...</Typography>
       ) : (
         <>
-          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" } }}>
+          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" } }}>
             <StatCard label="Listening time" value={duration(summary.secs)} note={summary.radioSecs > 0 ? `${duration(summary.radioSecs)} of it radio` : undefined} />
             <StatCard label="Songs played" value={String(summary.plays)} note={`${summary.uniqueTracks} different`} />
             <StatCard label="Artists" value={String(summary.uniqueArtists)} />
@@ -210,7 +212,7 @@ export default function StatsPage() {
             )}
           </Panel>
 
-          <Box sx={{ display: "grid", gap: 2.5, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, alignItems: "start" }}>
+          <Box sx={{ display: "grid", gap: 2.5, gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 1fr) minmax(0, 1fr)" }, alignItems: "start" }}>
             <Panel title="Top songs">
               <RankList
                 empty="No songs yet"

@@ -84,7 +84,10 @@ function Editor({ theme, onSave, onClose }: { theme: CustomTheme | null; onSave:
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="sm" fullScreen={IS_MOBILE}>
-      <DialogTitle>{theme ? "Edit theme" : "New theme"}</DialogTitle>
+      {/* full screen on mobile, so the title starts at the top edge of the screen, behind the status bar */}
+      <DialogTitle sx={IS_MOBILE ? { pt: "calc(env(safe-area-inset-top) + 16px)" } : undefined}>
+        {theme ? "Edit theme" : "New theme"}
+      </DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ pt: 1 }}>
           <TextField size="small" label="Name" value={name} onChange={(e) => setName(e.target.value)} slotProps={{ htmlInput: { maxLength: 40 } }} />

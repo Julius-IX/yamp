@@ -49,7 +49,7 @@ export type PrefetchAmount = (typeof PREFETCH_AMOUNTS)[number];
 export const isPrefetchAmount = (v: unknown): v is PrefetchAmount => PREFETCH_AMOUNTS.includes(v as PrefetchAmount);
 
 /** Before the amount there was a switch, and a device that turned it off stays off. */
-export const defaultPrefetchAmount = (): PrefetchAmount => (rawSetting("prefetch") === false ? "off" : "1");
+export const defaultPrefetchAmount = (): PrefetchAmount => (rawSetting("prefetch") === false ? "off" : "3");
 
 const prefetchLimit = () => {
   const amount = getSetting("prefetchAmount", defaultPrefetchAmount(), isPrefetchAmount);

@@ -8,7 +8,10 @@ import MediaCard from "./MediaCard";
 import Shelf from "./Shelf";
 import { unique } from "./tracks";
 
-/** A shelf of playable tracks. `tracks` is undefined or null while loading. Playing a card queues the whole row from it. */
+/**
+ * A shelf of playable tracks. `tracks` is undefined or null while loading. Playing a card queues
+ * the whole row from it.
+ */
 export default function TrackShelf({
   title, tracks, empty, variant = "square", subtitle = (t) => <ArtistLink artist={t.artist} />, hideWhenEmpty, videos,
 }: {
@@ -18,7 +21,10 @@ export default function TrackShelf({
   variant?: CardVariant;
   subtitle?: (t: Track) => ReactNode;
   hideWhenEmpty?: boolean;
-  /** The cards are videos. They open in the video modal and do not touch the queue. */
+  /**
+   * The cards are videos. They are tracks like any other and play from the whole row too, but a
+   * click on the card also opens the picture. The play button on the card plays without it.
+   */
   videos?: boolean;
 }) {
   const list = tracks && unique(tracks);
@@ -31,8 +37,9 @@ export default function TrackShelf({
           title={t.title}
           subtitle={subtitle(t)}
           variant={variant}
-          onClick={() => (videos ? video.open(t) : player.play(list, i))}
-          onQueue={videos ? undefined : () => player.enqueue([t], "end")}
+          onClick={() => (videos ? video.watch(list, i) : player.play(list, i))}
+          onPlay={videos ? () => player.play(list, i) : undefined}
+          track={t}
         />
       ))}
     </Shelf>

@@ -13,7 +13,7 @@ export const COMMANDS = {
   discord: {
     available: () => invoke<boolean>("discord__available"),
     clear: () => invoke<void>("discord__clear"),
-    update: (args: { title: string; artist: string; cover?: string | null; startMs: number; endMs?: number | null; url?: string | null; artistUrl?: string | null }) => invoke<void>("discord__update", args),
+    update: (args: { title: string; artist: string; cover?: string | null; album?: string | null; startMs: number; endMs?: number | null; url?: string | null; artistUrl?: string | null }) => invoke<void>("discord__update", args),
   },
   downloads: {
     count: () => invoke<number>("downloads__count"),

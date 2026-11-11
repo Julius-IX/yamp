@@ -3,7 +3,9 @@ use tauri::{AppHandle, State};
 use yamp_session::{Session, Update};
 
 /// Mirrors the player to the system's media controls and the window title. A missing `title`
-/// means nothing is playing.
+/// means nothing is queued. The window is only named after the track while it plays, so a taskbar
+/// or a status bar that reads the title shows what is heard and falls back to the app name when
+/// nothing is.
 #[tauri_groups::command(session)]
 pub fn update(
   app: AppHandle,
@@ -21,10 +23,10 @@ pub fn update(
   #[cfg(desktop)]
   {
     use tauri::Manager;
-    let label = match (&title, artist.is_empty()) {
-      (Some(t), false) => format!("{t} · {artist}"),
-      (Some(t), true) => t.clone(),
-      (None, _) => "yamp".into(),
+    let label = match (&title, playing, artist.is_empty()) {
+      (Some(t), true, false) => format!("{t} · {artist}"),
+      (Some(t), true, true) => t.clone(),
+      _ => "yamp".into(),
     };
     if let Some(window) = app.get_webview_window("main") {
       if let Err(e) = window.set_title(&label) {

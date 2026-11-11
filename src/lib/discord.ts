@@ -54,6 +54,7 @@ export function useDiscordPresence() {
           title: track.title,
           artist: track.artist || "Unknown artist",
           cover: track.thumbnail,
+          album: track.album ?? null,
           startMs: Math.round(startMs),
           // a live stream has no end
           endMs: length > 0 && !isRadio(track.id) ? Math.round(startMs + length * 1000) : null,

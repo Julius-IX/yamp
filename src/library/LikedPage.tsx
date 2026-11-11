@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Box, Skeleton, Typography } from "@mui/material";
 import TrackTable from "@/browse/TrackTable";
+import { playtime } from "@/components/media/format";
 import { useLikedCount } from "@/lib/likes";
 import { logger } from "@/lib/log";
 import type { Track } from "@/lib/types";
@@ -40,7 +41,7 @@ export default function LikedPage() {
         art={<LikedArt sx={{ width: COVER, height: COVER, borderRadius: radius.card, fontSize: COVER / 2.5, boxShadow: 8 }} />}
         label="PLAYLIST"
         title="Liked Songs"
-        meta={tracks ? `${tracks.length} songs` : undefined}
+        meta={tracks ? [`${tracks.length} songs`, playtime(tracks)].filter(Boolean).join(" · ") : undefined}
       >
         <PlayButtons tracks={tracks ?? []} />
       </Header>

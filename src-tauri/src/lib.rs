@@ -32,6 +32,7 @@ const SETTINGS: &[&str] = &[
   "updateSkipped",
   "lastCompact",
   "country",
+  "clock24",
   library::SYNC_KEY,
 ];
 

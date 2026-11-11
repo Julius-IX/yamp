@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TrackArtist } from "@/browse/ArtistLink";
-import { subdued } from "@/themes/ui";
+import { sheen, subdued } from "@/themes/ui";
 import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import Cover from "./Cover";
@@ -30,7 +30,8 @@ export default function PlayerBar() {
         elevation={0}
         sx={{
           display: "grid", gridTemplateColumns: "1fr minmax(300px, 2fr) 1fr", alignItems: "center", gap: 2,
-          flexShrink: 0, height: HEIGHT, px: 2, borderTop: 1, borderColor: "divider",
+          flexShrink: 0, height: HEIGHT, px: 2, borderTop: 1, borderColor: "divider", ...sheen,
+          boxShadow: "0 -10px 24px -16px rgba(0, 0, 0, 0.6)",
           // above the queue drawer, which is fixed and ends where the bar starts
           position: "relative", zIndex: (t) => t.zIndex.drawer + 1,
         }}

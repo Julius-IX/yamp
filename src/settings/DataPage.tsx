@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Stack } from "@mui/material";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import { open } from "@tauri-apps/plugin-dialog";
+import { formatClock, useClock24 } from "@/lib/clock";
 import { COMMANDS } from "@/lib/commands";
 import { useLocalVersion } from "@/lib/local";
 import { logger } from "@/lib/log";
@@ -161,6 +162,7 @@ function FolderRows() {
  */
 function ProviderRow({ provider }: { provider: SyncProvider }) {
   const sync = useSyncState();
+  const [clock24] = useClock24();
   const [menu, setMenu] = useState(false);
   useBackGuard(menu, () => setMenu(false));
 
@@ -173,7 +175,7 @@ function ProviderRow({ provider }: { provider: SyncProvider }) {
   let summary = "Not linked";
   if (waiting) summary = "Waiting for the browser...";
   else if (linked) {
-    const when = sync.lastSyncMs && new Date(sync.lastSyncMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const when = sync.lastSyncMs && formatClock(sync.lastSyncMs, clock24);
     summary = `Linked as ${status?.account ?? "your account"}${sync.syncing ? ", syncing..." : when ? `, synced ${when}` : ""}`;
   } else if (elsewhere) summary = "Sign out of the linked service first";
 

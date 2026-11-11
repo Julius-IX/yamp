@@ -7,6 +7,7 @@ import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
 import NowPlayingSheet from "./NowPlayingSheet";
+import { sheen } from "@/themes/ui";
 import { currentTrack, player, usePlayer, usePlayerTime } from "./store";
 
 /** Progress as a hairline on the top edge, since the bar itself has no room for a seek slider. */
@@ -17,7 +18,13 @@ function Progress() {
       variant="determinate"
       value={duration > 0 ? Math.min(100, (position / duration) * 100) : 0}
       // the default transition lags behind the four updates a second
-      sx={{ height: 2, "& .MuiLinearProgress-bar": { transition: "none" } }}
+      sx={{
+        height: 2,
+        "& .MuiLinearProgress-bar": {
+          transition: "none",
+          backgroundImage: (t) => `linear-gradient(90deg, ${t.palette.primary.dark}, ${t.palette.primary.light})`,
+        },
+      }}
     />
   );
 }
@@ -31,7 +38,7 @@ export default function MiniPlayer() {
   if (!track) return null;
   return (
     <>
-      <Paper square elevation={0} sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider" }}>
+      <Paper square elevation={0} sx={{ flexShrink: 0, borderTop: 1, borderColor: "divider", ...sheen }}>
         <Progress />
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, pl: 1.5, pr: 0.5, py: 0.75 }}>
           <ButtonBase

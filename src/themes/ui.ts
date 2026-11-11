@@ -37,6 +37,9 @@ export const sectionTitle = { typography: "h5", fontWeight: 700 } as const;
 /** The big title at the top of a screen. */
 export const heroTitle = {
   fontSize: { xs: 32, md: 56 }, fontWeight: 800, lineHeight: 1.05, wordBreak: "break-word",
+  // fades from the text color to a softer one, so the biggest text of a screen is not a flat block
+  backgroundImage: (t: Theme) => `linear-gradient(180deg, ${t.palette.text.primary} 35%, ${alpha(t.palette.text.primary, 0.6)})`,
+  backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent",
 } as const;
 
 /** A column heading of a table. */
@@ -51,8 +54,12 @@ export const columnHead = { fontSize: 11, letterSpacing: 1.5, fontWeight: 600, .
  */
 export const accentFill = {
   bgcolor: "primary.main",
+  backgroundImage: (t: Theme) => `linear-gradient(135deg, ${t.palette.primary.light}, ${t.palette.primary.main})`,
   color: (t: Theme) => t.palette.getContrastText(t.palette.primary.main),
-  "&:hover": { bgcolor: "primary.dark" },
+  "&:hover": {
+    bgcolor: "primary.dark",
+    backgroundImage: (t: Theme) => `linear-gradient(135deg, ${t.palette.primary.main}, ${t.palette.primary.dark})`,
+  },
 } as const;
 
 /**
@@ -69,8 +76,16 @@ export const accentTonal = {
 
 // ---- surfaces
 
+/**
+ * A light sheen from the top, so a surface is not one flat tone. It is the text color at a few
+ * percent, which lightens on a dark theme and darkens on a light one.
+ */
+export const sheen = {
+  backgroundImage: (t: Theme) => `linear-gradient(180deg, ${alpha(t.palette.text.primary, 0.045)}, transparent 70%)`,
+} as const;
+
 /** A bordered opaque surface, for cards and pills. */
-export const surface = { border: 1, borderColor: "divider", bgcolor: "background.paper" } as const;
+export const surface = { border: 1, borderColor: "divider", bgcolor: "background.paper", ...sheen } as const;
 
 /** A control that floats over content, like an arrow or a back button. */
 export const floating = {
@@ -92,5 +107,5 @@ export const glass = {
 
 /** A card of settings or other grouped content. */
 export const panel = {
-  borderRadius: radius.card, bgcolor: (t: Theme) => alpha(t.palette.background.paper, 0.6),
+  borderRadius: radius.card, bgcolor: (t: Theme) => alpha(t.palette.background.paper, 0.6), ...sheen,
 } as const;
