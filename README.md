@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/mint-app-icon-transparent.png" alt="Yamp icon" width="120" height="120">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/icons/mint-app-icon-transparent.png" alt="Yamp icon" width="120" height="120">
 
 # Yamp
 
@@ -13,10 +13,10 @@ Stream, download and sync your music on desktop and Android.
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20Android-informational?style=for-the-badge)
 ![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)
 
-<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/home_desktop.png" alt="Yamp home on desktop" width="620">
-<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/home_mobile.png" alt="Yamp home on Android" width="190">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/home_desktop.png" alt="Yamp home on desktop" width="620">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/home_mobile.png" alt="Yamp home on Android" width="190">
 
-[Download](https://github.com/Julius-IX/yamp/releases/latest) | [Features](#features) | [Screenshots](#screenshots) | [Installing](#installing) | [Cloud sync](#cloud-sync) | [Building](#building) | [Terms](https://github.com/Julius-IX/yamp/blob/main/TERMS.md) | [Privacy](https://julius-ix.github.io/yamp/PRIVACY)
+[Download](https://github.com/Julius-IX/yamp/releases/latest) | [Features](#features) | [Screenshots](#screenshots) | [Installing](#installing) | [Cloud sync](#cloud-sync) | [Building](#building) | [Terms](https://github.com/Julius-IX/yamp/blob/main/TERMS.md) | [Privacy](https://yamp.cc/PRIVACY)
 
 </div>
 
@@ -27,7 +27,7 @@ It is a personal project built for educational purposes and it is MIT licensed.
 There is no Yamp server and no account to make. Everything runs on your own device and, if you choose to sync, in your own cloud storage.
 
 The official builds are covered by the [Terms of Service](https://github.com/Julius-IX/yamp/blob/main/TERMS.md), which also explain how Yamp relates to the third-party services it uses.
-How Yamp handles your data is described in the [Privacy Policy](https://julius-ix.github.io/yamp/PRIVACY).
+How Yamp handles your data is described in the [Privacy Policy](https://yamp.cc/PRIVACY).
 Please read both before using the app.
 
 ## Features
@@ -56,12 +56,12 @@ Please read both before using the app.
     <th align="center">Android</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/playlist_desktop.png" alt="Playlist on desktop" width="480"><br><sub>Playlist</sub></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/playlist_mobile.png" alt="Playlist on Android" width="170"><br><sub>Playlist</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/playlist_desktop.png" alt="Playlist on desktop" width="480"><br><sub>Playlist</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/playlist_mobile.png" alt="Playlist on Android" width="170"><br><sub>Playlist</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/radio_desktop.png" alt="Radio on desktop" width="480"><br><sub>Radio</sub></td>
-    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/radio_mobile.png" alt="Radio on Android" width="170"><br><sub>Radio</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/radio_desktop.png" alt="Radio on desktop" width="480"><br><sub>Radio</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/previews/radio_mobile.png" alt="Radio on Android" width="170"><br><sub>Radio</sub></td>
   </tr>
 </table>
 
@@ -135,7 +135,7 @@ Settings travel along with the library, and the newest change wins.
 
 Yamp cannot see any other file in your account.
 iCloud only exists on Apple platforms, so devices of mixed kinds have to use Google Drive or OneDrive.
-The [Privacy Policy](https://julius-ix.github.io/yamp/PRIVACY) lists exactly what is stored, and how to disconnect an account and remove the data.
+The [Privacy Policy](https://yamp.cc/PRIVACY) lists exactly what is stored, and how to disconnect an account and remove the data.
 
 Providers sit behind a small storage interface, see the readme of [`cloud-sync`](https://github.com/Julius-IX/yamp/blob/main/src-tauri/crates/cloud_sync/README.md), so a fork can add one of its own.
 A build only offers a service when it was compiled with client ids for it, see [BUILDING.md](https://github.com/Julius-IX/yamp/blob/main/dev/BUILDING.md#cloud-sync).
