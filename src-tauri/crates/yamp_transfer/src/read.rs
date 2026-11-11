@@ -5,7 +5,7 @@ use std::{collections::HashSet, fmt};
 
 use crate::{
   entry::{Entry, Failure, Kind, Reason, Source},
-  text,
+  json, text,
 };
 
 /// What a file held.
@@ -22,6 +22,11 @@ pub enum ReadError {
   Empty,
   /// Neither a title nor an album column, which most likely means the file is not a list of songs.
   NoTitle,
+  Json(String),
+  /// The streaming history of Spotify is what was played, not what is in the library.
+  History,
+  /// Valid JSON, but not a file of Spotify's account data that lists songs.
+  Unrecognised,
 }
 
 impl fmt::Display for ReadError {
@@ -29,6 +34,9 @@ impl fmt::Display for ReadError {
     f.write_str(match self {
       Self::Empty => "the file is empty",
       Self::NoTitle => "the file has no column with song titles",
+      Self::Json(e) => return write!(f, "the file is not valid JSON: {e}"),
+      Self::History => "this is the listening history, use YourLibrary.json or a Playlist file instead",
+      Self::Unrecognised => "the file has no playlists, liked songs or albums in it",
     })
   }
 }
@@ -76,10 +84,14 @@ impl Columns {
   }
 }
 
-/// `name` is the name of the file without its extension. Exportify and similar tools write one
+/// Reads a CSV file or the JSON of Spotify's account data, which is told apart by its first
+/// character. `name` is the name of the file without its extension. Exportify and similar tools write one
 /// file per playlist and keep the playlist name only there, so it is the fallback for rows that
 /// do not name a collection themselves.
 pub fn parse(text: &str, name: &str) -> Result<Parsed, ReadError> {
+  if json::looks_like_json(text) {
+    return json::parse(text, name);
+  }
   let mut records = text::records(text).into_iter();
   let header: Vec<String> = records.next().ok_or(ReadError::Empty)?.iter().map(|h| h.trim().to_lowercase()).collect();
   let cols = Columns::find(&header);
