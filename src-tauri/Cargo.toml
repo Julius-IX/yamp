@@ -1,6 +1,6 @@
 [package]
 name = "yamp"
-version = "0.1.0"
+version = "1.0.0"
 description = "Yet Another Music Player"
 authors = ["Julius Schutte"]
 edition = "2024"
