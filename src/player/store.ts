@@ -86,7 +86,8 @@ let original: Track[] = [];
 let token = 0;
 /** Bumped by every pick of something to play. See `beginPick`. */
 let picks = 0;
-let extending = false;
+/** The last track autoplay already looked ahead from. See `extendAhead`. */
+let extendedFor = "";
 /** The next track, already loading in an element of its own so the switch needs no network. */
 let standby: { id: string; el: HTMLAudioElement } | null = null;
 let warming = "";
@@ -351,13 +352,19 @@ function recover(mine: number, index: number, retried: boolean) {
   set({ loading: false, playing: false, error: `playback failed (code ${code})` });
 }
 
+/** The lookup that is under way, shared so a track that ends meanwhile waits for it. */
+let extension: Promise<boolean> | null = null;
+
 /** Appends related tracks of the last one. Returns whether anything new was added. */
-async function extend(): Promise<boolean> {
+function extend(): Promise<boolean> {
+  return (extension ??= lookUpRelated().finally(() => (extension = null)));
+}
+
+async function lookUpRelated(): Promise<boolean> {
   const { queue } = read();
   const last = queue[queue.length - 1];
   // related tracks are looked up at the music provider, which does not know a station
-  if (!last || isRadio(last.id) || extending) return false;
-  extending = true;
+  if (!last || isRadio(last.id)) return false;
   try {
     const related = await COMMANDS.media.related({ id: last.id, limit: AUTOPLAY_BATCH });
     const known = new Set(read().queue.map((t) => t.id));
@@ -369,9 +376,22 @@ async function extend(): Promise<boolean> {
   } catch (e) {
     log.warn("autoplay couldn't find related tracks:", e);
     return false;
-  } finally {
-    extending = false;
   }
+}
+
+/**
+ * Looks up the autoplay tracks while the last track of the queue is still playing. They are
+ * then queued like any other, so the stream of the first one is resolved and loaded ahead and the
+ * end of a list has no pause. Each last track is tried once, a lookup that found nothing is not
+ * repeated every second. Ending still tries again, see `advance`.
+ */
+function extendAhead() {
+  const { queue, index, repeat } = read();
+  const last = queue[queue.length - 1];
+  if (!last || index !== queue.length - 1 || repeat !== "off" || extendedFor === last.id) return;
+  if (!getSetting("autoplay", true, isBoolean)) return;
+  extendedFor = last.id;
+  void extend().then((added) => added && prefetchNext());
 }
 
 /** Frees an element's media pipeline. Pausing alone keeps the buffers of the source. */
@@ -458,6 +478,7 @@ function wire(el: HTMLAudioElement) {
     setTime(el.currentTime);
     const { queue, index } = read();
     if (queue[index]) trackListen(queue[index], el.currentTime);
+    extendAhead();
     // cheap when there is nothing to do, and it is what retries a lookup that failed
     prefetchNext();
     warmNext();
