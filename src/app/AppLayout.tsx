@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { BottomNavigation, BottomNavigationAction, Box, Paper } from "@mui/material";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
-import { IS_MOBILE } from "@/util/platform";
+import { IS_MOBILE, IS_WINDOWS } from "@/util/platform";
 import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
@@ -13,6 +13,7 @@ import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
 import VideoModal from "@/video/VideoModal";
 import NoticeStack from "./notices/NoticeStack";
+import TitleBar from "./TitleBar";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
 
@@ -120,6 +121,7 @@ export default function AppLayout() {
           pb: IS_MOBILE && navHidden ? "env(safe-area-inset-bottom)" : 0,
         }}
       >
+        {IS_WINDOWS && <TitleBar />}
         <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
           {!IS_MOBILE && !navHidden && (
             <Sidebar tabs={tabs} activeId={activeId} onSelect={goTo} />
