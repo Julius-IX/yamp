@@ -7239,6 +7239,7 @@ dependencies = [
  "tauri-groups",
  "tauri-plugin-deep-link",
  "tauri-plugin-dialog",
+ "tauri-plugin-fs",
  "tauri-plugin-opener",
  "tauri-plugin-updater",
  "tauri-settings",

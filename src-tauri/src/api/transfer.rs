@@ -5,6 +5,8 @@ use super::{
   fail,
   wire::{track_to_db, tracks_to_db},
 };
+use std::io::Write;
+use tauri_plugin_fs::{FsExt, OpenOptions};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 use ts_types::TsType;
@@ -292,9 +294,11 @@ pub async fn save_csv(app: AppHandle, file_name: String, csv: String) -> Result<
     else {
       return Ok(None);
     };
-    let path = chosen.into_path().map_err(|e| e.to_string())?;
-    std::fs::write(&path, csv).map_err(|e| format!("{}: {e}", path.display()))?;
-    Ok(Some(path.to_string_lossy().into_owned()))
+    let mut opts = OpenOptions::new();
+    opts.write(true).create(true).truncate(true);
+    let mut file = app.fs().open(chosen.clone(), opts).map_err(|e| e.to_string())?;
+    file.write_all(csv.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(Some(chosen.to_string()))
   })
   .await
   .map_err(|e| e.to_string())?

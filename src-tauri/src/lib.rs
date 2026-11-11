@@ -66,6 +66,7 @@ pub fn run() {
     .plugin(tauri_plugin_opener::init())
     // the folder picker for the local music folders of the data settings
     .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_fs::init())
     .plugin(yt_api::init())
     .plugin(yamp_session::init())
     .plugin(yamp_storage::init());
