@@ -17,7 +17,7 @@ export type Colors = {
   textSubdued: string;
 };
 
-// Snowify keeps one red for every theme, including the light one.
+// One red for every theme, including the light one.
 const ERROR = "#f06070";
 
 const palette = (c: Colors, divider: string): PaletteOptions => ({
@@ -28,8 +28,8 @@ const palette = (c: Colors, divider: string): PaletteOptions => ({
   divider,
 });
 
-// Snowify only ships a light variant of its default theme. The other themes reuse its neutral
-// light surfaces, with their accent darkened until it has 4.5:1 contrast on the surface.
+// Every theme shares the same neutral light surfaces. Its accent is darkened until it has 4.5:1
+// contrast on the surface.
 const LIGHT = {
   base: "#f0f0f0",
   surface: "#fafafa",
@@ -38,7 +38,7 @@ const LIGHT = {
   textSubdued: "#999999",
 };
 
-// Snowify draws its surfaces translucent over the base color. They are flattened here so the
+// The surfaces are meant to sit translucent over the base color. They are flattened here so the
 // result is opaque, which is what a MUI palette expects.
 const defs = {
   violet: {

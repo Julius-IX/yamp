@@ -9,7 +9,7 @@ import { IS_MOBILE } from "@/util/platform";
 /**
  * Building blocks of the settings pages. A page is written once from these and looks different
  * per platform. Desktop gets one rounded card per section with the title inside it and the
- * control on the right of each option, like Snowify. Mobile gets flat full width rows under
+ * control on the right of each option. Mobile gets flat full width rows under
  * colored category labels, like Tachiyomi.
  */
 
