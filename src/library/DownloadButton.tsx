@@ -9,22 +9,44 @@ import type { Track } from "@/lib/types";
 import { useBackGuard } from "@/router/useBackGuard";
 
 /**
+ * The question before a download is deleted, since the song then has to be downloaded or
+ * streamed again. It is apart from the button so a menu can ask it as well.
+ */
+export function RemoveDownloadDialog({ track, onClose }: { track: Track; onClose: () => void }) {
+  useBackGuard(true, onClose);
+
+  const remove = async () => {
+    onClose();
+    await removeDownload(track.id);
+  };
+
+  return (
+    <Dialog open onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle>Remove download</DialogTitle>
+      <DialogContent>
+        <DialogContentText>
+          {`"${track.title}" will be deleted from this device. It stays in the playlists it is in.`}
+        </DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button color="error" variant="contained" onClick={() => void remove()}>Remove</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/**
  * Saves a song on this device, and once it is saved, marks it and takes the file off again. The
  * mark is the button, so a song that is downloaded can be recognised in any list and removed from
- * the same spot. Removing asks first, since the song then has to be downloaded or streamed again.
- * A song that comes from a folder of the user has no button, it is on the device already.
+ * the same spot. A song that comes from a folder of the user has no button, it is on the device
+ * already.
  */
 export default function DownloadButton({ track }: { track: Track }) {
   const status = useDownloadStatus(track.id);
   const [confirming, setConfirming] = useState(false);
-  useBackGuard(confirming, () => setConfirming(false));
 
   if (isLocalFile(track.id)) return null;
-
-  const remove = async () => {
-    setConfirming(false);
-    await removeDownload(track.id);
-  };
 
   return (
     <>
@@ -51,20 +73,7 @@ export default function DownloadButton({ track }: { track: Track }) {
           </IconButton>
         </Tooltip>
       )}
-      {confirming && (
-        <Dialog open onClose={() => setConfirming(false)} fullWidth maxWidth="xs">
-          <DialogTitle>Remove download</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              {`"${track.title}" will be deleted from this device. It stays in the playlists it is in.`}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setConfirming(false)}>Cancel</Button>
-            <Button color="error" variant="contained" onClick={() => void remove()}>Remove</Button>
-          </DialogActions>
-        </Dialog>
-      )}
+      {confirming && <RemoveDownloadDialog track={track} onClose={() => setConfirming(false)} />}
     </>
   );
 }
