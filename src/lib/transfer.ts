@@ -89,3 +89,9 @@ export async function importFiles(files: File[], onProgress: (p: ImportProgress)
 
 /** Returns the path that was written, or null when the dialog was closed. */
 export const saveCsv = (fileName: string, csv: string) => COMMANDS.transfer.saveCsv({ fileName, csv });
+
+/** Saves the likes, playlists and albums as a CSV file. Returns the path, or null when the dialog was closed. */
+export async function exportLibrary() {
+  const csv = await COMMANDS.transfer.exportCsv();
+  return saveCsv("yamp-library.csv", csv);
+}

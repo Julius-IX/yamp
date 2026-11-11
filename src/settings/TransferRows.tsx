@@ -1,8 +1,9 @@
 import { useRef, useState } from "react";
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography } from "@mui/material";
+import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
 import { logger } from "@/lib/log";
-import { importFiles, saveCsv, type ImportProgress, type ImportSummary } from "@/lib/transfer";
+import { exportLibrary, importFiles, saveCsv, type ImportProgress, type ImportSummary } from "@/lib/transfer";
 import { useBackGuard } from "@/router/useBackGuard";
 import { subdued } from "@/themes/ui";
 import { ActionRow } from "./controls";
@@ -93,6 +94,22 @@ export default function TransferRows() {
   const picker = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exported, setExported] = useState<string | null>(null);
+
+  const exportAll = async () => {
+    setExporting(true);
+    setExported(null);
+    try {
+      const path = await exportLibrary();
+      if (path) setExported(`Saved to ${path}`);
+    } catch (e) {
+      log.error("couldn't export the library:", e);
+      setExported(String(e));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const run = async (files: File[]) => {
     if (files.length === 0) return;
@@ -134,6 +151,14 @@ export default function TransferRows() {
           e.target.value = "";
           void run(files);
         }}
+      />
+      <ActionRow
+        title="Export to CSV"
+        icon={<FileDownloadOutlinedIcon />}
+        summary={exported ?? "Save the likes, playlists and saved albums as a CSV file that other services can read"}
+        label="Export"
+        busy={exporting}
+        onAction={() => void exportAll()}
       />
       <ReportDialog summary={summary} onClose={() => setSummary(null)} />
     </>
