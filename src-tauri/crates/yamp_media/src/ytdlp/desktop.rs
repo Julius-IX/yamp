@@ -95,13 +95,17 @@ impl DesktopEngine {
   }
 }
 
+/// Warnings that repeat on every call and cannot be acted on. They are logged at debug level so
+/// they do not bury the ones that matter.
+const KNOWN_NOISE: &[&str] = &["SABR-only streaming experiment"];
+
 /// Forwards what yt-dlp wrote to stderr to the log, on success as well. Warnings there are
 /// often the first sign of a problem, like a missing JS runtime or an upcoming format change.
 fn log_stderr(err: &str) {
   for line in err.lines().map(str::trim).filter(|l| !l.is_empty()) {
     if line.starts_with("ERROR") {
       log::error!("yt-dlp: {line}");
-    } else if line.starts_with("WARNING") {
+    } else if line.starts_with("WARNING") && !KNOWN_NOISE.iter().any(|n| line.contains(n)) {
       log::warn!("yt-dlp: {line}");
     } else {
       log::debug!("yt-dlp: {line}");
