@@ -1,30 +1,34 @@
 import { useSyncExternalStore } from "react";
 import type { Track } from "@/lib/types";
-import { player } from "@/player/store";
+import { currentTrack, getPlayer, player } from "@/player/store";
 
 /**
- * The video that is open, if any. Kept outside of React like the player, so any shelf can open
- * one without the modal being part of its tree.
+ * Whether the video view is open. A video is a song like any other, the player plays its audio
+ * and this view only shows the picture beside it, so closing it never stops anything. Kept
+ * outside of React like the player, so any shelf can open it without the modal being part of
+ * its tree.
  */
-let current: Track | null = null;
+let open = false;
 const listeners = new Set<() => void>();
 
-const set = (video: Track | null) => {
-  current = video;
+const set = (next: boolean) => {
+  if (open === next) return;
+  open = next;
   listeners.forEach((l) => l());
 };
 
 export const video = {
-  open(track: Track) {
-    // the video carries its own sound, so the music must not play underneath it
-    player.pause();
-    set(track);
+  /** Plays `tracks` from `index` unless that track already plays, and shows its picture. */
+  watch(tracks: Track[], index = 0) {
+    const track = tracks[index];
+    if (track && currentTrack(getPlayer())?.id !== track.id) player.play(tracks, index);
+    set(true);
   },
   close() {
-    set(null);
+    set(false);
   },
 };
 
 const subscribe = (cb: () => void) => (listeners.add(cb), () => void listeners.delete(cb));
 
-export const useVideo = () => useSyncExternalStore(subscribe, () => current);
+export const useVideoOpen = () => useSyncExternalStore(subscribe, () => open);
