@@ -33,6 +33,7 @@ const SETTINGS: &[&str] = &[
   "lastCompact",
   "country",
   "clock24",
+  "termsAccepted",
   library::SYNC_KEY,
 ];
 
