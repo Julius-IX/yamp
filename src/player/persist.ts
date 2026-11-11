@@ -9,6 +9,8 @@ export type Saved = {
   queue: Track[];
   /** The order before shuffling. Only saved while shuffle is on, otherwise it equals the queue. */
   original: Track[] | null;
+  /** The playlist or album that was played, so shuffle still covers it after a restart. Only saved while shuffle is on. */
+  source?: Track[] | null;
   index: number;
   position: number;
 };
@@ -18,6 +20,8 @@ const KEY = "playback";
 const MAX_SAVED = 100;
 /** Tracks kept from before the playing one, so previous still has somewhere to go. */
 const KEEP_BEHIND = 20;
+/** The source is a whole playlist, so it gets more room than the queue. */
+const MAX_SOURCE = 500;
 
 const isSaved = (v: unknown): v is Saved => {
   const s = v as Saved | null;
@@ -25,6 +29,7 @@ const isSaved = (v: unknown): v is Saved => {
     !!s &&
     Array.isArray(s.queue) &&
     s.queue.every((t) => typeof t?.id === "string") &&
+    (s.source == null || (Array.isArray(s.source) && s.source.every((t) => typeof t?.id === "string"))) &&
     isNumber(s.index) &&
     isNumber(s.position) &&
     s.index >= 0 &&
@@ -37,12 +42,20 @@ export function loadPlayback(): Saved | null {
   return isSaved(raw) ? raw : null;
 }
 
-export function savePlayback(queue: Track[], original: Track[], shuffle: boolean, index: number, position: number) {
+export function savePlayback(
+  queue: Track[],
+  original: Track[],
+  source: Track[],
+  shuffle: boolean,
+  index: number,
+  position: number,
+) {
   if (index < 0 || queue.length === 0) return setSetting(KEY, null);
+  const kept = shuffle ? source.slice(0, MAX_SOURCE) : null;
   if (queue.length <= MAX_SAVED) {
-    return setSetting<Saved>(KEY, { queue, original: shuffle ? original : null, index, position });
+    return setSetting<Saved>(KEY, { queue, original: shuffle ? original : null, source: kept, index, position });
   }
   // a trimmed queue cannot be put back into its unshuffled order
   const from = Math.max(0, index - KEEP_BEHIND);
-  setSetting<Saved>(KEY, { queue: queue.slice(from, from + MAX_SAVED), original: null, index: index - from, position });
+  setSetting<Saved>(KEY, { queue: queue.slice(from, from + MAX_SAVED), original: null, source: kept, index: index - from, position });
 }

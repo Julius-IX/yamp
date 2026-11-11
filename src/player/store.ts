@@ -82,6 +82,12 @@ audio.preload = "metadata";
 let current: PlayerState | undefined;
 let time: PlayerTime = { position: 0, duration: 0 };
 let original: Track[] = [];
+/**
+ * The whole list that was played, a playlist or an album. Shuffle draws from it and not from
+ * the queue, so a song that was removed from the queue or cut from a saved one is still part of
+ * the shuffle. Empty until something is played, `shufflePool` then falls back to the queue.
+ */
+let source: Track[] = [];
 /** Bumped by every load, so a stream that resolves after a newer request is dropped. */
 let token = 0;
 /** Bumped by every pick of something to play. See `beginPick`. */
@@ -115,6 +121,7 @@ function initialState(): PlayerState {
   const saved = loadPlayback();
   if (saved) {
     original = saved.original ?? saved.queue;
+    source = saved.source ?? original;
     time = { position: saved.position, duration: saved.queue[saved.index].durationSecs ?? 0 };
   }
   return {
@@ -145,7 +152,7 @@ const set = (patch: Partial<PlayerState>) => {
 function save() {
   const { queue, index, shuffle } = read();
   lastSave = Date.now();
-  savePlayback(queue, original, shuffle, index, time.position);
+  savePlayback(queue, original, source, shuffle, index, time.position);
 }
 
 const timeListeners = new Set<() => void>();
@@ -171,6 +178,12 @@ const shuffled = <T>(list: T[]): T[] => {
   }
   return out;
 };
+
+/** What a shuffle draws from. The whole source, plus whatever else was queued since. */
+function shufflePool(queue: Track[]): Track[] {
+  const ids = new Set(source.map((t) => t.id));
+  return [...source, ...queue.filter((t) => !ids.has(t.id))];
+}
 
 /**
  * A new order for another pass through a shuffled queue. Replaying the order of the last pass
@@ -514,7 +527,7 @@ async function advance(auto: boolean) {
   const autoplay = getSetting("autoplay", true, isBoolean);
   if (index < queue.length - 1) return start(index + 1);
   if (repeat === "all" && queue.length > 0) {
-    if (read().shuffle) set({ queue: nextPass(queue, queue[index]) });
+    if (read().shuffle) set({ queue: nextPass(shufflePool(queue), queue[index]) });
     return start(0);
   }
   if (autoplay && queue.length > 0 && (await extend())) return start(index + 1);
@@ -531,6 +544,7 @@ export const player = {
     picks++;
     const first = tracks[startIndex] ?? tracks[0];
     original = tracks;
+    source = tracks;
     if (read().shuffle) {
       const rest = tracks.filter((t) => t !== first);
       set({ queue: [first, ...shuffled(rest)] });
@@ -621,6 +635,7 @@ export const player = {
     audio.removeAttribute("src");
     audio.load();
     original = [];
+    source = [];
     set({ queue: [], index: -1, playing: false, loading: false, error: null });
     setTime(0, 0);
   },
@@ -653,7 +668,7 @@ export const player = {
     if (!playing) return set({ shuffle: on });
     if (on) {
       original = queue;
-      const rest = queue.filter((_, n) => n !== index);
+      const rest = shufflePool(queue).filter((t) => t.id !== playing.id);
       set({ shuffle: on, queue: [playing, ...shuffled(rest)], index: 0 });
     } else {
       set({ shuffle: on, queue: original, index: Math.max(0, original.indexOf(playing)) });
