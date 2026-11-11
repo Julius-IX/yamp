@@ -3,7 +3,7 @@
 //!
 //! The card is set up like the one of a music service. The status reads "Listening to" and the
 //! artist, since the person listens on yamp to something and not to yamp itself, and the card
-//! names yamp where Discord allows it, in the hover text of the cover and in a button. The title,
+//! names yamp where Discord allows it, as a badge on the cover and in a button. The title,
 //! the artist and the cover link to the track when it has a web page.
 //!
 //! Only a desktop can talk to Discord, over a local socket. On a phone every call does nothing
@@ -17,6 +17,10 @@ use std::{
 
 /// Where the button that names the app leads.
 const APP_URL: &str = "https://github.com/Julius-IX/yamp";
+
+/// The logo shown as the small badge on the corner of the cover. Discord loads it from the web, so
+/// it is the copy in the repository and not a file of the app.
+const BADGE_URL: &str = "https://raw.githubusercontent.com/Julius-IX/yamp/main/docs/assets/icons/mint-app-icon-transparent.png";
 
 const APP_ID: Option<&str> = option_env!("YAMP_DISCORD_APP_ID");
 
@@ -119,7 +123,7 @@ impl Presence {
     }
     // the hover text of the cover is the album when it is known, and otherwise where the music plays
     let hover = track.album.map_or_else(|| "Listening on yamp".to_string(), field);
-    let mut assets = Assets::new().large_text(&hover);
+    let mut assets = Assets::new().large_text(&hover).small_image(BADGE_URL).small_text("yamp");
     if let Some(cover) = web_url(track.cover) {
       assets = assets.large_image(cover);
     }
