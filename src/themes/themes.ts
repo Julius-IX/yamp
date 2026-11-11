@@ -129,6 +129,11 @@ export const buildTheme = (mode: Mode, colors: Colors) => {
     },
   });
   const { primary } = base.palette;
+  const floating = {
+    border: `1px solid ${base.palette.divider}`,
+    backgroundImage: `linear-gradient(180deg, ${alpha(base.palette.text.primary, 0.05)}, transparent 60%)`,
+    boxShadow: `0 16px 40px -12px rgba(0, 0, 0, ${mode === "dark" ? 0.7 : 0.25})`,
+  };
   // Flat fills read as dead on a near black page. The depth comes from the accent itself, as an
   // even tint over the page and a short gradient on what is filled with it, kept low so the
   // themes stay calm.
@@ -144,6 +149,9 @@ export const buildTheme = (mode: Mode, colors: Colors) => {
           },
         },
       },
+      // menus and dialogs float above the page, so they get an edge, a sheen and a deeper shadow
+      MuiMenu: { styleOverrides: { paper: floating } },
+      MuiDialog: { styleOverrides: { paper: floating } },
       MuiSlider: {
         styleOverrides: {
           // a seek bar or a volume bar fills with a run of the accent, and its knob has a halo
