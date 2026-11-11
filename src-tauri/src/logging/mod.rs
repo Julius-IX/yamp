@@ -1,8 +1,9 @@
 //! Central log hub shared by the Rust backend and the web frontend.
 //!
 //! Backend code logs through the `log` facade. The frontend logs through the `logging::push`
-//! command. Both end up in one ring buffer, are forwarded to the platform log (see `sink`) and are
-//! emitted as events, so any window can show every entry and still split on `LogSource`.
+//! command. Both end up in one ring buffer, are forwarded to the platform log and a log file (see
+//! `sink`) and are emitted as events, so any window can show every entry and still split on
+//! `LogSource`.
 //!
 //! The buffer lives in the backend on purpose. A window that opens late or reloads can fetch the
 //! history with `logging::list` instead of losing everything logged before it existed.
@@ -22,7 +23,7 @@ use std::{
 
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use ts_types::TsType;
 
 /// Event carrying a single `LogEntry`.
@@ -125,8 +126,14 @@ pub fn init() {
   }
 }
 
-/// Starts emitting entries to the frontend. Called once the app exists.
+/// Starts emitting entries to the frontend and writing them to `logs/` in the app data
+/// directory. Called once the app exists, since the directory is not known earlier. What was
+/// logged before that is written first.
 pub fn attach(handle: AppHandle) {
+  match handle.path().app_data_dir() {
+    Ok(dir) => sink::open_file(&dir.join("logs"), &snapshot()),
+    Err(e) => log::warn!("no app data directory for the log file: {e}"),
+  }
   let _ = HANDLE.set(handle);
 }
 
