@@ -26,7 +26,7 @@ type SectionInfo = {
 export const CLOUD_SECTIONS: Record<CloudSection, SectionInfo> = {
   general: { keys: ["country"] },
   appearance: { keys: ["theme", "mode", "animations", "tooltips", "customThemes"] },
-  playback: { keys: ["autoplay", "quality", "prefetch", "discordPresence"] },
+  playback: { keys: ["autoplay", "quality", "prefetch", "prefetchAmount", "discordPresence"] },
   // folders and downloads belong to one device, so only the statistics options are shared
   data: { keys: ["statsEnabled"], note: "Only the statistics option is saved, folders and downloads stay on this device" },
 };

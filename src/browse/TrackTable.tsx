@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { useIsLiked } from "@/lib/likes";
@@ -18,8 +20,19 @@ import { columnHead, faint, GUTTER, radius, subdued } from "@/themes/ui";
 const columns = (plays: boolean) =>
   IS_MOBILE ? "32px minmax(0, 1fr)" : `40px minmax(0, 1.4fr) minmax(0, 1fr)${plays ? " 96px" : ""}`;
 const BUTTON = 40;
-/** The queue, playlist, download and like buttons, and the remove button when the table can remove. */
-const actionsWidth = (removable: boolean) => BUTTON * (removable ? 5 : 4);
+/**
+ * The queue, playlist, download and like buttons, the remove button when the table can remove and
+ * the drag handle when it can move rows. On mobile the handle takes the place of the row number
+ * instead, the row has no room for one more button.
+ */
+const actionsWidth = (removable: boolean, movable: boolean) =>
+  BUTTON * (removable ? 5 : 4) + (movable && !IS_MOBILE ? BUTTON : 0);
+
+/** Distance from the edge of the scrolling page where dragging starts to scroll it, and its speed. */
+const SCROLL_ZONE = 72;
+const SCROLL_STEP = 14;
+
+type Drag = { from: number; to: number };
 
 /**
  * One slot of the action buttons. Every button sits in the same fixed box, centered on both axes,
@@ -35,19 +48,42 @@ const cell = (shown: boolean) => ({
 type RowProps = {
   track: Track; index: number; active: boolean; plays?: string | null; showPlays: boolean; onPlay: () => void;
   onRemove?: () => void;
+  /** Present when the row can be moved. The handle starts the drag and the table follows it. */
+  handle?: { onStart: (e: PointerEvent) => void };
+  /** Where the dragged row would land relative to this one, for the line that shows it. */
+  drop?: "above" | "below" | null;
+  dragging?: boolean;
 };
+
+/**
+ * A pointer drag and not the HTML one, which a touch screen does not start. `touchAction: none`
+ * keeps the page from scrolling under the finger, the table scrolls it while a row is dragged.
+ */
+function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
+  return (
+    <Box
+      aria-label="Drag to move"
+      onPointerDown={onStart}
+      onClick={(e) => e.stopPropagation()}
+      sx={{ display: "flex", cursor: "grab", touchAction: "none", color: "text.secondary", p: 1 }}
+    >
+      <DragIndicatorIcon fontSize="small" />
+    </Box>
+  );
+}
 
 /**
  * The row is a div that plays when clicked, not a button. The artist and the actions inside are
  * controls of their own, and a button cannot hold another one.
  */
-function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowProps) {
+function Row({ track, index, active, plays, showPlays, onPlay, onRemove, handle, drop, dragging }: RowProps) {
   const liked = useIsLiked(track.id);
   const download = useDownloadStatus(track.id);
   return (
     <Box
       role="button"
       tabIndex={0}
+      data-row
       onClick={onPlay}
       onKeyDown={(e) => {
         if (e.target !== e.currentTarget || (e.key !== "Enter" && e.key !== " ")) return;
@@ -56,6 +92,8 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
       }}
       sx={{
         display: "flex", alignItems: "center", py: 0.75, borderRadius: radius.row, cursor: "pointer",
+        opacity: dragging ? 0.5 : 1,
+        boxShadow: (t) => (drop ? `inset 0 ${drop === "above" ? 2 : -2}px 0 ${t.palette.primary.main}` : "none"),
         "&:hover, &:focus-visible": { bgcolor: "action.hover", outline: "none" },
         "&:hover .row-index": { display: "none" },
         "&:hover .row-play": { display: "flex" },
@@ -63,9 +101,13 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0, display: "grid", gridTemplateColumns: columns(showPlays), alignItems: "center" }}>
-        <Typography className="row-index" variant="body2" sx={{ ...(active ? { color: "primary.main" } : faint), textAlign: "center" }}>
-          {index + 1}
-        </Typography>
+        {handle && IS_MOBILE ? (
+          <Box sx={{ display: "flex", justifyContent: "center" }}><Handle onStart={handle.onStart} /></Box>
+        ) : (
+          <Typography className="row-index" variant="body2" sx={{ ...(active ? { color: "primary.main" } : faint), textAlign: "center" }}>
+            {index + 1}
+          </Typography>
+        )}
         <Box className="row-play" sx={{ display: "none", justifyContent: "center", color: "text.primary" }}>
           <PlayArrowIcon fontSize="small" />
         </Box>
@@ -86,7 +128,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
         )}
       </Box>
 
-      <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
+      <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove, !!handle), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {/* the buttons only show on hover, except a liked heart or a download, and always where there is no hover */}
         <Box className="row-action" sx={cell(true)}>
           <Tooltip title="Add to queue (Shift: play next)">
@@ -108,6 +150,9 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
         <Box className="row-action" sx={cell(liked)}>
           <LikeButton track={track} size="small" />
         </Box>
+        {handle && !IS_MOBILE && (
+          <Box className="row-action" sx={cell(true)}><Handle onStart={handle.onStart} /></Box>
+        )}
         {onRemove && (
           <Box className="row-action" sx={cell(true)}>
             <Tooltip title="Remove from playlist">
@@ -122,15 +167,102 @@ function Row({ track, index, active, plays, showPlays, onPlay, onRemove }: RowPr
   );
 }
 
+/** The nearest ancestor that scrolls, which is the page the table is on. */
+function scroller(el: HTMLElement | null): HTMLElement | null {
+  for (let p = el?.parentElement; p; p = p.parentElement) {
+    const overflow = getComputedStyle(p).overflowY;
+    if ((overflow === "auto" || overflow === "scroll") && p.scrollHeight > p.clientHeight) return p;
+  }
+  return null;
+}
+
 /**
  * Tracks as numbered rows. The row of the playing track is tinted, and a click plays from that
  * row. `plays` adds a column of play counts, as display text, one entry per track. `onRemove`
  * adds a button that takes a row out of the list the table shows, for a playlist of the library.
+ * `onMove` adds a handle to drag a row to another place, the row ends up at the index it is
+ * dropped on. The table does not reorder itself, the caller changes `tracks` in answer.
  */
 export default function TrackTable({
-  tracks, plays, onPlay, onRemove,
-}: { tracks: Track[]; plays?: (string | null)[]; onPlay: (index: number) => void; onRemove?: (index: number) => void }) {
+  tracks, plays, onPlay, onRemove, onMove,
+}: {
+  tracks: Track[]; plays?: (string | null)[]; onPlay: (index: number) => void; onRemove?: (index: number) => void;
+  onMove?: (from: number, to: number) => void;
+}) {
   const activeId = currentTrack(usePlayer())?.id;
+  const body = useRef<HTMLDivElement>(null);
+  const [drag, setDrag] = useState<Drag | null>(null);
+  // the latest pointer height, read by the scroll loop which runs between pointer events
+  const pointerY = useRef(0);
+
+  const indexAt = (y: number) => {
+    const rows = Array.from(body.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []);
+    const hit = rows.findIndex((r) => y < r.getBoundingClientRect().top + r.offsetHeight / 2);
+    return hit === -1 ? rows.length - 1 : hit;
+  };
+
+  // a mirror of the state for the window handlers, which outlive the render they were made in
+  const current = useRef<Drag | null>(null);
+  const moveRef = useRef(onMove);
+  moveRef.current = onMove;
+  const set = (d: Drag | null) => {
+    current.current = d;
+    setDrag(d);
+  };
+  const follow = (y: number) => {
+    const d = current.current;
+    const to = d && indexAt(y);
+    if (d && to !== d.to) set({ from: d.from, to: to! });
+  };
+
+  const start = (from: number) => (e: PointerEvent) => {
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pointerY.current = e.clientY;
+    set({ from, to: from });
+  };
+  const finish = (drop: boolean) => {
+    const d = current.current;
+    set(null);
+    if (d && drop && d.from !== d.to) moveRef.current?.(d.from, d.to);
+  };
+
+  // the handle holds the pointer capture, so its events reach the window while the drag lasts
+  const dragging = drag !== null;
+  useEffect(() => {
+    if (!dragging) return;
+    const moved = (e: globalThis.PointerEvent) => {
+      pointerY.current = e.clientY;
+      follow(e.clientY);
+    };
+    const up = () => finish(true);
+    const cancel = () => finish(false);
+    window.addEventListener("pointermove", moved);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
+    const page = scroller(body.current);
+    let frame = 0;
+    const scroll = () => {
+      if (page) {
+        const { top, bottom } = page.getBoundingClientRect();
+        const y = pointerY.current;
+        if (y < top + SCROLL_ZONE) page.scrollTop -= SCROLL_STEP;
+        else if (y > bottom - SCROLL_ZONE) page.scrollTop += SCROLL_STEP;
+        // the rows moved under the pointer, so the target changes without a pointer event
+        follow(y);
+      }
+      frame = requestAnimationFrame(scroll);
+    };
+    frame = requestAnimationFrame(scroll);
+    return () => {
+      window.removeEventListener("pointermove", moved);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", cancel);
+      cancelAnimationFrame(frame);
+    };
+    // the handlers only read refs, so one set of them serves the whole drag
+  }, [dragging]);
+
   return (
     <Box sx={{ px: GUTTER }}>
       <Box sx={{ display: "flex", borderBottom: 1, borderColor: "divider", pb: 1, mb: 0.5 }}>
@@ -140,11 +272,19 @@ export default function TrackTable({
           {!IS_MOBILE && <Typography sx={columnHead}>ARTIST</Typography>}
           {!IS_MOBILE && plays && <Typography sx={{ ...columnHead, textAlign: "right", pr: 1 }}>PLAYS</Typography>}
         </Box>
-        <Box sx={{ width: actionsWidth(!!onRemove) }} />
+        <Box sx={{ width: actionsWidth(!!onRemove, !!onMove) }} />
       </Box>
-      {tracks.map((t, i) => (
-        <Row key={`${t.id}:${i}`} track={t} index={i} active={t.id === activeId} plays={plays?.[i]} showPlays={!!plays} onPlay={() => onPlay(i)} onRemove={onRemove && (() => onRemove(i))} />
-      ))}
+      <Box ref={body} sx={{ userSelect: drag ? "none" : "auto" }}>
+        {tracks.map((t, i) => (
+          <Row
+            key={`${t.id}:${i}`} track={t} index={i} active={t.id === activeId} plays={plays?.[i]} showPlays={!!plays}
+            onPlay={() => onPlay(i)} onRemove={onRemove && (() => onRemove(i))}
+            handle={onMove && { onStart: start(i) }}
+            dragging={drag?.from === i}
+            drop={drag && drag.from !== drag.to && drag.to === i ? (drag.to > drag.from ? "below" : "above") : null}
+          />
+        ))}
+      </Box>
     </Box>
   );
 }

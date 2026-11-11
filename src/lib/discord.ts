@@ -3,9 +3,17 @@ import { COMMANDS } from "./commands";
 import { logger } from "./log";
 import { isBoolean, useSetting } from "./settings";
 import { isRadio } from "@/radio/station";
+import { isLocalFile } from "./local";
 import { currentTrack, getTime, onSeek, usePlayer } from "@/player/store";
 
 const log = logger("discord");
+
+/** The page of a track on YouTube Music, which the card links to. A local file or a station has none. */
+const trackUrl = (id: string) =>
+  isRadio(id) || isLocalFile(id) ? null : `https://music.youtube.com/watch?v=${encodeURIComponent(id)}`;
+
+/** There is no id of the artist at hand, so the link is a search for the name. */
+const artistUrl = (artist: string) => `https://music.youtube.com/search?q=${encodeURIComponent(artist)}`;
 
 /** Whether this build can show a presence. False on a phone, and without a Discord application id. */
 export function useDiscordAvailable() {
@@ -40,6 +48,7 @@ export function useDiscordPresence() {
       const { position, duration } = getTime();
       const startMs = Date.now() - position * 1000;
       const length = duration || track.durationSecs || 0;
+      const url = trackUrl(track.id);
       COMMANDS.discord
         .update({
           title: track.title,
@@ -48,6 +57,8 @@ export function useDiscordPresence() {
           startMs: Math.round(startMs),
           // a live stream has no end
           endMs: length > 0 && !isRadio(track.id) ? Math.round(startMs + length * 1000) : null,
+          url,
+          artistUrl: url && track.artist ? artistUrl(track.artist) : null,
         })
         .then(() => (failed = false))
         .catch(fail);

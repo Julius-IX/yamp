@@ -3,7 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
 import { isLocalFile } from "@/lib/local";
-import { getSetting, isBoolean, isNumber, setSetting } from "@/lib/settings";
+import { getSetting, isBoolean, isNumber, onSettingChange, rawSetting, setSetting } from "@/lib/settings";
 import type { AudioQuality, Track } from "@/lib/types";
 import { resolveStream } from "@/radio/api";
 import { isRadio, stationId } from "@/radio/station";
@@ -43,14 +43,30 @@ export type PlayerState = {
 export type PlayerTime = { position: number; duration: number };
 
 export const QUALITIES: AudioQuality[] = ["low", "medium", "high"];
+/** How many of the upcoming tracks are resolved ahead of time. `all` is the rest of the queue. */
+export const PREFETCH_AMOUNTS = ["off", "1", "3", "5", "10", "all"] as const;
+export type PrefetchAmount = (typeof PREFETCH_AMOUNTS)[number];
+export const isPrefetchAmount = (v: unknown): v is PrefetchAmount => PREFETCH_AMOUNTS.includes(v as PrefetchAmount);
+
+/** Before the amount there was a switch, and a device that turned it off stays off. */
+export const defaultPrefetchAmount = (): PrefetchAmount => (rawSetting("prefetch") === false ? "off" : "1");
+
+const prefetchLimit = () => {
+  const amount = getSetting("prefetchAmount", defaultPrefetchAmount(), isPrefetchAmount);
+  return amount === "off" ? 0 : amount === "all" ? Infinity : Number(amount);
+};
+
 export const isQuality = (v: unknown): v is AudioQuality => QUALITIES.includes(v as AudioQuality);
 
 /** A track is restarted instead of left when it already played this long. */
 const RESTART_AFTER_SECS = 3;
 /** The playback position is saved at most this often while playing. */
 const SAVE_EVERY_MS = 15_000;
-/** A stream URL stays usable for hours, a prefetched one is dropped after this to be safe. */
-const PREFETCH_MAX_AGE_MS = 20 * 60_000;
+/**
+ * A stream URL stays usable for hours, a prefetched one is dropped after this to be safe. It is
+ * also how far ahead is looked, a track that would start later than this from now is left for later.
+ */
+const PREFETCH_MAX_AGE_MS = 60 * 60_000;
 /** How long a failed lookup ahead of time is left alone before it is tried again. */
 const PREFETCH_RETRY_MS = 15_000;
 /** How many related tracks autoplay appends at once. */
@@ -81,6 +97,8 @@ const prefetched = new Map<string, { url: string; at: number }>();
 const resolving = new Set<string>();
 /** Ids whose last lookup ahead of time failed, and when. A phone loses its network often, so a lookup is tried again after a pause and not only when the playing track changes. */
 const prefetchFailed = new Map<string, number>();
+/** Ids that needed no lookup because their file is on this device, and when that was seen. A download can be removed, so it is looked at again after a pause. */
+const prefetchSkipped = new Map<string, number>();
 let lastSave = 0;
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
@@ -238,35 +256,72 @@ async function streamUrl(track: Track, now = true): Promise<string> {
 }
 
 /**
- * Resolves and starts loading the track after the playing one, when the setting allows it. It is
- * called again whenever the track that comes next may have changed, since a track that was just
- * queued would otherwise be looked up only when the one before it ends.
+ * The tracks after the playing one that the setting asks to be resolved, nearest first. A track
+ * that would start further ahead than the age of a prefetched URL is left out, since its URL
+ * would be dropped before it was used. That also keeps the entire queue from being looked up
+ * at once.
+ */
+function prefetchTargets(): Track[] {
+  const limit = prefetchLimit();
+  const { queue, index, repeat } = read();
+  if (limit === 0 || index < 0) return [];
+  const targets: Track[] = [];
+  let waitSecs = Math.max(0, (time.duration || queue[index]?.durationSecs || 0) - time.position);
+  // `step` stops short of the playing track, which comes round again when the queue repeats
+  for (let step = 1; step < queue.length && targets.length < limit; step++) {
+    const at = index + step;
+    const track = queue[repeat === "all" ? at % queue.length : at];
+    if (!track || waitSecs * 1000 > PREFETCH_MAX_AGE_MS) break;
+    targets.push(track);
+    waitSecs += track.durationSecs ?? 0;
+  }
+  return targets;
+}
+
+const recently = (seen: Map<string, number>, id: string) => Date.now() - (seen.get(id) ?? 0) < PREFETCH_RETRY_MS;
+
+/**
+ * Resolves the stream of the upcoming tracks, as many as the setting allows. It is called again
+ * whenever the tracks that come next may have changed, since a track that was just queued would
+ * otherwise be looked up only when the one before it ends. A lookup is a whole yt-dlp run, so
+ * they go one after the other, each one starting the next when it is done. Only the nearest track
+ * does not wait for a lookup that is under way, it may have changed while that one ran.
  */
 function prefetchNext() {
-  if (!getSetting("prefetch", true, isBoolean)) return;
-  const { queue, index, repeat } = read();
-  if (index < 0) return;
-  const next = queue[index + 1] ?? (repeat === "all" ? queue[0] : undefined);
-  // a station is live, so there is nothing to warm up and looking it up early would count a listener
-  if (!next || isRadio(next.id) || next.id === queue[index]?.id || prefetched.has(next.id) || resolving.has(next.id)) return;
-  if (Date.now() - (prefetchFailed.get(next.id) ?? 0) < PREFETCH_RETRY_MS) return;
+  const targets = prefetchTargets();
+  const { queue, index } = read();
+  const fresh = (id: string) => {
+    const hit = prefetched.get(id);
+    return !!hit && Date.now() - hit.at < PREFETCH_MAX_AGE_MS;
+  };
+  const next = targets.find(
+    (t) =>
+      // a station is live, so there is nothing to warm up and looking it up early would count a listener
+      !isRadio(t.id) && t.id !== queue[index]?.id && !fresh(t.id) && !resolving.has(t.id) &&
+      !recently(prefetchFailed, t.id) && !recently(prefetchSkipped, t.id),
+  );
+  if (!next || (resolving.size > 0 && next !== targets[0])) return;
   resolving.add(next.id);
   // a file on the device needs no warming up and a stream would only waste bandwidth
   localUrl(next)
     .then((local) => {
-      if (local) return;
+      if (local) return void prefetchSkipped.set(next.id, Date.now());
       return COMMANDS.media.stream({ id: next.id, quality: getSetting("quality", "high", isQuality) }).then((info) => {
         prefetched.set(next.id, { url: info.url, at: Date.now() });
         prefetchFailed.delete(next.id);
-        // only the nearest track is worth the bandwidth, older entries are not coming up
-        for (const id of [...prefetched.keys()].slice(0, -2)) prefetched.delete(id);
+        // the oldest are the ones least likely to still be coming up
+        const keep = Math.max(2, Math.min(prefetchLimit(), 50)) + 1;
+        for (const id of [...prefetched.keys()].slice(0, -keep)) prefetched.delete(id);
       });
     })
     .catch((e) => {
       prefetchFailed.set(next.id, Date.now());
       log.warn(`couldn't prefetch ${next.title}:`, e);
     })
-    .finally(() => resolving.delete(next.id));
+    .finally(() => {
+      resolving.delete(next.id);
+      prefetchNext();
+    });
 }
 
 /** A stream URL that expired while paused fails on resume, so it is resolved once more at the same spot. */
@@ -354,7 +409,7 @@ async function warm(next: Track) {
 
 /** Called by every time update. Cheap when there is nothing to do. */
 function warmNext() {
-  if (!getSetting("prefetch", true, isBoolean)) return;
+  if (prefetchLimit() === 0) return;
   if (!Number.isFinite(audio.duration) || audio.duration - audio.currentTime > WARM_AHEAD_SECS) return;
   const { queue, index, repeat } = read();
   const now = queue[index];
@@ -576,6 +631,9 @@ export const player = {
     prefetchNext();
   },
 };
+
+// the amount can be changed while a queue plays, which should be felt without waiting for the next track
+onSettingChange((key) => key === "prefetchAmount" && prefetchNext());
 
 // SECTION: hooks
 
