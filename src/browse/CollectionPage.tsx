@@ -8,7 +8,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { COMMANDS } from "@/lib/commands";
 import { refreshPlaylists } from "@/lib/library";
 import { logger } from "@/lib/log";
-import type { Item, Track } from "@/lib/types";
+import type { Item } from "@/lib/types";
 import Cover from "@/player/Cover";
 import { player } from "@/player/store";
 import { accentFill, eyebrow, GUTTER, heroTitle, radius, subdued } from "@/themes/ui";
@@ -18,15 +18,6 @@ import { useCached } from "./useCached";
 
 const log = logger("browse");
 const COVER = IS_MOBILE ? 140 : 200;
-
-const shuffled = (tracks: Track[]) => {
-  const out = [...tracks];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-};
 
 /**
  * An album or a playlist from the provider, as opposed to one in the library, so there is
@@ -117,7 +108,7 @@ export default function CollectionPage({ kind }: { kind: "album" | "playlist" })
         </IconButton>
         <Tooltip title="Shuffle">
           <span>
-            <IconButton aria-label="Shuffle" disabled={!ready} onClick={() => player.play(shuffled(tracks), 0)}>
+            <IconButton aria-label="Shuffle" disabled={!ready} onClick={() => player.playShuffled(tracks)}>
               <ShuffleIcon />
             </IconButton>
           </span>

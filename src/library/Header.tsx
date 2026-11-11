@@ -6,7 +6,6 @@ import type { Track } from "@/lib/types";
 import { player } from "@/player/store";
 import { accentFill, eyebrow, GUTTER, heroTitle, subdued } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
-import { shuffled } from "./play";
 
 /** The size of the artwork in the header, for the screen to size its own. */
 export const COVER = IS_MOBILE ? 140 : 200;
@@ -42,7 +41,7 @@ export function PlayButtons({ tracks }: { tracks: Track[] }) {
       </IconButton>
       <Tooltip title="Shuffle">
         <span>
-          <IconButton aria-label="Shuffle" disabled={empty} onClick={() => player.play(shuffled(tracks), 0)}>
+          <IconButton aria-label="Shuffle" disabled={empty} onClick={() => player.playShuffled(tracks)}>
             <ShuffleIcon />
           </IconButton>
         </span>

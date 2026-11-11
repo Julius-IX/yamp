@@ -5,15 +5,6 @@ import { beginPick, player, stillWanted } from "@/player/store";
 
 const log = logger("library");
 
-export const shuffled = (tracks: Track[]) => {
-  const out = [...tracks];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-};
-
 /** The liked songs, newest first. The count is the limit, since playing needs all of them. */
 export async function loadLiked(): Promise<Track[]> {
   const count = await COMMANDS.likes.count();
