@@ -1,6 +1,6 @@
 <div align="center" markdown="1">
 
-<img src="assets/mint-app-icon-transparent.png" alt="Yamp icon" width="120" height="120">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/mint-app-icon-transparent.png" alt="Yamp icon" width="120" height="120">
 
 # Yamp
 
@@ -13,8 +13,8 @@ Stream, download and sync your music on desktop and Android.
 ![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20Linux%20%7C%20Android-informational?style=for-the-badge)
 ![Tauri](https://img.shields.io/badge/Tauri-2-24C8DB?style=for-the-badge&logo=tauri&logoColor=white)
 
-<img src="assets/docs/home_desktop.png" alt="Yamp home on desktop" width="620">
-<img src="assets/docs/home_mobile.png" alt="Yamp home on Android" width="190">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/home_desktop.png" alt="Yamp home on desktop" width="620">
+<img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/home_mobile.png" alt="Yamp home on Android" width="190">
 
 [Download](https://github.com/Julius-IX/yamp/releases/latest) | [Features](#features) | [Screenshots](#screenshots) | [Installing](#installing) | [Cloud sync](#cloud-sync) | [Building](#building) | [Terms](https://github.com/Julius-IX/yamp/blob/main/TERMS.md) | [Privacy](https://julius-ix.github.io/yamp/PRIVACY)
 
@@ -56,12 +56,12 @@ Please read both before using the app.
     <th align="center">Android</th>
   </tr>
   <tr>
-    <td align="center"><img src="assets/docs/playlist_desktop.png" alt="Playlist on desktop" width="480"><br><sub>Playlist</sub></td>
-    <td align="center"><img src="assets/docs/playlist_mobile.png" alt="Playlist on Android" width="170"><br><sub>Playlist</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/playlist_desktop.png" alt="Playlist on desktop" width="480"><br><sub>Playlist</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/playlist_mobile.png" alt="Playlist on Android" width="170"><br><sub>Playlist</sub></td>
   </tr>
   <tr>
-    <td align="center"><img src="assets/docs/radio_desktop.png" alt="Radio on desktop" width="480"><br><sub>Radio</sub></td>
-    <td align="center"><img src="assets/docs/radio_mobile.png" alt="Radio on Android" width="170"><br><sub>Radio</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/radio_desktop.png" alt="Radio on desktop" width="480"><br><sub>Radio</sub></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/Julius-IX/yamp/main/assets/docs/radio_mobile.png" alt="Radio on Android" width="170"><br><sub>Radio</sub></td>
   </tr>
 </table>
 
