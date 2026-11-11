@@ -13,6 +13,7 @@ import Player from "@/player/Player";
 import Motion from "@/themes/Motion";
 import VideoModal from "@/video/VideoModal";
 import NoticeStack from "./notices/NoticeStack";
+import TermsDialog from "./TermsDialog";
 import TitleBar from "./TitleBar";
 import Sidebar from "./sidebar/Sidebar";
 import { tabs } from "./tabs";
@@ -152,6 +153,7 @@ export default function AppLayout() {
         {/* below the sidebar and the page on desktop, above the bottom navigation on mobile */}
         <Player />
         <VideoModal />
+        <TermsDialog />
         <Motion />
 
         {IS_MOBILE && !navHidden && (
