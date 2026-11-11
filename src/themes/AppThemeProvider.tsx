@@ -2,7 +2,7 @@ import { createContext, useContext, useLayoutEffect, useMemo, type ReactNode } f
 import { CssBaseline, GlobalStyles, ThemeProvider, useMediaQuery } from "@mui/material";
 import { createTheme } from "@mui/material/styles";
 import { isBoolean, useSetting } from "@/lib/settings";
-import { IS_WINDOWS } from "@/util/platform";
+import { IS_LINUX, IS_WINDOWS } from "@/util/platform";
 import { useResolvedTheme } from "./custom";
 import { DEFAULT_MODE, DEFAULT_THEME, modePrefs, type ModePref } from "./themes";
 
@@ -27,9 +27,10 @@ const noTooltips = {
 };
 
 /**
- * The webview on Windows draws classic scrollbars at the sides of every scrolling element, which
- * no other platform does. The layout is sized to the window and scrolls with wheel and touch, so
- * the bars only take space and add a horizontal one when something is a pixel too wide.
+ * The webviews on Windows and Linux draw classic scrollbars at the sides of every scrolling
+ * element. macOS and the mobile platforms use overlay bars that take no space. The layout is sized
+ * to the window and scrolls with wheel and touch, so the classic bars only take space and add a
+ * horizontal one when something is a pixel too wide.
  */
 const noScrollbars = {
   "*": { scrollbarWidth: "none" },
@@ -66,7 +67,7 @@ export function AppThemeProvider({ children }: { children: ReactNode }) {
     <ThemeCtx.Provider value={{ name, setName, mode, setMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        {IS_WINDOWS && <GlobalStyles styles={noScrollbars} />}
+        {(IS_WINDOWS || IS_LINUX) && <GlobalStyles styles={noScrollbars} />}
         {children}
       </ThemeProvider>
     </ThemeCtx.Provider>
