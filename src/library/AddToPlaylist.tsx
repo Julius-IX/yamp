@@ -7,47 +7,39 @@ import { addToPlaylist, createPlaylist, isSavedAlbum, usePlaylists } from "@/lib
 import type { Track } from "@/lib/types";
 import PlaylistDialog from "./PlaylistDialog";
 
-/** How long the check mark replaces the icon after a track was added. */
-const DONE_MS = 1500;
-
 /**
- * A button that opens the playlists of the library to put a track in. A saved album is not
- * offered, it is a copy of the release and not a list to build.
+ * The playlists of the library to put tracks in, as a menu below `anchor`. It is apart from the
+ * button so that a menu of actions or a selection of many tracks can open it as well. A saved
+ * album is not offered, it is a copy of the release and not a list to build. `onDone` runs once
+ * the tracks are in.
  */
-export default function AddToPlaylist({ track }: { track: Track }) {
+export function PlaylistMenu({ tracks, anchor, onClose, onDone }: {
+  tracks: Track[];
+  anchor: HTMLElement | null;
+  onClose: () => void;
+  onDone?: () => void;
+}) {
   const own = usePlaylists()?.filter((p) => !isSavedAlbum(p)) ?? [];
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [creating, setCreating] = useState(false);
-  const [done, setDone] = useState(false);
-
-  const flash = () => {
-    setDone(true);
-    setTimeout(() => setDone(false), DONE_MS);
-  };
 
   const add = async (id: string) => {
-    setAnchor(null);
-    if (await addToPlaylist(id, [track])) flash();
+    onClose();
+    if (await addToPlaylist(id, tracks)) onDone?.();
   };
 
   const createAndAdd = async (name: string, description: string | null) => {
     setCreating(false);
     const made = await createPlaylist(name, description);
-    if (made && (await addToPlaylist(made.id, [track]))) flash();
+    if (made && (await addToPlaylist(made.id, tracks))) onDone?.();
   };
 
   return (
     <>
-      <Tooltip title="Add to playlist">
-        <IconButton size="small" aria-label="Add to playlist" onClick={(e) => setAnchor(e.currentTarget)}>
-          {done ? <CheckIcon fontSize="small" color="primary" /> : <LibraryAddIcon fontSize="small" />}
-        </IconButton>
-      </Tooltip>
       <Menu
-        anchorEl={anchor} open={!!anchor} onClose={() => setAnchor(null)}
+        anchorEl={anchor} open={!!anchor} onClose={onClose}
         slotProps={{ paper: { sx: { maxHeight: 360, minWidth: 200 } } }}
       >
-        <MenuItem onClick={() => { setAnchor(null); setCreating(true); }}>
+        <MenuItem onClick={() => { onClose(); setCreating(true); }}>
           <ListItemIcon><AddIcon fontSize="small" /></ListItemIcon>
           <ListItemText>New playlist</ListItemText>
         </MenuItem>
@@ -61,6 +53,31 @@ export default function AddToPlaylist({ track }: { track: Track }) {
       {creating && (
         <PlaylistDialog open title="New playlist" submitLabel="Create" onClose={() => setCreating(false)} onSubmit={(n, d) => void createAndAdd(n, d)} />
       )}
+    </>
+  );
+}
+
+/** How long the check mark replaces the icon after a track was added. */
+const DONE_MS = 1500;
+
+/** A button that opens the playlists of the library to put a track in. */
+export default function AddToPlaylist({ track }: { track: Track }) {
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const [done, setDone] = useState(false);
+
+  const flash = () => {
+    setDone(true);
+    setTimeout(() => setDone(false), DONE_MS);
+  };
+
+  return (
+    <>
+      <Tooltip title="Add to playlist">
+        <IconButton size="small" aria-label="Add to playlist" onClick={(e) => setAnchor(e.currentTarget)}>
+          {done ? <CheckIcon fontSize="small" color="primary" /> : <LibraryAddIcon fontSize="small" />}
+        </IconButton>
+      </Tooltip>
+      <PlaylistMenu tracks={[track]} anchor={anchor} onClose={() => setAnchor(null)} onDone={flash} />
     </>
   );
 }
