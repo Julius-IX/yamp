@@ -37,6 +37,9 @@ export const sectionTitle = { typography: "h5", fontWeight: 700 } as const;
 /** The big title at the top of a screen. */
 export const heroTitle = {
   fontSize: { xs: 32, md: 56 }, fontWeight: 800, lineHeight: 1.05, wordBreak: "break-word",
+  // fades from the text color to a softer one, so the biggest text of a screen is not a flat block
+  backgroundImage: (t: Theme) => `linear-gradient(180deg, ${t.palette.text.primary} 35%, ${alpha(t.palette.text.primary, 0.6)})`,
+  backgroundClip: "text", WebkitBackgroundClip: "text", color: "transparent", WebkitTextFillColor: "transparent",
 } as const;
 
 /** A column heading of a table. */
