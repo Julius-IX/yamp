@@ -14,6 +14,7 @@ import FolderPicker from "./FolderPicker";
 import { providerIcon } from "./icons";
 import { PrefRow, Section } from "./rows";
 import StatsRows from "./StatsRows";
+import TransferRows from "./TransferRows";
 
 const log = logger("settings");
 
@@ -252,6 +253,7 @@ export default function DataPage() {
       {sync.loaded && sync.providers.length === 0 && (
         <PrefRow title="Cloud sync" summary="No cloud services are set up in this build" />
       )}
+      <TransferRows />
       <StatsRows />
     </Section>
   );
