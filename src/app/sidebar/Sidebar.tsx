@@ -3,7 +3,9 @@ import {
   Box, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Paper, Tooltip, Typography,
 } from "@mui/material";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import { alpha } from "@mui/material/styles";
 import type { Tab } from "@/router/types";
+import { sheen } from "@/themes/ui";
 import NewPlaylistButton from "./NewPlaylistButton";
 import PlaylistList from "./PlaylistList";
 import SidebarSection from "./SidebarSection";
@@ -27,7 +29,7 @@ export default function Sidebar({
       elevation={0}
       sx={{
         display: "flex", flexDirection: "column", flexShrink: 0, overflow: "hidden",
-        width: compact ? WIDTH_COMPACT : WIDTH, borderRight: 1, borderColor: "divider",
+        width: compact ? WIDTH_COMPACT : WIDTH, borderRight: 1, borderColor: "divider", ...sheen,
         transition: "width 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
       }}
     >
@@ -44,7 +46,18 @@ export default function Sidebar({
             <ListItemButton
               selected={t.id === activeId}
               onClick={() => onSelect(t)}
-              sx={{ borderRadius: 1, justifyContent: compact ? "center" : "flex-start" }}
+              sx={{
+                position: "relative", borderRadius: 1, justifyContent: compact ? "center" : "flex-start",
+                // the selected tab is a fade of the accent from its edge, with a bar on the edge itself
+                "&.Mui-selected, &.Mui-selected:hover": {
+                  bgcolor: "transparent",
+                  backgroundImage: (th) => `linear-gradient(90deg, ${alpha(th.palette.primary.main, 0.22)}, ${alpha(th.palette.primary.main, 0.04)})`,
+                },
+                "&.Mui-selected::before": {
+                  content: '""', position: "absolute", left: 0, top: "22%", bottom: "22%", width: 3, borderRadius: 2, bgcolor: "primary.main",
+                },
+                "&.Mui-selected .MuiListItemIcon-root": { color: "primary.main" },
+              }}
             >
               <ListItemIcon sx={{ minWidth: compact ? 0 : 40 }}>{t.icon}</ListItemIcon>
               {!compact && <ListItemText primary={t.label} />}
