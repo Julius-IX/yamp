@@ -80,7 +80,7 @@ export default function AboutPage() {
       <ActionRow
         title="Terms of Service"
         icon={<DescriptionOutlinedIcon />}
-        summary="TERMS.md in the repository"
+        summary="Terms for using yamp"
         label="Open"
         onAction={() => openUrl(TERMS_URL).catch((e) => log.error("couldn't open the terms:", e))}
       />
