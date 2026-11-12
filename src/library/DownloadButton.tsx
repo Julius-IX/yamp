@@ -4,35 +4,67 @@ import {
 } from "@mui/material";
 import DownloadDoneIcon from "@mui/icons-material/DownloadDone";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
-import { downloadTrack, isLocalFile, removeDownload, useDownloadStatus } from "@/lib/local";
+import { downloadTrack, isLocalFile, removeDownload, removeDownloads, useDownloadStatus } from "@/lib/local";
 import type { Track } from "@/lib/types";
 import { useBackGuard } from "@/router/useBackGuard";
 
-/**
- * The question before a download is deleted, since the song then has to be downloaded or
- * streamed again. It is apart from the button so a menu can ask it as well.
- */
-export function RemoveDownloadDialog({ track, onClose }: { track: Track; onClose: () => void }) {
+/** The question before files are deleted, since the songs then have to be downloaded or streamed again. */
+function RemovalDialog({ title, message, onConfirm, onClose }: {
+  title: string;
+  message: string;
+  onConfirm: () => Promise<void> | void;
+  onClose: () => void;
+}) {
   useBackGuard(true, onClose);
 
-  const remove = async () => {
+  const confirm = async () => {
     onClose();
-    await removeDownload(track.id);
+    await onConfirm();
   };
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle>Remove download</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent>
-        <DialogContentText>
-          {`"${track.title}" will be deleted from this device. It stays in the playlists it is in.`}
-        </DialogContentText>
+        <DialogContentText>{message}</DialogContentText>
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button color="error" variant="contained" onClick={() => void remove()}>Remove</Button>
+        <Button color="error" variant="contained" onClick={() => void confirm()}>Remove</Button>
       </DialogActions>
     </Dialog>
+  );
+}
+
+/** The question for one song. It is apart from the button so a menu can ask it as well. */
+export function RemoveDownloadDialog({ track, onClose }: { track: Track; onClose: () => void }) {
+  return (
+    <RemovalDialog
+      title="Remove download"
+      message={`"${track.title}" will be deleted from this device. It stays in the playlists it is in.`}
+      onConfirm={() => removeDownload(track.id)}
+      onClose={onClose}
+    />
+  );
+}
+
+/** The question for several songs at once. `onDone` runs when the removal is confirmed. */
+export function RemoveDownloadsDialog({ trackIds, onClose, onDone }: {
+  trackIds: string[];
+  onClose: () => void;
+  onDone?: () => void;
+}) {
+  const many = trackIds.length !== 1;
+  return (
+    <RemovalDialog
+      title={many ? "Remove downloads" : "Remove download"}
+      message={`${trackIds.length} ${many ? "songs" : "song"} will be deleted from this device. ${many ? "They stay" : "It stays"} in the playlists ${many ? "they are" : "it is"} in.`}
+      onConfirm={() => {
+        onDone?.();
+        return removeDownloads(trackIds);
+      }}
+      onClose={onClose}
+    />
   );
 }
 
