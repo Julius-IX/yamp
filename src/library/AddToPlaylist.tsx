@@ -60,8 +60,11 @@ export function PlaylistMenu({ tracks, anchor, onClose, onDone }: {
 /** How long the check mark replaces the icon after a track was added. */
 const DONE_MS = 1500;
 
-/** A button that opens the playlists of the library to put a track in. */
-export default function AddToPlaylist({ track }: { track: Track }) {
+/**
+ * A button that opens the playlists of the library to put a track in. The size follows the buttons
+ * it sits next to, a row of tracks uses the small one and a player the medium one.
+ */
+export default function AddToPlaylist({ track, size = "small" }: { track: Track; size?: "small" | "medium" }) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const [done, setDone] = useState(false);
 
@@ -73,8 +76,8 @@ export default function AddToPlaylist({ track }: { track: Track }) {
   return (
     <>
       <Tooltip title="Add to playlist">
-        <IconButton size="small" aria-label="Add to playlist" onClick={(e) => setAnchor(e.currentTarget)}>
-          {done ? <CheckIcon fontSize="small" color="primary" /> : <LibraryAddIcon fontSize="small" />}
+        <IconButton size={size} aria-label="Add to playlist" onClick={(e) => setAnchor(e.currentTarget)}>
+          {done ? <CheckIcon fontSize={size} color="primary" /> : <LibraryAddIcon fontSize={size} />}
         </IconButton>
       </Tooltip>
       <PlaylistMenu tracks={[track]} anchor={anchor} onClose={() => setAnchor(null)} onDone={flash} />
