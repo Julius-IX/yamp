@@ -8,8 +8,8 @@ import { downloadTrack, isLocalFile, removeDownload, removeDownloads, useDownloa
 import type { Track } from "@/lib/types";
 import { useBackGuard } from "@/router/useBackGuard";
 
-/** The question before files are deleted, since the songs then have to be downloaded or streamed again. */
-function RemovalDialog({ title, message, onConfirm, onClose }: {
+/** The question before something is removed. Downloads in particular need to be downloaded or streamed again. */
+export function RemovalDialog({ title, message, onConfirm, onClose }: {
   title: string;
   message: string;
   onConfirm: () => Promise<void> | void;
