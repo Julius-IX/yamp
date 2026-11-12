@@ -3,6 +3,7 @@ import { IS_ANDROID, IS_IOS, IS_LINUX, IS_MAC, IS_WINDOWS } from "@/util/platfor
 import { COMMANDS } from "./commands";
 import { pullSettings } from "./cloudSettings";
 import { refreshPlaylists } from "./library";
+import { refreshArrangement } from "./arrange";
 import { refreshLikes } from "./likes";
 import { logger } from "./log";
 import { getSetting, isNumber, setSetting } from "./settings";
@@ -100,7 +101,7 @@ export async function syncNow() {
   try {
     const report = await COMMANDS.sync.now();
     if (report.pulled > 0) {
-      await Promise.all([refreshLikes(), refreshPlaylists(), pullSettings()]);
+      await Promise.all([refreshLikes(), refreshPlaylists(), refreshArrangement(), pullSettings()]);
       window.dispatchEvent(new Event(SYNCED_EVENT));
     }
     set({ lastSyncMs: Date.now() });
