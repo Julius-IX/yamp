@@ -17,6 +17,7 @@ import { IS_MOBILE } from "@/util/platform";
 import AddToPlaylist from "@/library/AddToPlaylist";
 import DownloadButton from "@/library/DownloadButton";
 import ArtistLink from "./ArtistLink";
+import { useDragReorder } from "./useDragReorder";
 import SelectionBar from "./SelectionBar";
 import { TrackMenuButton } from "./TrackMenu";
 import { unique } from "./tracks";
@@ -36,12 +37,6 @@ const BUTTON = 40;
  */
 const actionsWidth = (removable: boolean, movable: boolean) =>
   IS_MOBILE ? BUTTON * 3 : BUTTON * (5 + (removable ? 1 : 0) + (movable ? 1 : 0));
-
-/** Distance from the edge of the scrolling page where dragging starts to scroll it, and its speed. */
-const SCROLL_ZONE = 72;
-const SCROLL_STEP = 14;
-
-type Drag = { from: number; to: number };
 
 /**
  * One slot of the action buttons. Every button sits in the same fixed box, centered on both axes,
@@ -78,7 +73,7 @@ type RowProps = {
  * A pointer drag and not the HTML one, which a touch screen does not start. `touchAction: none`
  * keeps the page from scrolling under the finger, the table scrolls it while a row is dragged.
  */
-function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
+export function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
   return (
     <Box
       aria-label="Drag to move"
@@ -210,15 +205,6 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
   );
 }
 
-/** The nearest ancestor that scrolls, which is the page the table is on. */
-function scroller(el: HTMLElement | null): HTMLElement | null {
-  for (let p = el?.parentElement; p; p = p.parentElement) {
-    const overflow = getComputedStyle(p).overflowY;
-    if ((overflow === "auto" || overflow === "scroll") && p.scrollHeight > p.clientHeight) return p;
-  }
-  return null;
-}
-
 /**
  * Tracks as numbered rows. The row of the playing track is tinted, and a click plays from that
  * row. `plays` adds a column of play counts, as display text, one entry per track. `onRemove`
@@ -237,7 +223,6 @@ export default function TrackTable({
 }) {
   const activeId = currentTrack(usePlayer())?.id;
   const body = useRef<HTMLDivElement>(null);
-  const [drag, setDrag] = useState<Drag | null>(null);
   // Mobile has no room for a handle on every row, so the handles are a mode the menu of a row starts
   const [reordering, setReordering] = useState(false);
   // the ids of the picked tracks while picking, null when not
@@ -250,76 +235,12 @@ export default function TrackTable({
       if (!next.delete(id)) next.add(id);
       return next;
     });
-  // the latest pointer height, read by the scroll loop which runs between pointer events
-  const pointerY = useRef(0);
-
   const indexAt = (y: number) => {
     const rows = Array.from(body.current?.querySelectorAll<HTMLElement>("[data-row]") ?? []);
     const hit = rows.findIndex((r) => y < r.getBoundingClientRect().top + r.offsetHeight / 2);
     return hit === -1 ? rows.length - 1 : hit;
   };
-
-  // a mirror of the state for the window handlers, which outlive the render they were made in
-  const current = useRef<Drag | null>(null);
-  const moveRef = useRef(onMove);
-  moveRef.current = onMove;
-  const set = (d: Drag | null) => {
-    current.current = d;
-    setDrag(d);
-  };
-  const follow = (y: number) => {
-    const d = current.current;
-    const to = d && indexAt(y);
-    if (d && to !== d.to) set({ from: d.from, to: to! });
-  };
-
-  const start = (from: number) => (e: PointerEvent) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    pointerY.current = e.clientY;
-    set({ from, to: from });
-  };
-  const finish = (drop: boolean) => {
-    const d = current.current;
-    set(null);
-    if (d && drop && d.from !== d.to) moveRef.current?.(d.from, d.to);
-  };
-
-  // the handle holds the pointer capture, so its events reach the window while the drag lasts
-  const dragging = drag !== null;
-  useEffect(() => {
-    if (!dragging) return;
-    const moved = (e: globalThis.PointerEvent) => {
-      pointerY.current = e.clientY;
-      follow(e.clientY);
-    };
-    const up = () => finish(true);
-    const cancel = () => finish(false);
-    window.addEventListener("pointermove", moved);
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
-    const page = scroller(body.current);
-    let frame = 0;
-    const scroll = () => {
-      if (page) {
-        const { top, bottom } = page.getBoundingClientRect();
-        const y = pointerY.current;
-        if (y < top + SCROLL_ZONE) page.scrollTop -= SCROLL_STEP;
-        else if (y > bottom - SCROLL_ZONE) page.scrollTop += SCROLL_STEP;
-        // the rows moved under the pointer, so the target changes without a pointer event
-        follow(y);
-      }
-      frame = requestAnimationFrame(scroll);
-    };
-    frame = requestAnimationFrame(scroll);
-    return () => {
-      window.removeEventListener("pointermove", moved);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", cancel);
-      cancelAnimationFrame(frame);
-    };
-    // the handlers only read refs, so one set of them serves the whole drag
-  }, [dragging]);
+  const { drag, start } = useDragReorder(body, onMove, (_x, y) => indexAt(y));
 
   // A tap anywhere but on a handle ends the mode. It is caught before it reaches the row under
   // it, which would otherwise start playing. Scrolling is no tap, so the list can be scrolled
