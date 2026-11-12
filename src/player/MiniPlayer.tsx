@@ -4,6 +4,7 @@ import PauseIcon from "@mui/icons-material/Pause";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
+import AddToPlaylist from "@/library/AddToPlaylist";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
 import NowPlayingSheet from "./NowPlayingSheet";
@@ -53,6 +54,8 @@ export default function MiniPlayer() {
             </Box>
           </ButtonBase>
           <LikeButton track={track} />
+          {/* small, so the title keeps some room next to the five buttons */}
+          <AddToPlaylist track={track} />
           <IconButton aria-label="Previous" onClick={player.prev}>
             <SkipPreviousIcon />
           </IconButton>
