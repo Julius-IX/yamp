@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Box, Skeleton, Typography } from "@mui/material";
 import TrackTable from "@/browse/TrackTable";
 import { playtime } from "@/components/media/format";
+import { useNote } from "@/lib/arrange";
 import { useLikedCount } from "@/lib/likes";
 import { logger } from "@/lib/log";
 import type { Track } from "@/lib/types";
@@ -11,6 +12,7 @@ import { IS_MOBILE } from "@/util/platform";
 import Header, { COVER, PlayButtons } from "./Header";
 import LikedArt from "./LikedArt";
 import { loadLiked } from "./play";
+import NoteButton from "./NoteButton";
 import PlaylistSort, { sortLabel } from "./PlaylistSort";
 import { useArranged } from "./useArranged";
 
@@ -24,6 +26,7 @@ const log = logger("library");
 export default function LikedPage() {
   const count = useLikedCount();
   const [loaded, setLoaded] = useState<Track[] | null>(null);
+  const note = useNote("liked");
   const { shown: tracks, sort, setSort, sorted, move } = useArranged("liked", loaded);
 
   useEffect(() => {
@@ -45,10 +48,11 @@ export default function LikedPage() {
         art={<LikedArt sx={{ width: COVER, height: COVER, borderRadius: radius.card, fontSize: COVER / 2.5, boxShadow: 8 }} />}
         label="PLAYLIST"
         title="Liked Songs"
-        meta={tracks ? [`${tracks.length} songs`, playtime(tracks)].filter(Boolean).join(" · ") : undefined}
+        meta={tracks ? [note, `${tracks.length} songs`, playtime(tracks)].filter(Boolean).join(" · ") : undefined}
       >
         <PlayButtons tracks={tracks ?? []} />
         <PlaylistSort sort={sort} onChange={setSort} />
+        <NoteButton slot="liked" />
       </Header>
 
       {tracks === null && Array.from({ length: 8 }, (_, i) => <Skeleton key={i} variant="rounded" height={44} sx={{ mx: GUTTER, my: 0.75 }} />)}
