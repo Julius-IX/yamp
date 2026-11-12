@@ -225,11 +225,14 @@ function scroller(el: HTMLElement | null): HTMLElement | null {
  * adds a button that takes a row out of the list the table shows, for a playlist of the library.
  * `onMove` adds a handle to drag a row to another place, the row ends up at the index it is
  * dropped on. The table does not reorder itself, the caller changes `tracks` in answer.
+ * `onRemoveMany` adds the removal to the bar of the selection mode. It gets the index of every
+ * row of a picked track, since picking works on tracks and a playlist can hold one twice.
  */
 export default function TrackTable({
-  tracks, plays, onPlay, onRemove, onMove,
+  tracks, plays, onPlay, onRemove, onRemoveMany, onMove,
 }: {
   tracks: Track[]; plays?: (string | null)[]; onPlay: (index: number) => void; onRemove?: (index: number) => void;
+  onRemoveMany?: (indices: number[]) => void;
   onMove?: (from: number, to: number) => void;
 }) {
   const activeId = currentTrack(usePlayer())?.id;
@@ -347,6 +350,7 @@ export default function TrackTable({
           picked={chosen} total={everyone.length}
           onToggleAll={() => setPicked(chosen.length === everyone.length ? new Set() : new Set(everyone.map((t) => t.id)))}
           onDone={() => setPicked(null)}
+          onRemove={onRemoveMany && (() => onRemoveMany(tracks.flatMap((t, i) => (picked.has(t.id) ? [i] : []))))}
         />
       ) : (
         <Box sx={{ display: "flex", alignItems: "center", borderBottom: 1, borderColor: "divider", pb: 1, mb: 0.5 }}>
