@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TrackArtist } from "@/browse/ArtistLink";
+import AddToPlaylist from "@/library/AddToPlaylist";
 import { sheen, subdued } from "@/themes/ui";
 import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
@@ -43,6 +44,7 @@ export default function PlayerBar() {
             <Typography variant="body2" sx={subdued} noWrap>{track ? <TrackArtist track={track} /> : "Search, or open your library"}</Typography>
           </Box>
           <LikeButton track={track} />
+          {track && <AddToPlaylist track={track} size="medium" />}
         </Box>
 
         <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
