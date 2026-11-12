@@ -58,7 +58,8 @@ fn release_label(kind: &AlbumType) -> Option<&'static str> {
     AlbumType::Album => Some("Album"),
     AlbumType::Single => Some("Single"),
     AlbumType::EP => Some("EP"),
-    _ => None,
+    #[allow(unreachable_patterns)]
+    _ => None, 
   }
 }
 
