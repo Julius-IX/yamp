@@ -6,7 +6,7 @@ import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import OndemandVideoIcon from "@mui/icons-material/OndemandVideo";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import { isLocalFile } from "@/lib/local";
+import { isLocalFile, useDownloadStatus } from "@/lib/local";
 import type { Track } from "@/lib/types";
 import Cover from "@/player/Cover";
 import LikeButton from "@/player/LikeButton";
@@ -29,10 +29,13 @@ const BUTTON = 40;
 /**
  * Desktop has a button for each of queue, playlist, video, download and like, plus remove when
  * the table can remove and the drag handle when it can move rows. All of them but the heart show
- * on hover. Mobile has no room for that, it has the heart and one menu.
+ * on hover. Mobile has no room for that, it has the heart and one menu. The download button is
+ * the exception to the hover rule once a song is downloading or downloaded. It then stays shown as
+ * the status, and on mobile gets a slot before the heart only then. That slot is always reserved
+ * in the width, so a row does not resize when a download starts or is removed.
  */
 const actionsWidth = (removable: boolean, movable: boolean) =>
-  IS_MOBILE ? BUTTON * 2 : BUTTON * (5 + (removable ? 1 : 0) + (movable ? 1 : 0));
+  IS_MOBILE ? BUTTON * 3 : BUTTON * (5 + (removable ? 1 : 0) + (movable ? 1 : 0));
 
 /** Distance from the edge of the scrolling page where dragging starts to scroll it, and its speed. */
 const SCROLL_ZONE = 72;
@@ -95,6 +98,7 @@ function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
  */
 function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging, reordering, onReorder, selecting, selected, onToggle }: RowProps) {
   const watchable = !isRadio(track.id) && !isLocalFile(track.id);
+  const download = useDownloadStatus(track.id);
   return (
     <Box
       role="button"
@@ -152,6 +156,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
       <Box onClick={(e) => e.stopPropagation()} sx={{ width: actionsWidth(!!onRemove, !!handle), display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
         {selecting ? null : IS_MOBILE ? (
           <>
+            {download !== "none" && <Box sx={cell(true)}><DownloadButton track={track} /></Box>}
             <Box sx={cell(true)}><LikeButton track={track} size="small" /></Box>
             <Box sx={cell(true)}>
               {reordering && handle ? (
@@ -194,7 +199,8 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
                 </Tooltip>
               </Box>
             )}
-            <Box className="row-action" sx={cell(false)}><DownloadButton track={track} /></Box>
+            {/* a download that runs or exists stays visible, it is the mark and the way to remove it */}
+            <Box className={download === "none" ? "row-action" : undefined} sx={cell(download !== "none")}><DownloadButton track={track} /></Box>
             {/* the heart is the one button that is always there, last so it keeps the same place in every row */}
             <Box sx={cell(true)}><LikeButton track={track} size="small" /></Box>
           </>
