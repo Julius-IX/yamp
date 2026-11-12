@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import TrackTable from "@/browse/TrackTable";
 import { playtime } from "@/components/media/format";
 import { COMMANDS } from "@/lib/commands";
-import { editPlaylist, moveInPlaylist, removeFromPlaylist, removePlaylistCover, usePlaylists } from "@/lib/library";
+import { editPlaylist, moveInPlaylist, removeFromPlaylist, removeManyFromPlaylist, removePlaylistCover, usePlaylists } from "@/lib/library";
 import { logger } from "@/lib/log";
 import type { Track } from "@/lib/types";
 import { player } from "@/player/store";
@@ -125,6 +125,7 @@ export default function OwnPlaylistPage() {
       )}
       {tracks && tracks.length > 0 && (
         <TrackTable tracks={shown} onPlay={(i) => player.play(shown, i)} onRemove={(i) => void removeFromPlaylist(id, order[i])}
+          onRemoveMany={(rows) => void removeManyFromPlaylist(id, rows.map((i) => order[i]))}
           // a sorted view is not the order of the playlist, so there is nothing to rearrange in it
           onMove={sorted || shown.length < 2 ? undefined : move}
         />

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::{Deserialize, Serialize};
 use sqlx::{SqliteConnection, SqlitePool};
 use uuid::Uuid;
@@ -200,6 +202,25 @@ impl Playlists {
       .await
   }
 
+  /// Removes the entries at all of `positions` in one edit. Order and repeats in `positions`
+  /// do not matter. Nothing is removed when one of them is out of range.
+  pub async fn remove_positions(&self, id: &str, positions: &[u32]) -> Result<()> {
+    self
+      .edit(id, |ids| {
+        let doomed: BTreeSet<usize> = positions.iter().map(|&p| p as usize).collect();
+        if let Some(bad) = doomed.iter().find(|&&p| p >= ids.len()) {
+          return Err(Error::Invalid(format!("no entry at position {bad}")));
+        }
+        let mut at = 0;
+        ids.retain(|_| {
+          at += 1;
+          !doomed.contains(&(at - 1))
+        });
+        Ok(())
+      })
+      .await
+  }
+
   /// Moves the entry at `from` so that it ends up at `to`.
   pub async fn move_track(&self, id: &str, from: u32, to: u32) -> Result<()> {
     self
@@ -337,6 +358,19 @@ mod tests {
 
     assert_eq!(ids(&db, &id).await, ["a", "c", "d"]);
     assert!(db.playlists().remove_at(&id, 3).await.is_err());
+  }
+
+  #[tokio::test]
+  async fn removes_several_positions_at_once() {
+    let db = Db::memory().await.unwrap();
+    let id = filled(&db).await;
+    let playlists = db.playlists();
+
+    // out of order and repeated on purpose
+    playlists.remove_positions(&id, &[3, 0, 3]).await.unwrap();
+    assert_eq!(ids(&db, &id).await, ["b", "c"]);
+    assert!(playlists.remove_positions(&id, &[0, 2]).await.is_err());
+    assert_eq!(ids(&db, &id).await, ["b", "c"]);
   }
 
   #[tokio::test]

@@ -1,6 +1,7 @@
 import { MouseEvent, useState } from "react";
 import { Box, ButtonBase, ListItemButton, ListItemText, Menu, MenuItem, Tooltip } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { applyOrder, useOrder } from "@/lib/arrange";
 import { coverOf, isSavedAlbum, usePlaylists } from "@/lib/library";
 import { useLikedCount } from "@/lib/likes";
 import DeletePlaylistDialog from "@/library/DeletePlaylistDialog";
@@ -71,19 +72,20 @@ function PlaylistItem({
 }
 
 /**
- * The liked songs and the playlists of the library. They open in the library tab, whatever tab is
+ * The liked songs and the playlists of the library, in the order of the library screen. They open in the library tab, whatever tab is
  * showing. Saved albums are left out, they live in the library screen.
  */
 export default function PlaylistList({ compact }: { compact: boolean }) {
   const { openTab } = useTabs();
   const playlists = usePlaylists();
+  const saved = useOrder("playlists");
   const likedCount = useLikedCount();
   const [menu, setMenu] = useState<{ entry: Entry; x: number; y: number } | null>(null);
   const [deleting, setDeleting] = useState<Entry | null>(null);
 
   const entries: Entry[] = [
     { id: LikedSongs.path, title: "Liked Songs", trackCount: likedCount, liked: true },
-    ...(playlists ?? []).filter((p) => !isSavedAlbum(p)).map((p) => ({ id: p.id, title: p.name, trackCount: p.trackCount, cover: coverOf(p) })),
+    ...(playlists ? applyOrder(playlists, saved ?? []) : []).filter((p) => !isSavedAlbum(p)).map((p) => ({ id: p.id, title: p.name, trackCount: p.trackCount, cover: coverOf(p) })),
   ];
 
   const open = (e: Entry) => openTab("library", e.liked ? LikedSongs.to() : OwnPlaylist.to({ id: e.id }));

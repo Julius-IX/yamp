@@ -5,8 +5,9 @@ import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import FileDownloadOffOutlinedIcon from "@mui/icons-material/FileDownloadOffOutlined";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
+import PlaylistRemoveIcon from "@mui/icons-material/PlaylistRemove";
 import { PlaylistMenu } from "@/library/AddToPlaylist";
-import { RemoveDownloadsDialog } from "@/library/DownloadButton";
+import { RemovalDialog, RemoveDownloadsDialog } from "@/library/DownloadButton";
 import { downloadedAmong, downloadTrack, useDownloadedCount } from "@/lib/local";
 import type { Track } from "@/lib/types";
 import { player } from "@/player/store";
@@ -15,17 +16,20 @@ import { subdued } from "@/themes/ui";
 /**
  * The bar above a table while it is picking tracks. The checkbox picks all of them or none, so a
  * whole playlist is one tap away from being downloaded. `picked` is what the actions work on.
- * Removing downloads only touches the picked songs that are downloaded.
+ * Removing downloads only touches the picked songs that are downloaded. `onRemove` is given by
+ * a table that lists a playlist, and adds the action that takes the picked songs out of it.
  */
-export default function SelectionBar({ picked, total, onToggleAll, onDone }: {
+export default function SelectionBar({ picked, total, onToggleAll, onDone, onRemove }: {
   picked: Track[];
   total: number;
   onToggleAll: () => void;
   onDone: () => void;
+  onRemove?: () => void;
 }) {
   const [playlists, setPlaylists] = useState<HTMLElement | null>(null);
   // the ids to remove are read when the button is pressed, so the question keeps the ones it was asked for
   const [removing, setRemoving] = useState<string[] | null>(null);
+  const [leaving, setLeaving] = useState(false);
   const none = picked.length === 0;
   const downloaded = useDownloadedCount(picked.map((t) => t.id));
 
@@ -84,11 +88,31 @@ export default function SelectionBar({ picked, total, onToggleAll, onDone }: {
           </IconButton>
         </span>
       </Tooltip>
+      {onRemove && (
+        <Tooltip title="Remove from playlist">
+          <span>
+            <IconButton aria-label="Remove selected from playlist" disabled={none} onClick={() => setLeaving(true)}>
+              <PlaylistRemoveIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
       <Tooltip title="Done">
         <IconButton aria-label="Stop selecting" onClick={onDone}>
           <CloseIcon />
         </IconButton>
       </Tooltip>
+      {leaving && onRemove && (
+        <RemovalDialog
+          title="Remove from playlist"
+          message={`${picked.length} ${picked.length === 1 ? "song" : "songs"} will be removed from this playlist.`}
+          onConfirm={() => {
+            onDone();
+            onRemove();
+          }}
+          onClose={() => setLeaving(false)}
+        />
+      )}
       {removing && <RemoveDownloadsDialog trackIds={removing} onClose={() => setRemoving(null)} onDone={onDone} />}
       <PlaylistMenu tracks={picked} anchor={playlists} onClose={() => setPlaylists(null)} onDone={onDone} />
     </Box>

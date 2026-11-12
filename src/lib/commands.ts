@@ -79,6 +79,7 @@ export const COMMANDS = {
     moveTrack: (args: { id: string; from: number; to: number }) => invoke<void>("playlists__move_track", args),
     removeAt: (args: { id: string; position: number }) => invoke<void>("playlists__remove_at", args),
     removeCover: (args: { id: string }) => invoke<boolean>("playlists__remove_cover", args),
+    removePositions: (args: { id: string; positions: number[] }) => invoke<void>("playlists__remove_positions", args),
     saveAs: (args: { id: string; name: string; description?: string | null; tracks: Track[] }) => invoke<boolean>("playlists__save_as", args),
     setCover: (args: { id: string; image: number[] }) => invoke<void>("playlists__set_cover", args),
     tracks: (args: { id: string }) => invoke<Track[]>("playlists__tracks", args),

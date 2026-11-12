@@ -1,14 +1,19 @@
-import { useState } from "react";
-import { Box, Button, Chip, Typography } from "@mui/material";
+import { useMemo, useRef, useState } from "react";
+import { Box, Button, Chip, Typography, type Theme } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import CheckIcon from "@mui/icons-material/Check";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { useNavigate } from "react-router-dom";
 import { Album } from "@/browse/paths";
 import MediaCard, { CardSkeleton } from "@/browse/MediaCard";
+import { Handle } from "@/browse/TrackTable";
+import { useDragReorder } from "@/browse/useDragReorder";
+import { applyOrder, saveOrder, useOrder } from "@/lib/arrange";
 import { coverOf, createPlaylist, isSavedAlbum, usePlaylists } from "@/lib/library";
 import { useLikedCount } from "@/lib/likes";
 import { useLocalCount } from "@/lib/local";
 import type { LibraryPlaylist } from "@/lib/types";
-import { accentTonal, GUTTER, subdued, surface } from "@/themes/ui";
+import { accentTonal, GUTTER, radius, scrim, subdued, surface } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
 import LikedArt from "./LikedArt";
 import LocalArt from "./LocalArt";
@@ -50,7 +55,11 @@ function PlaylistCard({ playlist }: { playlist: LibraryPlaylist }) {
 
 /**
  * Everything saved in one grid, filtered by kind. The liked songs and the local songs come first
- * and cannot be removed, which is why they are not part of the playlists the grid lists.
+ * and cannot be removed, which is why they are not part of the playlists the grid lists. For
+ * the same reason they cannot be moved. The other cards are moved with the drag handle that
+ * the rows of a playlist have too. Only the unfiltered grid can be rearranged, a filtered one
+ * holds just part of the order. A touch screen has no hover to show the handles, so a button
+ * there turns them on.
  */
 export default function LibraryPage() {
   const navigate = useNavigate();
@@ -59,8 +68,33 @@ export default function LibraryPage() {
   const localCount = useLocalCount();
   const [filter, setFilter] = useState<Filter>("all");
   const [creating, setCreating] = useState(false);
+  const [handles, setHandles] = useState(false);
+  const saved = useOrder("playlists");
+  const grid = useRef<HTMLDivElement>(null);
 
-  const shown = playlists?.filter((p) => (filter === "all" ? true : isSavedAlbum(p) === (filter === "albums")));
+  const ordered = useMemo(() => playlists && saved && applyOrder(playlists, saved), [playlists, saved]);
+  const shown = ordered?.filter((p) => (filter === "all" ? true : isSavedAlbum(p) === (filter === "albums")));
+  const canMove = filter === "all" && (ordered?.length ?? 0) > 1;
+
+  const move = (from: number, to: number) => {
+    const ids = ordered!.map((p) => p.id);
+    ids.splice(to, 0, ...ids.splice(from, 1));
+    saveOrder("playlists", ids);
+  };
+
+  // the card the pointer is in, or else the nearest one, since the gaps of the grid belong to no card
+  const indexAt = (x: number, y: number) => {
+    const cards = Array.from(grid.current?.querySelectorAll<HTMLElement>("[data-card]") ?? []);
+    let best = 0;
+    let nearest = Infinity;
+    cards.forEach((c, i) => {
+      const r = c.getBoundingClientRect();
+      const d = Math.hypot(x - (r.left + r.width / 2), y - (r.top + r.height / 2));
+      if (d < nearest) [best, nearest] = [i, d];
+    });
+    return best;
+  };
+  const { drag, start } = useDragReorder(grid, canMove ? move : undefined, indexAt);
 
   const create = async (name: string, description: string | null) => {
     setCreating(false);
@@ -79,14 +113,19 @@ export default function LibraryPage() {
       <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, px: GUTTER, pb: 3 }}>
         {FILTERS.map((f) => (
           <Chip
-            key={f.id} label={f.label} clickable onClick={() => setFilter(f.id)}
+            key={f.id} label={f.label} clickable onClick={() => { setFilter(f.id); setHandles(false); }}
             variant="outlined" sx={f.id === filter ? accentTonal : surface}
           />
         ))}
-        <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)} sx={{ ml: "auto" }}>New playlist</Button>
+        {IS_MOBILE && canMove && (
+          <Button size="small" startIcon={handles ? <CheckIcon /> : <SwapVertIcon />} onClick={() => setHandles(!handles)} sx={{ ml: "auto" }}>
+            {handles ? "Done" : "Reorder"}
+          </Button>
+        )}
+        <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)} sx={IS_MOBILE && canMove ? undefined : { ml: "auto" }}>New playlist</Button>
       </Box>
 
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, px: GUTTER }}>
+      <Box ref={grid} sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, px: GUTTER, userSelect: drag ? "none" : "auto" }}>
         {filter !== "albums" && (
           <MediaCard
             art={<LikedArt sx={{ width: "100%", aspectRatio: "1", fontSize: 56 }} />}
@@ -108,7 +147,37 @@ export default function LibraryPage() {
           />
         )}
         {shown
-          ? shown.map((p) => <PlaylistCard key={p.id} playlist={p} />)
+          ? shown.map((p, i) => (
+            <Box
+              key={p.id}
+              data-card
+              sx={{
+                position: "relative", borderRadius: radius.card, transition: "opacity 0.15s",
+                opacity: drag?.from === i ? 0.4 : 1,
+                "&:hover .card-handle": { opacity: 1 },
+                // the card paints over its wrapper, so the target is marked by a bar in the gap on
+                // the side the dragged card would land on, and an outline that shows the slot
+                ...(drag && drag.from !== drag.to && drag.to === i && {
+                  outline: "2px dashed", outlineColor: "primary.main", outlineOffset: 2,
+                  "&::after": {
+                    content: '""', position: "absolute", top: 0, bottom: 0, width: 4, borderRadius: 2, zIndex: 3,
+                    [drag.to > drag.from ? "right" : "left"]: -9,
+                    bgcolor: "primary.main", boxShadow: (t: Theme) => `0 0 10px 2px ${t.palette.primary.main}`,
+                  },
+                }),
+              }}
+            >
+              <PlaylistCard playlist={p} />
+              {canMove && (
+                <Box
+                  className="card-handle"
+                  sx={{ position: "absolute", top: 12, left: 12, borderRadius: "50%", opacity: IS_MOBILE ? (handles ? 1 : 0) : 0, pointerEvents: IS_MOBILE && !handles ? "none" : "auto", "& [data-handle]": { color: "inherit" }, ...scrim }}
+                >
+                  <Handle onStart={start(i)} />
+                </Box>
+              )}
+            </Box>
+          ))
           : Array.from({ length: GHOSTS }, (_, i) => <CardSkeleton key={i} />)}
       </Box>
       {shown?.length === 0 && EMPTY[filter] && <Typography sx={{ ...subdued, px: GUTTER, pt: 1 }}>{EMPTY[filter]}</Typography>}

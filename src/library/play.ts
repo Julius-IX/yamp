@@ -1,3 +1,4 @@
+import { applyOrder, savedOrder } from "@/lib/arrange";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
 import type { Track } from "@/lib/types";
@@ -36,7 +37,11 @@ async function run(load: () => Promise<Track[]>, how: "play" | "queue", what: st
 
 export const playPlaylist = (id: string) => run(() => COMMANDS.playlists.tracks({ id }), "play", "a playlist");
 export const queuePlaylist = (id: string) => run(() => COMMANDS.playlists.tracks({ id }), "queue", "a playlist");
-export const playLiked = () => run(loadLiked, "play", "the liked songs");
-export const queueLiked = () => run(loadLiked, "queue", "the liked songs");
-export const playLocal = () => run(loadLocal, "play", "the local songs");
-export const queueLocal = () => run(loadLocal, "queue", "the local songs");
+// played from a card, so they follow the order the list has on its own screen
+const arranged = (load: () => Promise<Track[]>, slot: "liked" | "local") => async () =>
+  applyOrder(await load(), await savedOrder(slot));
+
+export const playLiked = () => run(arranged(loadLiked, "liked"), "play", "the liked songs");
+export const queueLiked = () => run(arranged(loadLiked, "liked"), "queue", "the liked songs");
+export const playLocal = () => run(arranged(loadLocal, "local"), "play", "the local songs");
+export const queueLocal = () => run(arranged(loadLocal, "local"), "queue", "the local songs");
