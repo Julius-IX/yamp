@@ -4,6 +4,7 @@ import { TransitionProps } from "@mui/material/transitions";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import { TrackArtist } from "@/browse/ArtistLink";
+import AddToPlaylist from "@/library/AddToPlaylist";
 import { useBackGuard } from "@/router/useBackGuard";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
@@ -68,6 +69,7 @@ export default function NowPlayingSheet({ open, onClose }: { open: boolean; onCl
                   <Typography color="text.secondary" noWrap>{track && <TrackArtist track={track} onOpen={onClose} />}</Typography>
                 </Box>
                 <LikeButton track={track} />
+                {track && <AddToPlaylist track={track} size="medium" />}
               </Box>
               <SeekBar />
               <TransportControls large />
