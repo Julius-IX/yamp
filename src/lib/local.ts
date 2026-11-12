@@ -70,14 +70,25 @@ export async function downloadTrack(track: Track) {
 }
 
 /** Deletes the file from this device. The song stays in the playlists and likes it is part of. */
-export async function removeDownload(trackId: string) {
-  try {
-    await COMMANDS.downloads.remove({ trackId });
-  } catch (e) {
-    log.error(`couldn't remove the download of ${trackId}:`, e);
+export const removeDownload = (trackId: string) => removeDownloads([trackId]);
+
+/**
+ * Deletes the files of several songs and reloads once at the end. A song that fails does not
+ * stop the rest, and the reload shows which ones are gone.
+ */
+export async function removeDownloads(trackIds: string[]) {
+  for (const trackId of trackIds) {
+    try {
+      await COMMANDS.downloads.remove({ trackId });
+    } catch (e) {
+      log.error(`couldn't remove the download of ${trackId}:`, e);
+    }
   }
   await refreshLocal();
 }
+
+/** The ids of the ones given that are downloaded. */
+export const downloadedAmong = (ids: string[]) => ids.filter((id) => state.downloaded.has(id));
 
 /** Subscribes once for the whole app, the events outlive any screen. */
 function start() {
@@ -120,6 +131,12 @@ export function useDownloadStatus(trackId: string): DownloadStatus {
   return useSyncExternalStore(subscribe, () =>
     state.downloaded.has(trackId) ? "done" : state.busy.has(trackId) ? "busy" : "none",
   );
+}
+
+/** How many of the songs are downloaded. A number keeps a bar from rendering again for other songs. */
+export function useDownloadedCount(ids: string[]) {
+  useStarted();
+  return useSyncExternalStore(subscribe, () => downloadedAmong(ids).length);
 }
 
 /** How many songs the local playlist holds. */
