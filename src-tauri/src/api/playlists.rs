@@ -115,6 +115,12 @@ pub async fn remove_at(db: State<'_, Db>, id: String, position: u32) -> Result<(
   db.playlists().remove_at(&id, position).await.map_err(fail)
 }
 
+/// Removes several entries in one edit, each named by its position as for `remove_at`.
+#[tauri_groups::command(playlists)]
+pub async fn remove_positions(db: State<'_, Db>, id: String, positions: Vec<u32>) -> Result<(), String> {
+  db.playlists().remove_positions(&id, &positions).await.map_err(fail)
+}
+
 /// Moves the entry at `from` so that it ends up at `to`.
 #[tauri_groups::command(playlists)]
 pub async fn move_track(db: State<'_, Db>, id: String, from: u32, to: u32) -> Result<(), String> {
