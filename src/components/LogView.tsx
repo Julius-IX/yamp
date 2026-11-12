@@ -33,7 +33,7 @@ const COLORS: Record<LogLevel, string> = {
 };
 
 /** Release builds start at the levels that matter to a user. Dev builds show everything. */
-const DEFAULT_LEVEL: LogLevel = import.meta.env.DEV ? "trace" : "info";
+const DEFAULT_LEVEL: LogLevel = import.meta.env.DEV ? "trace" : "warn";
 
 type SourceFilter = LogSource | "all";
 
