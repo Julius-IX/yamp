@@ -71,6 +71,12 @@ function parseIds(text: string | undefined): readonly string[] {
   }
 }
 
+/** The saved order for code that is not a component, such as playing a list from a card. */
+export async function savedOrder(slot: OrderSlot) {
+  if (stored === null) await refreshArrangement();
+  return parseIds(stored?.get(orderKey(slot)));
+}
+
 /** The saved order of a list, empty when it was never arranged. Null while loading. */
 export function useOrder(slot: OrderSlot) {
   const map = useStored();
