@@ -27,7 +27,7 @@ const columns = (plays: boolean) =>
   IS_MOBILE ? "32px minmax(0, 1fr)" : `40px minmax(0, 1.4fr) minmax(0, 1fr)${plays ? " 96px" : ""}`;
 const BUTTON = 40;
 /**
- * Desktop has a button for each of queue, playlist, download, video and like, plus remove when
+ * Desktop has a button for each of queue, playlist, video, download and like, plus remove when
  * the table can remove and the drag handle when it can move rows. All of them but the heart show
  * on hover. Mobile has no room for that, it has the heart and one menu.
  */
@@ -174,7 +174,6 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
               </Tooltip>
             </Box>
             <Box className="row-action" sx={cell(false)}><AddToPlaylist track={track} /></Box>
-            <Box className="row-action" sx={cell(false)}><DownloadButton track={track} /></Box>
             {/* the slot is kept for what has no picture, so the buttons after it stay in their columns */}
             <Box className="row-action" sx={cell(false)}>
               {watchable && (
@@ -195,6 +194,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
                 </Tooltip>
               </Box>
             )}
+            <Box className="row-action" sx={cell(false)}><DownloadButton track={track} /></Box>
             {/* the heart is the one button that is always there, last so it keeps the same place in every row */}
             <Box sx={cell(true)}><LikeButton track={track} size="small" /></Box>
           </>
