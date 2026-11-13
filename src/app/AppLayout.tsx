@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore
 import { BottomNavigation, BottomNavigationAction, Box, Paper } from "@mui/material";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { IS_MOBILE, IS_WINDOWS } from "@/util/platform";
+import { setBackFallback } from "@/router/backGuard";
 import { TAB_ROOT } from "@/router/paths";
 import { TabsContext } from "@/router/TabsContext";
 import type { RouteHandle, Tab } from "@/router/types";
@@ -91,24 +92,25 @@ export default function AppLayout() {
   }, [openTab]);
   const tabsApi = useMemo(() => ({ activeId, openTab, openBrowse }), [activeId, openTab, openBrowse]);
 
-  // Android hardware back arrives as a popstate. A sentinel entry is kept pushed so there is always
-  // something to pop. It pops the active tab's stack, then goes to the first tab, then lets the OS exit.
-  useEffect(() => {
-    history.pushState({ sentinel: true }, "");
-    const onPop = () => {
-      const { activeId, stacks } = latest.current;
-      const router = stacks[activeId].router;
-      if (!atRoot(router)) {
-        history.pushState({ sentinel: true }, "");
-        router.navigate(-1);
-      } else if (activeId !== tabs[0].id) {
-        history.pushState({ sentinel: true }, "");
-        setActiveId(tabs[0].id);
-      }
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, []);
+  // Pops the active tab's stack, then goes to the first tab. At the root of the first tab nothing is
+  // left to do, so the press is not used and the activity hides the app.
+  useEffect(
+    () =>
+      setBackFallback(() => {
+        const { activeId, stacks } = latest.current;
+        const router = stacks[activeId].router;
+        if (!atRoot(router)) {
+          router.navigate(-1);
+          return true;
+        }
+        if (activeId !== tabs[0].id) {
+          setActiveId(tabs[0].id);
+          return true;
+        }
+        return false;
+      }),
+    [],
+  );
 
   return (
     <TabsContext.Provider value={tabsApi}>
