@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
-import { addToPlaylist, createPlaylist, isSavedAlbum, usePlaylists } from "@/lib/library";
+import { mapLimit } from "@/browse/tracks";
+import { addToPlaylist, createPlaylist, isSavedAlbum, playlistTrackIds, usePlaylists } from "@/lib/library";
 import type { Track } from "@/lib/types";
 import PlaylistDialog from "./PlaylistDialog";
 
@@ -21,6 +22,25 @@ export function PlaylistMenu({ tracks, anchor, onClose, onDone }: {
 }) {
   const own = usePlaylists()?.filter((p) => !isSavedAlbum(p)) ?? [];
   const [creating, setCreating] = useState(false);
+  // playlists that already hold every one of the tracks, read while the menu is open
+  const [full, setFull] = useState<ReadonlySet<string>>(new Set());
+  const wanted = tracks.map((t) => t.id);
+  const key = `${wanted.join(",")}|${own.map((p) => `${p.id}:${p.updatedMs}`).join(",")}`;
+
+  useEffect(() => {
+    if (!anchor) return;
+    let stale = false;
+    mapLimit(own, 4, async (p) => {
+      const held = await playlistTrackIds(p.id);
+      return wanted.every((id) => held.has(id)) ? p.id : null;
+    })
+      .then((ids) => !stale && setFull(new Set(ids.filter((id): id is string => id !== null))))
+      .catch(() => !stale && setFull(new Set()));
+    return () => {
+      stale = true;
+    };
+    // the key names everything the check reads, the rest is read from this render
+  }, [anchor, key]);
 
   const add = async (id: string) => {
     onClose();
@@ -45,8 +65,13 @@ export function PlaylistMenu({ tracks, anchor, onClose, onDone }: {
         </MenuItem>
         {own.length > 0 && <Divider />}
         {own.map((p) => (
-          <MenuItem key={p.id} onClick={() => void add(p.id)}>
-            <ListItemText slotProps={{ primary: { noWrap: true } }}>{p.name}</ListItemText>
+          <MenuItem key={p.id} disabled={full.has(p.id)} onClick={() => void add(p.id)}>
+            <ListItemText
+              slotProps={{ primary: { noWrap: true } }}
+              secondary={full.has(p.id) ? (tracks.length === 1 ? "Already added" : "All already added") : undefined}
+            >
+              {p.name}
+            </ListItemText>
           </MenuItem>
         ))}
       </Menu>
