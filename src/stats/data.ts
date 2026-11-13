@@ -180,8 +180,18 @@ export function summarize(all: Day[], range: Range): Summary {
     }
   }
 
-  const spanDays =
-    range === "all" ? (days.length ? Math.max(1, Math.round((Date.now() - parse(days[0].day).getTime()) / 86_400_000) + 1) : 1) : RANGE_DAYS[range];
+  // days elapsed from a given day through today, inclusive (calendar days, DST-safe)
+  const daysSince = (d: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return Math.round((today.getTime() - d.getTime()) / 86_400_000) + 1;
+  };
+
+  // divide by the days you've actually had data for, capped at the range length
+  const spanDays = days.length
+    ? Math.max(1, Math.min(daysSince(parse(days[0].day)), range === "all" ? Infinity : RANGE_DAYS[range]))
+    : 1;
+
   const bestDay = [...perDay].sort((a, b) => b[1] - a[1])[0];
 
   return {
