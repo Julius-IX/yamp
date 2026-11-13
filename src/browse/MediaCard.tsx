@@ -22,9 +22,9 @@ const COVER: Record<CardVariant, object> = {
   wide: { aspectRatio: "16 / 9" },
 };
 
-const shell = (variant: CardVariant) =>
+const shell = (variant: CardVariant, fluid = false) =>
   ({
-    display: "block", flexShrink: 0, width: WIDTH[variant], p: 1.25, borderRadius: radius.card, textAlign: "left",
+    display: "block", flexShrink: 0, width: fluid ? "100%" : WIDTH[variant], minWidth: 0, p: 1.25, borderRadius: radius.card, textAlign: "left",
     scrollSnapAlign: "start",
     ...(variant === "round" ? { textAlign: "center", border: 1, borderColor: "transparent" } : surface),
   }) as const;
@@ -37,6 +37,8 @@ type Props = {
   /** Text, or links such as an artist. Clicks on a link must not reach the card. */
   subtitle?: ReactNode;
   variant?: CardVariant;
+  /** Fills the width of its container instead of the fixed width, for a grid that sets the column size. */
+  fluid?: boolean;
   onClick: () => void;
   /** Plays without opening. Without it a click on the overlay is a click on the card. */
   onPlay?: () => void;
@@ -54,14 +56,14 @@ type Props = {
  * A cover with a title and a line below. The overlay is a hint that the card plays, so on a
  * touch screen without hover it is left out. Artists have no overlay, they only open.
  */
-export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", onClick, onPlay, onQueue, track }: Props) {
+export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", fluid, onClick, onPlay, onQueue, track }: Props) {
   return (
     <ButtonBase
       // a div and not a button, the menu of the card holds a button and a button cannot contain one
       component="div"
       onClick={onClick}
       sx={{
-        ...shell(variant), transition: "background-color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
+        ...shell(variant, fluid), transition: "background-color 0.2s, border-color 0.2s, transform 0.2s, box-shadow 0.2s",
         "&:hover": {
           bgcolor: "action.hover",
           ...(variant !== "round" && { borderColor: "text.disabled" }),
@@ -156,9 +158,9 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
 }
 
 /** Animated, for a shelf that is still loading. */
-export function CardSkeleton({ variant = "square" }: { variant?: CardVariant }) {
+export function CardSkeleton({ variant = "square", fluid }: { variant?: CardVariant, fluid?: boolean }) {
   return (
-    <Box sx={shell(variant)}>
+    <Box sx={shell(variant, fluid)}>
       <Skeleton
         variant={variant === "round" ? "circular" : "rounded"}
         sx={{ width: "100%", height: "auto", ...COVER[variant] }}
