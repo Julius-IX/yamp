@@ -247,7 +247,8 @@ export default function DataPage() {
           )
         }
       />
-      <FolderRows />
+      <StatsRows />
+      <TransferRows />
       {sync.providers.map((p) => (
         <ProviderRow key={p.id} provider={p} />
       ))}
@@ -255,8 +256,7 @@ export default function DataPage() {
       {sync.loaded && sync.providers.length === 0 && (
         <PrefRow title="Cloud sync" summary="No cloud services are set up in this build" />
       )}
-      <TransferRows />
-      <StatsRows />
+      <FolderRows />
     </Section>
   );
 }

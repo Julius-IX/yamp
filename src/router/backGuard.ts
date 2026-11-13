@@ -1,41 +1,49 @@
 /**
- * Lets an overlay that is not part of any tab router take the Android back press, like the full
- * screen player. The app layout turns a back press into a tab navigation, so without a guard
- * the tab would change underneath an open overlay.
+ * Routes the Android back press. The activity asks `window.yampBack` whether the frontend used
+ * the press and hides itself when the answer is no, so the player keeps running. Nothing is
+ * pushed to the browser history for this, which would otherwise take a press to pop.
  *
- * A guard pushes one history entry, which keeps the entry the layout reserved for itself in
- * place. This listener is added when the module loads, ahead of the layout's own, and stops the
- * event from reaching it whenever a guard handles the press.
+ * A press goes to the newest guard first. A guard belongs to an overlay that is not part of any
+ * tab router, like the full screen player, and the tab behind it must not move. Without a guard
+ * the press goes to the fallback, which the app layout sets to navigate its tabs.
  */
 type Guard = { onBack: () => void };
 
 const guards: Guard[] = [];
-/** Pops caused by a guard that was released from the UI, which are not back presses. */
-let ignored = 0;
+let fallback: (() => boolean) | null = null;
 
-window.addEventListener("popstate", (e) => {
-  if (ignored > 0) {
-    ignored--;
-    e.stopImmediatePropagation();
-    return;
+/** Returns whether the frontend used the press. */
+function handleBack() {
+  // the guard stays until its owner releases it, so a guard that ignores the press keeps holding it
+  const guard = guards[guards.length - 1];
+  if (guard) {
+    guard.onBack();
+    return true;
   }
-  const guard = guards.pop();
-  if (!guard) return;
-  e.stopImmediatePropagation();
-  guard.onBack();
-});
+  return fallback?.() ?? false;
+}
+
+declare global {
+  interface Window {
+    yampBack?: () => boolean;
+  }
+}
+window.yampBack = handleBack;
 
 /** Returns the release function, meant to be the cleanup of an effect. */
 export function pushBackGuard(onBack: () => void) {
   const guard: Guard = { onBack };
-  history.pushState({ guard: true }, "");
   guards.push(guard);
   return () => {
     const at = guards.indexOf(guard);
-    // already gone means the back press consumed it, and its entry was popped with it
-    if (at < 0) return;
-    guards.splice(at, 1);
-    ignored++;
-    history.back();
+    if (at >= 0) guards.splice(at, 1);
+  };
+}
+
+/** Sets what a press does when no guard is held. It returns true when it navigated. */
+export function setBackFallback(onBack: () => boolean) {
+  fallback = onBack;
+  return () => {
+    if (fallback === onBack) fallback = null;
   };
 }

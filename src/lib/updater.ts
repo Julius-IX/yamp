@@ -17,7 +17,6 @@ const REPO = "Julius-IX/yamp";
 const PROGRESS_EVENT = "updater:progress";
 /** Short enough to catch a release soon, long enough to stay out of the way of the startup. */
 const FIRST_CHECK_MS = 15_000;
-const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 
 /** A release newer than the running one. `url` is where Android gets the APK. */
 export type Pending = UpdateInfo & { url?: string };
@@ -143,19 +142,15 @@ const isString = (v: unknown): v is string => typeof v === "string";
 export const useSkippedVersion = () => useSetting("updateSkipped", "", isString)[0];
 export const skipVersion = (version: string) => setSetting("updateSkipped", version);
 
-/** Checks shortly after the start and then every few hours while the option is on. Mount once. */
+/** Checks once shortly after the start while the option is on. A session is not checked again. Mount once. */
 export function useAutoUpdateCheck() {
   const [auto] = useSetting("updateCheck", true, isBoolean);
   useEffect(() => {
     if (!auto) return;
     let alive = true;
-    let timer = 0;
-    const run = async () => {
-      if (!alive) return;
-      if (await updatesAvailable()) await checkForUpdates(false);
-      if (alive) timer = window.setTimeout(run, CHECK_EVERY_MS);
-    };
-    timer = window.setTimeout(run, FIRST_CHECK_MS);
+    const timer = window.setTimeout(async () => {
+      if (alive && (await updatesAvailable())) await checkForUpdates(false);
+    }, FIRST_CHECK_MS);
     return () => {
       alive = false;
       window.clearTimeout(timer);

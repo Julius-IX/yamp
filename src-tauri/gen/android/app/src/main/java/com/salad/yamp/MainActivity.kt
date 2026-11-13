@@ -2,11 +2,28 @@ package com.salad.yamp
 
 import android.os.Bundle
 import android.webkit.WebView
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import com.salad.yamp.session.SessionHost
 
 class MainActivity : TauriActivity() {
   private var webView: WebView? = null
+
+  // The frontend owns the navigation stacks, so the default back handling of the webview history
+  // is turned off. Nothing is pushed to that history anymore.
+  override val handleBackNavigation = false
+
+  private val backCallback = object : OnBackPressedCallback(true) {
+    override fun handleOnBackPressed() {
+      val view = webView ?: return
+      view.evaluateJavascript("window.yampBack ? window.yampBack() : false") { handled ->
+        if (handled == "true") return@evaluateJavascript
+        // Finishing the activity would destroy the webview, and the audio element lives in it.
+        // Moving the task to the back keeps playback and the media session running.
+        moveTaskToBack(true)
+      }
+    }
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
@@ -15,6 +32,7 @@ class MainActivity : TauriActivity() {
 
   override fun onWebViewCreate(webView: WebView) {
     this.webView = webView
+    onBackPressedDispatcher.addCallback(this, backCallback)
   }
 
   // The activity pauses its webview when it leaves the screen, and a paused one does not run the

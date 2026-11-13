@@ -17,7 +17,7 @@ const BACK_INSET = BACK_SIZE + 12;
  * Back steps through the tab's own history, so a screen can be left without rebuilding the
  * route to the one before it. The first entry has the key "default" and nothing to go back to.
  */
-export default function SearchLayout() {
+export default function SearchLayout({ placeholder, recents }: { placeholder?: string; recents?: boolean }) {
   const navigate = useNavigate();
   const canGoBack = useLocation().key !== "default";
 
@@ -34,7 +34,7 @@ export default function SearchLayout() {
               <ArrowBackIcon fontSize="small" />
             </IconButton>
           )}
-          <SearchBar leftInset={canGoBack ? BACK_INSET : 0} />
+          <SearchBar leftInset={canGoBack ? BACK_INSET : 0} placeholder={placeholder} recents={recents} />
         </Box>
       </Box>
       <Outlet />

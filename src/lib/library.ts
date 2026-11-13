@@ -62,8 +62,23 @@ export const editPlaylist = async (id: string, name: string, description: string
 export const deletePlaylist = async (id: string) =>
   (await change("delete a playlist", () => COMMANDS.playlists.delete({ id }))) !== null;
 
-export const addToPlaylist = async (id: string, tracks: Track[]) =>
-  (await change("add to a playlist", () => COMMANDS.playlists.addTracks({ id, tracks }))) !== null;
+/** The ids of the tracks a playlist holds. */
+export async function playlistTrackIds(id: string): Promise<Set<string>> {
+  return new Set((await COMMANDS.playlists.tracks({ id })).map((t) => t.id));
+}
+
+/**
+ * Adds the tracks the playlist does not hold yet, judged by track id, so another version of a
+ * song is a different track and goes in. The backend allows repeats, which a synced list may
+ * have, so the check is made here. Returns how many were added, or null when it failed.
+ */
+export const addToPlaylist = (id: string, tracks: Track[]) =>
+  change("add to a playlist", async () => {
+    const held = await playlistTrackIds(id);
+    const fresh = [...new Map(tracks.map((t) => [t.id, t])).values()].filter((t) => !held.has(t.id));
+    if (fresh.length > 0) await COMMANDS.playlists.addTracks({ id, tracks: fresh });
+    return fresh.length;
+  });
 
 export const removeFromPlaylist = async (id: string, position: number) =>
   (await change("remove from a playlist", () => COMMANDS.playlists.removeAt({ id, position }))) !== null;
