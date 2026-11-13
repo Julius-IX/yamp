@@ -1,21 +1,23 @@
 import { useEffect } from "react";
 import { resolveArtwork } from "@/lib/artwork";
-import { IS_IOS } from "@/util/platform";
+import { IS_IOS, IS_LINUX } from "@/util/platform";
 import { currentTrack, getTime, player, usePlayer } from "./store";
 
 const SEEK_STEP_SECS = 10;
 
 /**
- * The webview's own Media Session. Only iOS gets it published to the system, since WKWebView
- * does. Everywhere else the webview does not, or does it twice next to the native one, which
- * `useNativeSession` covers. Mount it once.
+ * The webview's own Media Session. iOS gets all of it published to the system, since WKWebView
+ * does. WebKitGTK on Linux publishes a player of its own next to the native one and names it
+ * after the page title, so only the metadata is set there. Without it, widgets that pick that
+ * player show the app name and not the track. Everywhere else the webview does not publish,
+ * which `useNativeSession` covers. Mount it once.
  */
 export function usePlayerMediaSession() {
   const state = usePlayer();
   const track = currentTrack(state);
 
   useEffect(() => {
-    if (!IS_IOS || !("mediaSession" in navigator)) return;
+    if (!(IS_IOS || IS_LINUX) || !("mediaSession" in navigator)) return;
     navigator.mediaSession.metadata = track
       ? new MediaMetadata({
           title: track.title,

@@ -6,6 +6,7 @@ import FilterNoneIcon from "@mui/icons-material/FilterNone";
 import RemoveIcon from "@mui/icons-material/Remove";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { faint } from "@/themes/ui";
+import { currentTrack, usePlayer } from "@/player/store";
 
 const HEIGHT = 32;
 
@@ -25,14 +26,24 @@ function Control({ label, onClick, danger, children }: { label: string; onClick:
   );
 }
 
+/** Follows the native window title, which only names the track while it plays. */
+function useWindowLabel() {
+  const state = usePlayer();
+  const track = currentTrack(state);
+  if (!track || !state.playing) return "yamp";
+  return track.artist ? `${track.title} · ${track.artist}` : track.title;
+}
+
 /**
  * The window controls on Windows, in place of the native title bar, which is switched off in
  * `tauri.windows.conf.json`. It takes the colors of the app so the window does not have a
  * differently colored strip on top. The empty part drags the window and a double click on it
- * maximizes, which the `data-tauri-drag-region` attribute does by itself.
+ * maximizes, which the `data-tauri-drag-region` attribute does by itself. The title is drawn here
+ * since the native one is not visible, so it has to follow the window title on its own.
  */
 export default function TitleBar() {
   const [maximized, setMaximized] = useState(false);
+  const label = useWindowLabel();
   // outside of the app, like the page opened in a browser, there is no window to control
   const win = "__TAURI_INTERNALS__" in window ? getCurrentWindow() : null;
 
@@ -48,9 +59,10 @@ export default function TitleBar() {
     <Box data-tauri-drag-region sx={{ display: "flex", alignItems: "center", height: HEIGHT, flexShrink: 0, userSelect: "none" }}>
       <Typography
         data-tauri-drag-region variant="caption"
-        sx={{ flex: 1, pl: 1.5, letterSpacing: 1, fontWeight: 600, ...faint }}
+        noWrap
+        sx={{ flex: 1, minWidth: 0, pl: 1.5, letterSpacing: 1, fontWeight: 600, ...faint }}
       >
-        yamp
+        {label}
       </Typography>
       <Control label="Minimize" onClick={() => void win?.minimize()}><RemoveIcon /></Control>
       <Control label={maximized ? "Restore" : "Maximize"} onClick={() => void win?.toggleMaximize()}>
