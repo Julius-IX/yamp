@@ -62,7 +62,7 @@ export default function AboutPage() {
           <ActionRow title="Updates" summary={row.summary} label={row.label} busy={row.busy} onAction={row.onAction} />
           <SwitchRow
             title="Check for updates automatically"
-            summary="Looks when yamp starts and every few hours, nothing is installed without asking"
+            summary="Looks once when yamp starts, nothing is installed without asking"
             checked={auto}
             onChange={setAuto}
           />
