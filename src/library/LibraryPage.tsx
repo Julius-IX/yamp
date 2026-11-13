@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Box, Button, Chip, Typography, type Theme } from "@mui/material";
+import { Box, Button, Chip, IconButton, Typography, type Theme } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import CheckIcon from "@mui/icons-material/Check";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
@@ -118,12 +118,25 @@ export default function LibraryPage() {
             variant="outlined" sx={f.id === filter ? accentTonal : surface}
           />
         ))}
+        {/* symbols only on mobile, so both buttons fit on the row of the filters */}
         {IS_MOBILE && canMove && (
-          <Button size="small" startIcon={handles ? <CheckIcon /> : <SwapVertIcon />} onClick={() => setHandles(!handles)} sx={{ ml: "auto" }}>
-            {handles ? "Done" : "Reorder"}
-          </Button>
+          <IconButton
+            size="small" color="primary" aria-label={handles ? "Done" : "Reorder"}
+            onClick={() => setHandles(!handles)} sx={{ ml: "auto" }}
+          >
+            {handles ? <CheckIcon /> : <SwapVertIcon />}
+          </IconButton>
         )}
-        <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)} sx={IS_MOBILE && canMove ? undefined : { ml: "auto" }}>New playlist</Button>
+        {IS_MOBILE ? (
+          <IconButton
+            size="small" color="primary" aria-label="New playlist"
+            onClick={() => setCreating(true)} sx={canMove ? undefined : { ml: "auto" }}
+          >
+            <AddIcon />
+          </IconButton>
+        ) : (
+          <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)} sx={{ ml: "auto" }}>New playlist</Button>
+        )}
       </Box>
 
       <Box
