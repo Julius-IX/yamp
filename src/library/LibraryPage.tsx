@@ -43,6 +43,7 @@ function PlaylistCard({ playlist }: { playlist: LibraryPlaylist }) {
   const album = isSavedAlbum(playlist);
   return (
     <MediaCard
+      fluid={IS_MOBILE}
       thumbnail={coverOf(playlist)}
       title={playlist.name}
       subtitle={album ? ["Album", playlist.description].filter(Boolean).join(" · ") : `Playlist · ${playlist.trackCount} songs`}
@@ -125,9 +126,17 @@ export default function LibraryPage() {
         <Button size="small" startIcon={<AddIcon />} onClick={() => setCreating(true)} sx={IS_MOBILE && canMove ? undefined : { ml: "auto" }}>New playlist</Button>
       </Box>
 
-      <Box ref={grid} sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, px: GUTTER, userSelect: drag ? "none" : "auto" }}>
+      <Box
+        ref={grid}
+        sx={{
+          gap: 1.5, px: GUTTER, userSelect: drag ? "none" : "auto",
+          // fixed width cards do not fit three across on a phone, so the columns set the width there
+          ...(IS_MOBILE ? { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))" } : { display: "flex", flexWrap: "wrap" }),
+        }}
+      >
         {filter !== "albums" && (
           <MediaCard
+            fluid={IS_MOBILE}
             art={<LikedArt sx={{ width: "100%", aspectRatio: "1", fontSize: 56 }} />}
             title="Liked Songs"
             subtitle={`Playlist · ${likedCount} songs`}
@@ -138,6 +147,7 @@ export default function LibraryPage() {
         )}
         {filter !== "albums" && (
           <MediaCard
+            fluid={IS_MOBILE}
             art={<LocalArt sx={{ width: "100%", aspectRatio: "1", fontSize: 56 }} />}
             title="Local"
             subtitle={`Playlist · ${localCount} songs`}
@@ -146,6 +156,8 @@ export default function LibraryPage() {
             onQueue={() => void queueLocal()}
           />
         )}
+        {/* keeps the playlists that are made off the first row, which only holds the two fixed ones */}
+        {IS_MOBILE && filter !== "albums" && <Box aria-hidden />}
         {shown
           ? shown.map((p, i) => (
             <Box
@@ -178,7 +190,7 @@ export default function LibraryPage() {
               )}
             </Box>
           ))
-          : Array.from({ length: GHOSTS }, (_, i) => <CardSkeleton key={i} />)}
+          : Array.from({ length: GHOSTS }, (_, i) => <CardSkeleton key={i} fluid={IS_MOBILE} />)}
       </Box>
       {shown?.length === 0 && EMPTY[filter] && <Typography sx={{ ...subdued, px: GUTTER, pt: 1 }}>{EMPTY[filter]}</Typography>}
 
