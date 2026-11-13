@@ -82,13 +82,13 @@ export default function AppLayout() {
     setStacks((s) => ({ ...s, [tab.id]: { router: makeRouter(tab), gen: s[tab.id].gen + 1 } }));
   };
 
-  const openTab = useCallback((id: string, to?: string) => {
+  const openTab = useCallback((id: string, to?: string, state?: unknown) => {
     setActiveId(id);
-    if (to) latest.current.stacks[id].router.navigate(to);
+    if (to) latest.current.stacks[id].router.navigate(to, { state });
   }, []);
-  const openBrowse = useCallback((to: string) => {
+  const openBrowse = useCallback((to: string, state?: unknown) => {
     const active = tabs.find((t) => t.id === latest.current.activeId);
-    openTab((active?.browse ? active : tabs.find((t) => t.browse)!).id, to);
+    openTab((active?.browse ? active : tabs.find((t) => t.browse)!).id, to, state);
   }, [openTab]);
   const tabsApi = useMemo(() => ({ activeId, openTab, openBrowse }), [activeId, openTab, openBrowse]);
 

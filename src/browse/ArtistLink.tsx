@@ -2,27 +2,28 @@ import { Fragment, type KeyboardEvent, type MouseEvent, type ReactNode } from "r
 import { Box } from "@mui/material";
 import { COMMANDS } from "@/lib/commands";
 import { logger } from "@/lib/log";
-import type { Track } from "@/lib/types";
+import type { Item, Track } from "@/lib/types";
 import { isRadio } from "@/radio/station";
 import { useTabs } from "@/router/TabsContext";
+import { Search } from "@/search/paths";
 import { Artist } from "./paths";
 
 const log = logger("browse");
 
 /** Names resolved so far. A track carries its artist as text, so the page is found by searching. */
-const resolved = new Map<string, Promise<string | null>>();
+const resolved = new Map<string, Promise<Item | null>>();
 
-function resolveArtist(name: string): Promise<string | null> {
+function resolveArtist(name: string): Promise<Item | null> {
   const key = name.toLowerCase();
   let hit = resolved.get(key);
   if (!hit) {
     hit = COMMANDS.media
       .searchItems({ query: name, kind: "artist", limit: 3 })
       // the best match is the artist named exactly like this, and failing that the first one
-      .then((items) => (items.find((i) => i.title.toLowerCase() === key) ?? items[0])?.id ?? null);
+      .then((items) => items.find((i) => i.title.toLowerCase() === key) ?? items[0] ?? null);
     resolved.set(key, hit);
     // a failed or empty lookup is not remembered, the next click tries again
-    hit.then((id) => id ?? resolved.delete(key)).catch(() => resolved.delete(key));
+    hit.then((item) => item ?? resolved.delete(key)).catch(() => resolved.delete(key));
   }
   return hit;
 }
@@ -41,11 +42,14 @@ export default function ArtistLink({ artist, onOpen }: { artist: string; onOpen?
   const open = async (name: string) => {
     onOpen?.();
     try {
-      const id = await resolveArtist(name);
-      if (id) openBrowse(Artist.to({ id }));
+      const item = await resolveArtist(name);
+      // the item rides along like it does from a card, so the page has a name and a cover at once
+      if (item) return openBrowse(Artist.to({ id: item.id }), { item });
     } catch (e) {
       log.warn(`couldn't find the artist "${name}":`, e);
     }
+    // a name without a page of its own still leads somewhere, the results of a search for it
+    openBrowse(Search.to({ query: { q: name } }));
   };
 
   return (
