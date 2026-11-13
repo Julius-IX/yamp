@@ -18,10 +18,9 @@ class MainActivity : TauriActivity() {
       val view = webView ?: return
       view.evaluateJavascript("window.yampBack ? window.yampBack() : false") { handled ->
         if (handled == "true") return@evaluateJavascript
-        // nothing left in the frontend to go back to, so the press goes on to the default
-        isEnabled = false
-        onBackPressedDispatcher.onBackPressed()
-        isEnabled = true
+        // Finishing the activity would destroy the webview, and the audio element lives in it.
+        // Moving the task to the back keeps playback and the media session running.
+        moveTaskToBack(true)
       }
     }
   }
