@@ -30,11 +30,19 @@ const Kbd = ({ children }: { children: string }) => (
  * queries. The query lives in the URL and the field follows it, so back and forward restore a
  * search. `leftInset` keeps it clear of a button at the left edge.
  */
-export default function SearchBar({ leftInset = 0 }: { leftInset?: number }) {
+export default function SearchBar({
+  leftInset = 0, placeholder = "What do you want to listen to?", recents: withRecents = true,
+}: {
+  leftInset?: number;
+  placeholder?: string;
+  /** Off for a bar that searches something else than the provider, whose recent searches would not fit. */
+  recents?: boolean;
+}) {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const urlQuery = params.get("q") ?? "";
-  const recents = useRecentSearches();
+  const saved = useRecentSearches();
+  const recents = withRecents ? saved : [];
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
 
@@ -67,7 +75,7 @@ export default function SearchBar({ leftInset = 0 }: { leftInset?: number }) {
   const submit = (raw: string) => {
     const q = raw.trim();
     if (!q) return;
-    addRecentSearch(q);
+    if (withRecents) addRecentSearch(q);
     setText(q);
     input.current?.blur();
     if (q !== urlQuery) navigate(Search.to({ query: { q } }));
@@ -123,7 +131,7 @@ export default function SearchBar({ leftInset = 0 }: { leftInset?: number }) {
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
                 onKeyDown={onKeyDown}
-                placeholder="What do you want to listen to?"
+                placeholder={placeholder}
                 inputProps={{ "aria-label": "Search" }}
                 startAdornment={<SearchIcon fontSize="small" sx={{ mr: 1, ...subdued }} />}
                 endAdornment={
