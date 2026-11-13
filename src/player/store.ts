@@ -538,21 +538,18 @@ async function advance(auto: boolean) {
 // SECTION: actions
 
 export const player = {
-  /** Replaces the queue and starts at `startIndex`. */
+  /**
+   * Replaces the queue and starts at `startIndex`. A pick plays the list in the order it is shown,
+   * so shuffle is turned off. It only comes from `playShuffled` and the shuffle toggle.
+   */
   play(tracks: Track[], startIndex = 0) {
     if (tracks.length === 0) return;
     picks++;
-    const first = tracks[startIndex] ?? tracks[0];
     original = tracks;
     source = tracks;
-    if (read().shuffle) {
-      const rest = tracks.filter((t) => t !== first);
-      set({ queue: [first, ...shuffled(rest)] });
-      void start(0);
-    } else {
-      set({ queue: tracks });
-      void start(tracks.indexOf(first));
-    }
+    setSetting("shuffle", false);
+    set({ shuffle: false, queue: tracks });
+    void start(tracks[startIndex] ? startIndex : 0);
   },
 
   /**
