@@ -24,13 +24,13 @@ export function PlaylistMenu({ tracks, anchor, onClose, onDone }: {
 
   const add = async (id: string) => {
     onClose();
-    if (await addToPlaylist(id, tracks)) onDone?.();
+    if ((await addToPlaylist(id, tracks)) !== null) onDone?.();
   };
 
   const createAndAdd = async (name: string, description: string | null) => {
     setCreating(false);
     const made = await createPlaylist(name, description);
-    if (made && (await addToPlaylist(made.id, tracks))) onDone?.();
+    if (made && (await addToPlaylist(made.id, tracks)) !== null) onDone?.();
   };
 
   return (
