@@ -26,5 +26,7 @@ kotlin {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.9.0")
+    // `ActivityResult` of the settings page that `StoragePlugin` waits for, not exposed by `tauri-android`
+    implementation("androidx.activity:activity:1.9.3")
     implementation(project(":tauri-android"))
 }
