@@ -113,6 +113,17 @@ impl<E: YtDlpEngine> MediaSource for YtDlpBackend<E> {
     Ok(parse::entries(&out, true))
   }
 
+  async fn search_videos(&self, query: &str, limit: usize) -> Result<Vec<Track>> {
+    let q = query.trim();
+    if q.is_empty() {
+      return Ok(vec![]);
+    }
+    let limit = limit.clamp(1, MAX_LIMIT);
+    // plain YouTube search on purpose, the music one only lists what is a song or a music video
+    let out = self.engine.run(&flat_listing(format!("ytsearch{limit}:{q}"), limit), None).await?;
+    Ok(parse::entries(&out, false))
+  }
+
   async fn track(&self, id: &str) -> Result<Track> {
     check_id(id)?;
     let args = resolving(YtDlpArgs::new(watch_url(id)).flag("--dump-json").flag("--no-playlist"));
@@ -288,6 +299,23 @@ mod tests {
     let calls = b.engine.calls.lock().unwrap();
     assert_eq!(calls[0].target, "https://music.youtube.com/search?q=a%20b");
     assert_eq!(calls[1].target, "ytsearch10:a b");
+  }
+
+  #[tokio::test]
+  async fn video_search_keeps_videos_of_any_length() {
+    let long = r#"{"id":"bbbbbbbbbbb","title":"Ten hour mix","channel":"DJ","duration":36000.0}"#;
+    let b = YtDlpBackend::new(Mock::new(vec![Ok(format!("{SONG}\n{long}\n"))]));
+    let videos = b.search_videos("mix", 10).await.unwrap();
+    assert_eq!(videos.len(), 2);
+    let calls = b.engine.calls.lock().unwrap();
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0].target, "ytsearch10:mix");
+  }
+
+  #[tokio::test]
+  async fn an_empty_video_search_never_reaches_the_engine() {
+    let b = YtDlpBackend::new(Mock::new(vec![]));
+    assert!(b.search_videos("  ", 10).await.unwrap().is_empty());
   }
 
   #[tokio::test]
