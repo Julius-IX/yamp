@@ -43,9 +43,10 @@ impl YtApi {
     }
   }
 
+  /// Music videos first and then the other videos of the provider, see [`Backend::search_videos`].
   pub async fn search_videos(&self, query: &str, limit: Option<usize>) -> Result<Vec<Track>> {
     let limit = limit.unwrap_or(DEFAULT_LIMIT);
-    logged("video search", self.backend.catalog.search_videos(query, limit).await)
+    logged("video search", self.backend.search_videos(query, limit).await)
   }
 
   /// Artists, albums or playlists, one kind at a time because providers list them apart.
