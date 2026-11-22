@@ -74,6 +74,7 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
           },
         },
         "&:hover .card-play": { opacity: 1, transform: "none" },
+        marginTop: 1
       }}
     >
       <Box sx={{ position: "relative" }}>
