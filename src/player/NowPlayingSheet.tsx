@@ -8,6 +8,7 @@ import AddToPlaylist from "@/library/AddToPlaylist";
 import { useBackGuard } from "@/router/useBackGuard";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
+import Marquee from "./Marquee";
 import QueuePanel from "./QueuePanel";
 import SeekBar from "./SeekBar";
 import { currentTrack, usePlayer } from "./store";
@@ -65,8 +66,8 @@ export default function NowPlayingSheet({ open, onClose }: { open: boolean; onCl
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1, px: 3, pb: 3 }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="h6" noWrap sx={{ fontWeight: 700 }}>{track?.title}</Typography>
-                  <Typography color="text.secondary" noWrap>{track && <TrackArtist track={track} onOpen={onClose} />}</Typography>
+                  <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}><Marquee>{track?.title}</Marquee></Typography>
+                  <Typography color="text.secondary" component="div"><Marquee>{track && <TrackArtist track={track} onOpen={onClose} />}</Marquee></Typography>
                 </Box>
                 <LikeButton track={track} />
                 {track && <AddToPlaylist track={track} size="medium" />}

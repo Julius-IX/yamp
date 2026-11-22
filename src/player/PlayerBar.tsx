@@ -6,6 +6,7 @@ import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/materi
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
+import Marquee from "./Marquee";
 import QueuePanel from "./QueuePanel";
 import SeekBar from "./SeekBar";
 import { currentTrack, usePlayer } from "./store";
@@ -40,8 +41,8 @@ export default function PlayerBar() {
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
           <Cover src={track?.thumbnail} sx={{ width: 56, height: 56, flexShrink: 0, fontSize: 28 }} />
           <Box sx={{ minWidth: 0 }}>
-            <Typography noWrap sx={{ fontWeight: 600 }}>{track?.title ?? "Pick something to listen to"}</Typography>
-            <Typography variant="body2" sx={subdued} noWrap>{track ? <TrackArtist track={track} /> : "Search, or open your library"}</Typography>
+            <Typography component="div" sx={{ fontWeight: 600 }}><Marquee>{track?.title ?? "Pick something to listen to"}</Marquee></Typography>
+            <Typography variant="body2" component="div" sx={subdued}><Marquee>{track ? <TrackArtist track={track} /> : "Search, or open your library"}</Marquee></Typography>
           </Box>
           <LikeButton track={track} />
           {track && <AddToPlaylist track={track} size="medium" />}
