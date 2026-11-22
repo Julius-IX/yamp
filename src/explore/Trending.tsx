@@ -1,7 +1,7 @@
 import { Box, ButtonBase, Skeleton, Typography } from "@mui/material";
 import ArtistLink from "@/browse/ArtistLink";
 import { unique } from "@/browse/tracks";
-import Cover from "@/player/Cover";
+import TrackArt from "@/player/TrackArt";
 import { player } from "@/player/store";
 import { faint, GUTTER, radius, sectionTitle, subdued } from "@/themes/ui";
 import { IS_MOBILE } from "@/util/platform";
@@ -41,7 +41,7 @@ export default function Trending() {
                 }}
               >
                 <Typography sx={{ width: 28, flexShrink: 0, textAlign: "center", fontWeight: 700, ...faint }}>{i + 1}</Typography>
-                <Cover src={t.thumbnail} px={96} sx={{ width: COVER, height: COVER, fontSize: 20 }} />
+                <TrackArt track={t} px={96} sx={{ width: COVER, height: COVER, fontSize: 20 }} />
                 <Box sx={{ minWidth: 0 }}>
                   <Typography variant="body2" noWrap sx={{ fontWeight: 600 }}>{t.title}</Typography>
                   <Typography variant="caption" noWrap component="div" sx={subdued}>

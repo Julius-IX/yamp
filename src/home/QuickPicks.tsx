@@ -1,6 +1,6 @@
 import { Box, ButtonBase, IconButton, Typography } from "@mui/material";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
-import Cover from "@/player/Cover";
+import TrackArt from "@/player/TrackArt";
 import { useHistory } from "@/player/history";
 import { player } from "@/player/store";
 import { GUTTER, radius, surface } from "@/themes/ui";
@@ -32,7 +32,7 @@ export default function QuickPicks() {
               transition: "background-color 0.2s", "&:hover": { bgcolor: "action.hover" },
             }}
           >
-            <Cover src={t.thumbnail} px={160} sx={{ width: THUMB, height: THUMB, borderRadius: 0, fontSize: 24 }} />
+            <TrackArt track={t} px={160} sx={{ width: THUMB, height: THUMB, borderRadius: 0, fontSize: 24 }} />
             <Typography variant="body2" noWrap sx={{ flex: 1, minWidth: 0, pr: IS_MOBILE ? 1.5 : 5, fontWeight: 600 }}>
               {t.title}
             </Typography>

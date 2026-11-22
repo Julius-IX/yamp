@@ -8,7 +8,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { isLocalFile, useDownloadStatus } from "@/lib/local";
 import type { Track } from "@/lib/types";
-import Cover from "@/player/Cover";
+import TrackArt from "@/player/TrackArt";
 import LikeButton from "@/player/LikeButton";
 import { currentTrack, player, usePlayer } from "@/player/store";
 import { isRadio } from "@/radio/station";
@@ -132,7 +132,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
           <PlayArrowIcon fontSize="small" />
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-          <Cover src={track.thumbnail} px={96} sx={{ width: 40, height: 40, fontSize: 20 }} />
+          <TrackArt track={track} px={96} sx={{ width: 40, height: 40, fontSize: 20 }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="body2" noWrap color={active ? "primary" : "text.primary"}>{track.title}</Typography>
             {IS_MOBILE && (
