@@ -5,7 +5,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SkipNextIcon from "@mui/icons-material/SkipNext";
 import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import AddToPlaylist from "@/library/AddToPlaylist";
-import Cover from "./Cover";
+import TrackArt from "./TrackArt";
 import LikeButton from "./LikeButton";
 import Marquee from "./Marquee";
 import NowPlayingSheet from "./NowPlayingSheet";
@@ -48,7 +48,7 @@ export default function MiniPlayer() {
             aria-label="Open the player"
             sx={{ display: "flex", alignItems: "center", gap: 1.5, flex: 1, minWidth: 0, textAlign: "left", justifyContent: "flex-start" }}
           >
-            <Cover src={track.thumbnail} sx={{ width: 44, height: 44, fontSize: 24 }} />
+            <TrackArt track={track} sx={{ width: 44, height: 44, fontSize: 24 }} />
             <Box sx={{ minWidth: 0 }}>
               <Typography component="div" sx={{ fontWeight: 600 }}><Marquee>{track.title}</Marquee></Typography>
               <Typography variant="caption" color="text.secondary" component="div"><Marquee>{track.artist}</Marquee></Typography>
