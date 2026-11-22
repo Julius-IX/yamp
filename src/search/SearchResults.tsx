@@ -1,14 +1,17 @@
+import { useMemo } from "react";
 import { Box, Skeleton, Typography } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { duration } from "@/components/media/format";
 import { COMMANDS } from "@/lib/commands";
 import { player } from "@/player/store";
 import { GUTTER, sectionTitle, subdued } from "@/themes/ui";
+import { Album, Artist, Playlist } from "@/browse/paths";
 import ItemShelf from "@/browse/ItemShelf";
 import TrackShelf from "@/browse/TrackShelf";
 import TrackTable from "@/browse/TrackTable";
 import { useCached } from "@/browse/useCached";
+import { parseLink } from "./link";
 
 const SONGS = 10;
 const ARTISTS = 5;
@@ -21,18 +24,46 @@ const SHELF = 12;
 export default function SearchResults() {
   const query = (useSearchParams()[0].get("q") ?? "").trim();
   const q = query.toLowerCase();
+  // A pasted link is opened and not searched for. Its text would only find unrelated results.
+  const link = useMemo(() => parseLink(query), [query]);
+  const text = link ? "" : query;
 
-  const artists = useCached(query ? `search-artists:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "artist", limit: ARTISTS }), []);
-  const songs = useCached(query ? `search-songs:${q}` : null, () => COMMANDS.media.search({ query, limit: SONGS }), []);
-  const albums = useCached(query ? `search-albums:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "album", limit: SHELF }), []);
-  const playlists = useCached(query ? `search-playlists:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "playlist", limit: SHELF }), []);
-  const videos = useCached(query ? `search-videos:${q}` : null, () => COMMANDS.media.searchVideos({ query, limit: SHELF }), []);
+  const artists = useCached(text ? `search-artists:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "artist", limit: ARTISTS }), []);
+  const songs = useCached(text ? `search-songs:${q}` : null, () => COMMANDS.media.search({ query, limit: SONGS }), []);
+  const albums = useCached(text ? `search-albums:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "album", limit: SHELF }), []);
+  const playlists = useCached(text ? `search-playlists:${q}` : null, () => COMMANDS.media.searchItems({ query, kind: "playlist", limit: SHELF }), []);
+  const videos = useCached(text ? `search-videos:${q}` : null, () => COMMANDS.media.searchVideos({ query, limit: SHELF }), []);
+  // null once the lookup failed, as the track is then not one that can be played
+  const linked = useCached(link?.kind === "video" ? `search-link:${link.id}` : null, () => COMMANDS.media.track({ id: link?.id ?? "" }), null);
+
+  if (link && link.kind !== "video") {
+    const to = link.kind === "artist" ? Artist.to({ id: link.id }) : link.kind === "album" ? Album.to({ id: link.id }) : Playlist.to({ id: link.id });
+    // replaced, so that back leaves the search and does not land on the link again
+    return <Navigate to={to} replace />;
+  }
+
+  if (link) {
+    return (
+      <Box sx={{ pt: 10, pb: 2 }}>
+        <Box component="section" sx={{ pb: 3 }}>
+          <Typography sx={{ ...sectionTitle, px: GUTTER, pb: 1.5 }}>Video</Typography>
+          {linked ? (
+            <TrackTable tracks={[linked]} onPlay={() => player.play([linked], 0)} />
+          ) : linked === null ? (
+            <Typography sx={{ ...subdued, px: GUTTER }}>This video could not be loaded.</Typography>
+          ) : (
+            <Skeleton variant="rounded" height={44} sx={{ mx: GUTTER, my: 0.75 }} />
+          )}
+        </Box>
+      </Box>
+    );
+  }
 
   if (!query) {
     return (
       <Box sx={{ pt: 20, textAlign: "center", ...subdued }}>
         <SearchIcon sx={{ fontSize: 64 }} />
-        <Typography>Search for songs, artists, albums, or playlists</Typography>
+        <Typography>Search for songs, artists, albums, or playlists, or paste a link</Typography>
       </Box>
     );
   }
