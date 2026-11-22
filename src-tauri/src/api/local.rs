@@ -96,12 +96,12 @@ pub async fn cover_dir(app: AppHandle) -> Result<String, String> {
   Ok(library::cover_dir(&app).to_string_lossy().into_owned())
 }
 
-/// Asks for the permission to read audio files where the system wants one, and returns whether it
-/// is granted. Elsewhere it returns true at once.
+/// Asks for the permission to read the files of a folder where the system wants one, and returns
+/// whether it is granted. Elsewhere it returns true at once.
 #[tauri_groups::command(local)]
 pub async fn request_access(app: AppHandle) -> Result<bool, String> {
   // the call waits for the person to answer a prompt
-  tauri::async_runtime::spawn_blocking(move || app.state::<yamp_storage::Storage>().request_audio_access())
+  tauri::async_runtime::spawn_blocking(move || app.state::<yamp_storage::Storage>().request_files_access())
     .await
     .map_err(err)
 }

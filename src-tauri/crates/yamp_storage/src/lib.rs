@@ -1,4 +1,4 @@
-//! Access to the audio files of the device.
+//! Access to the files of the device.
 //!
 //! Reading music from a folder needs a permission on Android, and the system asks for it from
 //! native code, so the prompt has a Kotlin side in `./android`. Every other platform reads files
@@ -21,10 +21,10 @@ pub struct Storage {
 }
 
 impl Storage {
-  /// Asks for the permission to read audio files, unless it was given before, and returns whether
-  /// it is granted. The call waits for the answer of the person, so it must not run on the main
-  /// thread, where the prompt itself is shown from.
-  pub fn request_audio_access(&self) -> bool {
+  /// Asks for the permission to read the files of shared storage, unless it was given before, and
+  /// returns whether it is granted. The call waits for the person to answer, so it must not run on
+  /// the main thread, where the prompt itself is shown from.
+  pub fn request_files_access(&self) -> bool {
     self.inner.request()
   }
 }
