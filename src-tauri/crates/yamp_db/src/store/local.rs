@@ -399,30 +399,36 @@ fn read_track(path: &Path, covers: &Path) -> Track {
     release_year: None,
   };
   let tagged = match read_from_path(path) {
-    Ok(tagged) => tagged,
+    Ok(tagged) => Some(tagged),
     Err(e) => {
       log::debug!("no tags in {}: {e}", path.display());
-      return track;
+      None
     }
   };
-  let seconds = tagged.properties().duration().as_secs_f64();
-  track.duration_secs = (seconds > 0.0).then_some(seconds);
-  if let Some(tag) = tagged.primary_tag().or_else(|| tagged.first_tag()) {
-    let text = |value: Option<std::borrow::Cow<'_, str>>| {
-      value.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
-    };
-    track.title = text(tag.title()).unwrap_or(track.title);
-    track.artist = text(tag.artist()).unwrap_or(track.artist);
-    track.album = text(tag.album());
-    track.release_year = tag.year();
-    let picture = tag
-      .pictures()
-      .iter()
-      .find(|p| p.pic_type() == PictureType::CoverFront)
-      .or_else(|| tag.pictures().first());
-    if let Some(name) = picture.and_then(|p| cache_cover(p.data(), covers)) {
-      track.thumbnail = Some(format!("{COVER_PREFIX}{name}"));
+  let mut embedded = None;
+  if let Some(tagged) = &tagged {
+    let seconds = tagged.properties().duration().as_secs_f64();
+    track.duration_secs = (seconds > 0.0).then_some(seconds);
+    if let Some(tag) = tagged.primary_tag().or_else(|| tagged.first_tag()) {
+      let text = |value: Option<std::borrow::Cow<'_, str>>| {
+        value.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
+      };
+      track.title = text(tag.title()).unwrap_or(track.title);
+      track.artist = text(tag.artist()).unwrap_or(track.artist);
+      track.album = text(tag.album());
+      track.release_year = tag.year();
     }
+    // The picture is looked for in every tag. A file that has two kinds of tags, like ID3v2 next
+    // to an older one, can keep its cover in a different one than the text that is read above.
+    let pictures = || tagged.tags().iter().flat_map(|t| t.pictures());
+    embedded = pictures()
+      .find(|p| p.pic_type() == PictureType::CoverFront)
+      .or_else(|| pictures().next())
+      .map(|p| p.data());
+  }
+  let cached = embedded.and_then(|picture| cache_cover(picture, covers));
+  if let Some(name) = cached {
+    track.thumbnail = Some(format!("{COVER_PREFIX}{name}"));
   }
   track
 }
