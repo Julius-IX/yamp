@@ -7,6 +7,7 @@ import SkipPreviousIcon from "@mui/icons-material/SkipPrevious";
 import AddToPlaylist from "@/library/AddToPlaylist";
 import Cover from "./Cover";
 import LikeButton from "./LikeButton";
+import Marquee from "./Marquee";
 import NowPlayingSheet from "./NowPlayingSheet";
 import { sheen } from "@/themes/ui";
 import { currentTrack, player, usePlayer, usePlayerTime } from "./store";
@@ -49,8 +50,8 @@ export default function MiniPlayer() {
           >
             <Cover src={track.thumbnail} sx={{ width: 44, height: 44, fontSize: 24 }} />
             <Box sx={{ minWidth: 0 }}>
-              <Typography noWrap sx={{ fontWeight: 600 }}>{track.title}</Typography>
-              <Typography variant="caption" color="text.secondary" noWrap component="div">{track.artist}</Typography>
+              <Typography component="div" sx={{ fontWeight: 600 }}><Marquee>{track.title}</Marquee></Typography>
+              <Typography variant="caption" color="text.secondary" component="div"><Marquee>{track.artist}</Marquee></Typography>
             </Box>
           </ButtonBase>
           <LikeButton track={track} />
