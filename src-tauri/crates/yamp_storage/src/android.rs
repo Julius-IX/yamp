@@ -1,5 +1,5 @@
-//! Android backend. The Kotlin side in `./android` asks for `READ_MEDIA_AUDIO`, or the older
-//! `READ_EXTERNAL_STORAGE` below Android 13.
+//! Android backend. The Kotlin side in `./android` sends the person to the settings page for access
+//! to all files, or asks for `READ_EXTERNAL_STORAGE` below Android 11. The reason is in there.
 use serde::Deserialize;
 use tauri::{
   AppHandle, Wry,

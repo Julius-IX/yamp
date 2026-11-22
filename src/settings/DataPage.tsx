@@ -87,9 +87,9 @@ function FolderRows() {
     try {
       if (IS_MOBILE) {
         // a phone has no folder dialog that gives a path, and the folders can only be read once
-        // the permission for audio files is given
+        // the permission for all files is given
         if (await COMMANDS.local.requestAccess()) setPicking(true);
-        else setError("Allow access to audio files for this app in the system settings, then try again");
+        else setError("Allow access to all files for this app in the system settings, then try again");
         return;
       }
       const picked = await open({ directory: true, multiple: false, title: "Add music folder" });
