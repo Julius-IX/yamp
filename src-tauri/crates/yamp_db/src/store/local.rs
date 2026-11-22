@@ -34,8 +34,12 @@ pub fn is_local_id(id: &str) -> bool {
   id.starts_with(LOCAL_PREFIX)
 }
 
-/// Containers that a browser engine can play, since the audio element does the decoding.
-const AUDIO_EXTS: &[&str] = &["mp3", "m4a", "aac", "flac", "ogg", "oga", "opus", "wav", "weba", "webm"];
+/// Containers that a browser engine can play, since the audio element does the decoding. The video
+/// containers are in because a long recording, like a mix or a lecture, is often kept as one. The
+/// element plays the sound of such a file and ignores the picture.
+const AUDIO_EXTS: &[&str] = &[
+  "mp3", "m4a", "m4b", "aac", "flac", "ogg", "oga", "opus", "wav", "weba", "webm", "mka", "mp4", "m4v", "mov", "mkv",
+];
 
 const UNKNOWN_ARTIST: &str = "Unknown artist";
 
@@ -587,6 +591,20 @@ mod tests {
     let id = track_id_for(&base.join("one.mp3"));
     assert!(is_local_id(&id));
     assert_eq!(locals.path(&id).await.unwrap(), Some(base.join("one.mp3")));
+    let _ = std::fs::remove_dir_all(base);
+  }
+
+  #[tokio::test]
+  async fn video_containers_are_scanned_as_well() {
+    let base = scratch("video");
+    for name in ["mix.mp4", "talk.MKV", "clip.mov", "book.m4b", "pic.jpg"] {
+      std::fs::write(base.join(name), b"x").unwrap();
+    }
+    let db = Db::memory().await.unwrap();
+    db.locals().add_dir(&base).await.unwrap();
+    db.locals().scan(base.to_str().unwrap(), &covers_of(&base)).await.unwrap();
+    // the two files of the scratch folder and the four containers, not the picture
+    assert_eq!(db.locals().count().await.unwrap(), 6);
     let _ = std::fs::remove_dir_all(base);
   }
 
