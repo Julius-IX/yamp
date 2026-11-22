@@ -13,6 +13,7 @@ import android.graphics.drawable.Icon
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.net.Uri
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
@@ -250,10 +251,15 @@ object SessionHost {
     private fun loadCover(url: String) {
         thread {
             val bitmap = try {
-                val connection = URL(url).openConnection() as HttpURLConnection
-                connection.connectTimeout = 8000
-                connection.readTimeout = 8000
-                connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                if (url.startsWith("file://")) {
+                    // a cover of a song from a folder, cached by the app
+                    BitmapFactory.decodeFile(Uri.parse(url).path)
+                } else {
+                    val connection = URL(url).openConnection() as HttpURLConnection
+                    connection.connectTimeout = 8000
+                    connection.readTimeout = 8000
+                    connection.inputStream.use { BitmapFactory.decodeStream(it) }
+                }
             } catch (e: Exception) {
                 null
             }

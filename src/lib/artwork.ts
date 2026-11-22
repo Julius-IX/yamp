@@ -22,6 +22,17 @@ export async function loadCoverDir() {
 
 export const isLocalCover = (url: string | null | undefined) => !!url?.startsWith(LOCAL_COVER);
 
+/**
+ * The cached cover as a `file://` URL, for the parts of the system that show it, like the lock
+ * screen and the media widgets. They cannot read the asset protocol, but they can read a file
+ * of the app. Null for a thumbnail that is not a cached cover.
+ */
+export function localCoverFile(url: string | null | undefined): string | null {
+  if (!url || !isLocalCover(url) || !coverDir) return null;
+  const path = `${coverDir}/${url.slice(LOCAL_COVER.length)}.jpg`.replace(/\\/g, "/");
+  return encodeURI(`file://${path.startsWith("/") ? "" : "/"}${path}`);
+}
+
 /** The URL to load an image from. A provider URL is that already, a cached cover is a file. */
 export function resolveArtwork(url: string | null | undefined): string | null {
   if (!url) return null;
