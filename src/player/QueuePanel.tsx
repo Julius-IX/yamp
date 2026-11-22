@@ -2,7 +2,7 @@ import { Box, ButtonBase, Button, FormControlLabel, IconButton, Switch, Tooltip,
 import CloseIcon from "@mui/icons-material/Close";
 import { isBoolean, useSetting } from "@/lib/settings";
 import type { Track } from "@/lib/types";
-import Cover from "./Cover";
+import TrackArt from "./TrackArt";
 import { currentTrack, player, usePlayer } from "./store";
 
 function Row({ track, active = false, onClick, onRemove }: {
@@ -23,7 +23,7 @@ function Row({ track, active = false, onClick, onRemove }: {
         "&.Mui-disabled": { opacity: 1, pointerEvents: "auto" },
       }}
     >
-      <Cover src={track.thumbnail} sx={{ width: 40, height: 40 }} />
+      <TrackArt track={track} sx={{ width: 40, height: 40 }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography noWrap color={active ? "primary" : "text.primary"} sx={{ fontWeight: active ? 600 : 400 }}>
           {track.title}

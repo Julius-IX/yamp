@@ -6,7 +6,7 @@ import QueueMusicIcon from "@mui/icons-material/QueueMusic";
 import { TrackArtist } from "@/browse/ArtistLink";
 import AddToPlaylist from "@/library/AddToPlaylist";
 import { useBackGuard } from "@/router/useBackGuard";
-import Cover from "./Cover";
+import TrackArt from "./TrackArt";
 import LikeButton from "./LikeButton";
 import Marquee from "./Marquee";
 import QueuePanel from "./QueuePanel";
@@ -56,8 +56,8 @@ export default function NowPlayingSheet({ open, onClose }: { open: boolean; onCl
             </Box>
 
             <Box sx={{ flex: 1, minHeight: 0, display: "flex", alignItems: "center", justifyContent: "center", px: 3 }}>
-              <Cover
-                src={track?.thumbnail}
+               <TrackArt
+                 track={track}
                 px={1024}
                 sx={{ width: "100%", maxWidth: 360, height: "auto", aspectRatio: "1", borderRadius: 2, fontSize: 96 }}
               />

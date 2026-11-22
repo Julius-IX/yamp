@@ -39,6 +39,14 @@ pub fn tracks_from_db(tracks: Vec<db::Track>) -> Vec<Track> {
   tracks.into_iter().map(track_from_db).collect()
 }
 
+/// The cover that the user set for a track, as an image that the webview shows without a request.
+#[derive(Serialize, TsType)]
+#[serde(rename_all = "camelCase")]
+pub struct TrackCover {
+  pub track_id: String,
+  pub url: String,
+}
+
 #[derive(Serialize, Deserialize, TsType)]
 #[serde(rename_all = "camelCase")]
 pub struct Artist {

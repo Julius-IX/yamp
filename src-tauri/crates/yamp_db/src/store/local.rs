@@ -10,6 +10,7 @@
 //! of the downloads.
 
 use std::{
+  cell::OnceCell,
   collections::{HashMap, HashSet},
   io,
   path::{Path, PathBuf},
@@ -168,7 +169,7 @@ impl Locals {
   /// share that is offline looks the same as an emptied folder, and dropping the tracks for it
   /// would take their likes out of the lists until the next scan.
   ///
-  /// Covers that the files carry are cached as JPEG files in `covers`.
+  /// Covers that the files carry, or that sit next to them, are cached as JPEG files in `covers`.
   pub async fn scan(&self, dir: &str, covers: &Path) -> Result<ScanReport> {
     let known = self.known_files(dir).await?;
     let root = PathBuf::from(dir);
@@ -348,6 +349,7 @@ fn walk(root: &Path, known: &HashMap<String, (u64, i64)>, covers: &Path) -> io::
       }
     };
     at_root = false;
+    let art = FolderArt::new(&dir);
     for entry in entries.flatten() {
       // hidden files are mostly leftovers, like the `._` copies that macOS writes on other drives
       if entry.file_name().to_string_lossy().starts_with('.') {
@@ -369,7 +371,7 @@ fn walk(root: &Path, known: &HashMap<String, (u64, i64)>, covers: &Path) -> io::
         .map_or(0, |d| d.as_millis() as i64);
       let stamp = (meta.len(), modified_ms);
       if known.get(&key) != Some(&stamp) {
-        let track = read_track(&path, covers);
+        let track = read_track(&path, covers, &art);
         changed.push(Changed { path: key.clone(), size_bytes: stamp.0, modified_ms, track });
       }
       seen.insert(key);
@@ -386,7 +388,8 @@ fn is_audio(path: &Path) -> bool {
 }
 
 /// The track for a file. A file without readable tags still plays, it is named after the file.
-fn read_track(path: &Path, covers: &Path) -> Track {
+/// The cover is the picture in the tags, else the one in the folder of the file.
+fn read_track(path: &Path, covers: &Path, folder: &FolderArt) -> Track {
   let mut track = Track {
     id: track_id_for(path),
     title: path
@@ -399,32 +402,85 @@ fn read_track(path: &Path, covers: &Path) -> Track {
     release_year: None,
   };
   let tagged = match read_from_path(path) {
-    Ok(tagged) => tagged,
+    Ok(tagged) => Some(tagged),
     Err(e) => {
       log::debug!("no tags in {}: {e}", path.display());
-      return track;
+      None
     }
   };
-  let seconds = tagged.properties().duration().as_secs_f64();
-  track.duration_secs = (seconds > 0.0).then_some(seconds);
-  if let Some(tag) = tagged.primary_tag().or_else(|| tagged.first_tag()) {
-    let text = |value: Option<std::borrow::Cow<'_, str>>| {
-      value.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
-    };
-    track.title = text(tag.title()).unwrap_or(track.title);
-    track.artist = text(tag.artist()).unwrap_or(track.artist);
-    track.album = text(tag.album());
-    track.release_year = tag.year();
-    let picture = tag
-      .pictures()
-      .iter()
-      .find(|p| p.pic_type() == PictureType::CoverFront)
-      .or_else(|| tag.pictures().first());
-    if let Some(name) = picture.and_then(|p| cache_cover(p.data(), covers)) {
-      track.thumbnail = Some(format!("{COVER_PREFIX}{name}"));
+  let mut embedded = None;
+  if let Some(tagged) = &tagged {
+    let seconds = tagged.properties().duration().as_secs_f64();
+    track.duration_secs = (seconds > 0.0).then_some(seconds);
+    if let Some(tag) = tagged.primary_tag().or_else(|| tagged.first_tag()) {
+      let text = |value: Option<std::borrow::Cow<'_, str>>| {
+        value.map(|v| v.trim().to_owned()).filter(|v| !v.is_empty())
+      };
+      track.title = text(tag.title()).unwrap_or(track.title);
+      track.artist = text(tag.artist()).unwrap_or(track.artist);
+      track.album = text(tag.album());
+      track.release_year = tag.year();
     }
+    // The picture is looked for in every tag. A file that has two kinds of tags, like ID3v2 next
+    // to an older one, can keep its cover in a different one than the text that is read above.
+    let pictures = || tagged.tags().iter().flat_map(|t| t.pictures());
+    embedded = pictures()
+      .find(|p| p.pic_type() == PictureType::CoverFront)
+      .or_else(|| pictures().next())
+      .map(|p| p.data());
+  }
+  // A picture that cannot be read is skipped, the folder is tried before the track goes without.
+  // The folder is only read when it is needed, so an album with covers in its tags never does.
+  let cached = embedded
+    .and_then(|picture| cache_cover(picture, covers))
+    .or_else(|| folder.get().and_then(|picture| cache_cover(picture, covers)));
+  if let Some(name) = cached {
+    track.thumbnail = Some(format!("{COVER_PREFIX}{name}"));
   }
   track
+}
+
+/// Names that a picture of the cover goes by in a folder, best first.
+const FOLDER_ART_NAMES: &[&str] = &["cover", "folder", "front", "album", "albumart"];
+const FOLDER_ART_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp"];
+/// A picture beyond this is not a cover, and reading it would only slow the scan down.
+const FOLDER_ART_MAX_BYTES: u64 = 20 * 1024 * 1024;
+
+/// The picture that sits next to the songs of one folder. Many albums keep their cover there and
+/// not in the tags. It is looked for once per folder, and only when a file has no usable cover
+/// of its own.
+struct FolderArt<'a> {
+  dir: &'a Path,
+  found: OnceCell<Option<Vec<u8>>>,
+}
+
+impl<'a> FolderArt<'a> {
+  fn new(dir: &'a Path) -> Self {
+    Self { dir, found: OnceCell::new() }
+  }
+
+  fn get(&self) -> Option<&[u8]> {
+    self.found.get_or_init(|| find_folder_art(self.dir)).as_deref()
+  }
+}
+
+/// The bytes of the best named picture in `dir`. Names are compared without regard to case, since
+/// `Cover.JPG` is as common as `cover.jpg`.
+fn find_folder_art(dir: &Path) -> Option<Vec<u8>> {
+  let best = std::fs::read_dir(dir)
+    .ok()?
+    .flatten()
+    .filter_map(|entry| {
+      let path = entry.path();
+      let stem = path.file_stem()?.to_str()?.to_ascii_lowercase();
+      let ext = path.extension()?.to_str()?.to_ascii_lowercase();
+      let rank = FOLDER_ART_NAMES.iter().position(|n| *n == stem)?;
+      let small = entry.metadata().is_ok_and(|m| m.is_file() && m.len() <= FOLDER_ART_MAX_BYTES);
+      (FOLDER_ART_EXTS.contains(&ext.as_str()) && small).then_some((rank, path))
+    })
+    // the path settles a tie, so a folder with both `cover.jpg` and `cover.png` always gives the same one
+    .min()?;
+  std::fs::read(best.1).ok()
 }
 
 /// Writes the picture of a file into `covers` and returns the name it got, without extension.
@@ -644,6 +700,37 @@ mod tests {
     assert_eq!((cached.width(), cached.height()), (LOCAL_COVER_SIZE, LOCAL_COVER_SIZE));
     assert_eq!(std::fs::read_dir(&covers).unwrap().count(), 2);
     assert_eq!(cache_cover(b"not an image", &covers), None);
+    let _ = std::fs::remove_dir_all(covers);
+  }
+
+  #[test]
+  fn the_best_named_picture_of_a_folder_is_used() {
+    let base = scratch("folder-art-rank");
+    assert_eq!(find_folder_art(&base), None);
+    std::fs::write(base.join("holiday.jpg"), b"not a cover").unwrap();
+    std::fs::write(base.join("Folder.PNG"), b"second").unwrap();
+    assert_eq!(find_folder_art(&base).as_deref(), Some(&b"second"[..]));
+    std::fs::write(base.join("COVER.jpeg"), b"first").unwrap();
+    assert_eq!(find_folder_art(&base).as_deref(), Some(&b"first"[..]));
+    let _ = std::fs::remove_dir_all(base);
+  }
+
+  #[tokio::test]
+  async fn a_picture_in_the_folder_covers_the_files_next_to_it() {
+    let db = Db::memory().await.unwrap();
+    let base = scratch("folder-art-scan");
+    std::fs::write(base.join("cover.png"), picture(40, 40)).unwrap();
+    let covers = covers_of(&base);
+    db.locals().add_dir(&base).await.unwrap();
+    db.locals().scan(base.to_str().unwrap(), &covers).await.unwrap();
+
+    let tracks = db.locals().tracks(10, 0).await.unwrap();
+    let thumbnail = |title: &str| tracks.iter().find(|t| t.title == title).unwrap().thumbnail.clone();
+    assert!(thumbnail("one").is_some_and(|t| t.starts_with(COVER_PREFIX)));
+    // the other file is in a folder of its own, and that one has no picture
+    assert_eq!(thumbnail("two"), None);
+    assert_eq!(std::fs::read_dir(&covers).unwrap().count(), 1);
+    let _ = std::fs::remove_dir_all(base);
     let _ = std::fs::remove_dir_all(covers);
   }
 

@@ -4,7 +4,7 @@ import AddToPlaylist from "@/library/AddToPlaylist";
 import { sheen, subdued } from "@/themes/ui";
 import { Box, Drawer, IconButton, Paper, Tooltip, Typography } from "@mui/material";
 import QueueMusicIcon from "@mui/icons-material/QueueMusic";
-import Cover from "./Cover";
+import TrackArt from "./TrackArt";
 import LikeButton from "./LikeButton";
 import Marquee from "./Marquee";
 import QueuePanel from "./QueuePanel";
@@ -39,7 +39,7 @@ export default function PlayerBar() {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-          <Cover src={track?.thumbnail} sx={{ width: 56, height: 56, flexShrink: 0, fontSize: 28 }} />
+          <TrackArt track={track} sx={{ width: 56, height: 56, flexShrink: 0, fontSize: 28 }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography component="div" sx={{ fontWeight: 600 }}><Marquee>{track?.title ?? "Pick something to listen to"}</Marquee></Typography>
             <Typography variant="body2" component="div" sx={subdued}><Marquee>{track ? <TrackArtist track={track} /> : "Search, or open your library"}</Marquee></Typography>

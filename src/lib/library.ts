@@ -120,7 +120,7 @@ export const coverOf = (p: LibraryPlaylist) => customCovers.get(p.id)?.url ?? p.
 /** The longest edge of what is sent. The backend crops and scales for good, this only keeps a photo from crossing the bridge at full size. */
 const SEND_PX = 1024;
 
-async function shrink(file: Blob): Promise<number[]> {
+export async function shrink(file: Blob): Promise<number[]> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, SEND_PX / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");

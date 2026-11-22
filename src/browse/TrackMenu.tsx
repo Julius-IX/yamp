@@ -1,9 +1,11 @@
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Box, Divider, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, type SxProps, type Theme } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadDoneIcon from "@mui/icons-material/DownloadDone";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import HideImageOutlinedIcon from "@mui/icons-material/HideImageOutlined";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import LibraryAddIcon from "@mui/icons-material/LibraryAdd";
@@ -14,6 +16,7 @@ import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import { toggleLike, useIsLiked } from "@/lib/likes";
 import { downloadTrack, isLocalFile, useDownloadStatus } from "@/lib/local";
+import { removeTrackCover, setTrackCover, useHasTrackCover } from "@/lib/trackCovers";
 import type { Track } from "@/lib/types";
 import { player } from "@/player/store";
 import { isRadio } from "@/radio/station";
@@ -58,6 +61,8 @@ export default function TrackMenu({ track, anchor, onClose, onPlay, onWatch, lik
   const download = useDownloadStatus(track.id);
   const [playlists, setPlaylists] = useState<HTMLElement | null>(null);
   const [removing, setRemoving] = useState(false);
+  const hasCover = useHasTrackCover(track.id);
+  const picker = useRef<HTMLInputElement>(null);
 
   const radio = isRadio(track.id);
   const local = isLocalFile(track.id);
@@ -97,10 +102,25 @@ export default function TrackMenu({ track, anchor, onClose, onPlay, onWatch, lik
             onClick={act(() => void toggleLike(track))}
           />
         )}
+        {!radio && <Item icon={<ImageOutlinedIcon fontSize="small" />} label="Change cover" onClick={act(() => picker.current?.click())} />}
+        {hasCover && <Item icon={<HideImageOutlinedIcon fontSize="small" />} label="Reset cover" onClick={act(() => void removeTrackCover(track.id))} />}
         {(onRemove || onReorder) && <Divider />}
         {onRemove && <Item icon={<CloseIcon fontSize="small" />} label="Remove from playlist" onClick={act(onRemove)} />}
         {onReorder && <Item icon={<DragIndicatorIcon fontSize="small" />} label="Reorder tracks" onClick={act(onReorder)} />}
       </Menu>
+      {/* outside of the menu, which drops its entries once it is closed and the picker answers after that */}
+      <input
+        ref={picker}
+        type="file"
+        accept="image/*"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          // cleared so that picking the same file again still fires a change
+          e.target.value = "";
+          if (file) void setTrackCover(track.id, file);
+        }}
+      />
       <PlaylistMenu tracks={[track]} anchor={playlists} onClose={() => setPlaylists(null)} />
       {removing && <RemoveDownloadDialog track={track} onClose={() => setRemoving(false)} />}
     </>

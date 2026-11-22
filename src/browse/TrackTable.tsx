@@ -5,10 +5,12 @@ import CloseIcon from "@mui/icons-material/Close";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import OndemandVideoIcon from "@mui/icons-material/OndemandVideo";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { isLocalFile, useDownloadStatus } from "@/lib/local";
+import { removeTrackCover, setTrackCover, useHasTrackCover } from "@/lib/trackCovers";
 import type { Track } from "@/lib/types";
-import Cover from "@/player/Cover";
+import TrackArt from "@/player/TrackArt";
 import LikeButton from "@/player/LikeButton";
 import { currentTrack, player, usePlayer } from "@/player/store";
 import { isRadio } from "@/radio/station";
@@ -28,7 +30,7 @@ const columns = (plays: boolean) =>
   IS_MOBILE ? "32px minmax(0, 1fr)" : `40px minmax(0, 1.4fr) minmax(0, 1fr)${plays ? " 96px" : ""}`;
 const BUTTON = 40;
 /**
- * Desktop has a button for each of queue, playlist, video, download and like, plus remove when
+ * Desktop has a button for each of cover, queue, playlist, video, download and like, plus remove when
  * the table can remove and the drag handle when it can move rows. All of them but the heart show
  * on hover. Mobile has no room for that, it has the heart and one menu. The download button is
  * the exception to the hover rule once a song is downloading or downloaded. It then stays shown as
@@ -36,7 +38,7 @@ const BUTTON = 40;
  * in the width, so a row does not resize when a download starts or is removed.
  */
 const actionsWidth = (removable: boolean, movable: boolean) =>
-  IS_MOBILE ? BUTTON * 3 : BUTTON * (5 + (removable ? 1 : 0) + (movable ? 1 : 0));
+  IS_MOBILE ? BUTTON * 3 : BUTTON * (6 + (removable ? 1 : 0) + (movable ? 1 : 0));
 
 /**
  * One slot of the action buttons. Every button sits in the same fixed box, centered on both axes,
@@ -94,6 +96,8 @@ export function Handle({ onStart }: { onStart: (e: PointerEvent) => void }) {
 function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove, handle, drop, dragging, reordering, onReorder, selecting, selected, onToggle }: RowProps) {
   const watchable = !isRadio(track.id) && !isLocalFile(track.id);
   const download = useDownloadStatus(track.id);
+  const hasCover = useHasTrackCover(track.id);
+  const picker = useRef<HTMLInputElement>(null);
   return (
     <Box
       role="button"
@@ -132,7 +136,7 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
           <PlayArrowIcon fontSize="small" />
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-          <Cover src={track.thumbnail} px={96} sx={{ width: 40, height: 40, fontSize: 20 }} />
+          <TrackArt track={track} px={96} sx={{ width: 40, height: 40, fontSize: 20 }} />
           <Box sx={{ minWidth: 0 }}>
             <Typography variant="body2" noWrap color={active ? "primary" : "text.primary"}>{track.title}</Typography>
             {IS_MOBILE && (
@@ -163,6 +167,28 @@ function Row({ track, index, active, plays, showPlays, onPlay, onWatch, onRemove
           </>
         ) : (
           <>
+            {/* radio stations have a logo and no cover to change */}
+            <Box className="row-action" sx={cell(false)}>
+              {!isRadio(track.id) && (
+                <Tooltip title={hasCover ? "Change cover (Shift: reset)" : "Change cover"}>
+                  <IconButton
+                    size="small" aria-label="Change cover"
+                    onClick={(e) => (e.shiftKey && hasCover ? void removeTrackCover(track.id) : picker.current?.click())}
+                  >
+                    <ImageOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              )}
+              <input
+                ref={picker} type="file" accept="image/*" hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  // cleared so that picking the same file again still fires a change
+                  e.target.value = "";
+                  if (file) void setTrackCover(track.id, file);
+                }}
+              />
+            </Box>
             <Box className="row-action" sx={cell(false)}>
               <Tooltip title="Add to queue (Shift: play next)">
                 <IconButton

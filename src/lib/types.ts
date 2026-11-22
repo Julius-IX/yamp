@@ -212,6 +212,11 @@ export type Track = {
   releaseYear: number | null;
 }
 
+export type TrackCover = {
+  trackId: string;
+  url: string;
+}
+
 export type UpdateInfo = {
   version: string;
   notes: string | null;

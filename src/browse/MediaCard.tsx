@@ -4,6 +4,7 @@ import MusicNoteIcon from "@mui/icons-material/MusicNote";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import Cover from "@/player/Cover";
+import { useTrackCover } from "@/lib/trackCovers";
 import type { Track } from "@/lib/types";
 import { IS_MOBILE } from "@/util/platform";
 import { TrackMenuButton } from "./TrackMenu";
@@ -57,6 +58,8 @@ type Props = {
  * touch screen without hover it is left out. Artists have no overlay, they only open.
  */
 export default function MediaCard({ thumbnail, art, title, subtitle, variant = "square", fluid, onClick, onPlay, onQueue, track }: Props) {
+  // a card that shows a track draws the cover that was set for it, if there is one
+  const cover = useTrackCover(track, thumbnail);
   return (
     <ButtonBase
       // a div and not a button, the menu of the card holds a button and a button cannot contain one
@@ -80,7 +83,7 @@ export default function MediaCard({ thumbnail, art, title, subtitle, variant = "
       <Box sx={{ position: "relative" }}>
         {art ?? (
           <Cover
-            src={thumbnail}
+            src={cover}
             px={variant === "wide" ? 480 : 320}
             sx={{ width: "100%", fontSize: 40, ...COVER[variant] }}
           />
