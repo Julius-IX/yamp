@@ -189,6 +189,12 @@ fn content_type(path: &Path) -> &'static str {
     Some("opus") => "audio/ogg; codecs=opus",
     Some("wav") => "audio/wav",
     Some("weba" | "webm") => "audio/webm",
+    Some("m4b") => "audio/mp4",
+    Some("mka") => "audio/x-matroska",
+    // the element decides by this type whether it can play a file, so a video is named as one
+    Some("mp4" | "m4v") => "video/mp4",
+    Some("mov") => "video/quicktime",
+    Some("mkv") => "video/x-matroska",
     _ => "application/octet-stream",
   }
 }
@@ -272,6 +278,14 @@ mod tests {
   fn can_be_shared_between_threads() {
     fn shared<T: Send + Sync>() {}
     shared::<FileServer>();
+  }
+
+  #[test]
+  fn video_containers_get_a_type_that_can_be_played() {
+    assert_eq!(content_type(Path::new("mix.MP4")), "video/mp4");
+    assert_eq!(content_type(Path::new("book.m4b")), "audio/mp4");
+    assert_eq!(content_type(Path::new("talk.mkv")), "video/x-matroska");
+    assert_eq!(content_type(Path::new("what.xyz")), "application/octet-stream");
   }
 
   #[test]
