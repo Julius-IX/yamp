@@ -393,15 +393,19 @@ async function lookUpRelated(): Promise<boolean> {
 }
 
 /**
- * Looks up the autoplay tracks while the last track of the queue is still playing. They are
- * then queued like any other, so the stream of the first one is resolved and loaded ahead and the
- * end of a list has no pause. Each last track is tried once, a lookup that found nothing is not
- * repeated every second. Ending still tries again, see `advance`.
+ * Looks up the autoplay tracks once fewer tracks than the prefetch amount are left after the
+ * playing one. They are then queued like any other, so the stream of the first one is resolved
+ * and loaded ahead and the switch from a known list to autoplay has no pause. Each last track is
+ * tried once, a lookup that found nothing is not repeated every second. Ending still tries again,
+ * see `advance`.
  */
 function extendAhead() {
   const { queue, index, repeat } = read();
   const last = queue[queue.length - 1];
-  if (!last || index !== queue.length - 1 || repeat !== "off" || extendedFor === last.id) return;
+  if (!last || index < 0 || repeat !== "off" || extendedFor === last.id) return;
+  // the batch is the most one lookup adds, and the end of the list always counts as needing it
+  const wanted = Math.max(1, Math.min(prefetchLimit(), AUTOPLAY_BATCH));
+  if (queue.length - 1 - index >= wanted) return;
   if (!getSetting("autoplay", true, isBoolean)) return;
   extendedFor = last.id;
   void extend().then((added) => added && prefetchNext());
@@ -698,7 +702,11 @@ export const player = {
 };
 
 // the amount can be changed while a queue plays, which should be felt without waiting for the next track
-onSettingChange((key) => key === "prefetchAmount" && prefetchNext());
+onSettingChange((key) => {
+  if (key !== "prefetchAmount") return;
+  extendAhead();
+  prefetchNext();
+});
 
 // SECTION: hooks
 
