@@ -3,12 +3,22 @@
 //! notification runs in a foreground service so playback survives the app leaving the screen.
 use crate::{ACTION_EVENT, Update};
 use serde::Serialize;
-use std::sync::mpsc::{Sender, channel};
+use std::sync::{
+  OnceLock,
+  mpsc::{Sender, channel},
+};
 use tauri::{
   AppHandle, Emitter, Wry,
   ipc::{Channel, InvokeResponseBody},
-  plugin::PluginApi,
+  plugin::{PluginApi, PluginHandle},
 };
+
+/// Set once while the plugin registers, which is the only moment Tauri hands the handle out.
+static HANDLE: OnceLock<PluginHandle<Wry>> = OnceLock::new();
+
+/// The commands of the Kotlin plugin that the app may call besides the media session. A list keeps
+/// a typo from making a trip over the bridge to be rejected there.
+const COMMANDS: &[&str] = &["discord"];
 
 #[derive(Serialize)]
 struct ListenArgs {
@@ -17,6 +27,7 @@ struct ListenArgs {
 
 pub fn start(app: &AppHandle<Wry>, api: PluginApi<Wry, ()>) -> Result<Sender<Update>, Box<dyn std::error::Error>> {
   let handle = api.register_android_plugin("com.salad.yamp.session", "SessionPlugin")?;
+  let _ = HANDLE.set(handle.clone());
   let emitter = app.clone();
   let (tx, rx) = channel::<Update>();
   // The plugin calls block until Kotlin answers, so none of them is made from the setup that
@@ -41,4 +52,10 @@ pub fn start(app: &AppHandle<Wry>, api: PluginApi<Wry, ()>) -> Result<Sender<Upd
     }
   })?;
   Ok(tx)
+}
+
+pub async fn native(command: &str, payload: serde_json::Value) -> Result<serde_json::Value, String> {
+  let command = COMMANDS.iter().find(|c| **c == command).ok_or_else(|| format!("unknown native command {command}"))?;
+  let handle = HANDLE.get().ok_or("the media session is not ready")?;
+  handle.run_mobile_plugin_async::<serde_json::Value>(command, payload).await.map_err(|e| e.to_string())
 }

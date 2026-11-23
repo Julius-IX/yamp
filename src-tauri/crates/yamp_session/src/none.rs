@@ -9,3 +9,7 @@ pub fn start(_app: &AppHandle<Wry>, _api: PluginApi<Wry, ()>) -> Result<Sender<U
   std::thread::spawn(move || while rx.recv().is_ok() {});
   Ok(tx)
 }
+
+pub async fn native(_command: &str, _payload: serde_json::Value) -> Result<serde_json::Value, String> {
+  Err("there is no native side on this platform".into())
+}

@@ -71,6 +71,11 @@ impl Session {
       log::warn!("the media session backend is not running");
     }
   }
+
+  /// Calls a command of the Kotlin plugin, which is `discord`. Only Android has one, elsewhere this is an error.
+  pub async fn native(&self, command: &str, payload: serde_json::Value) -> Result<serde_json::Value, String> {
+    backend::native(command, payload).await
+  }
 }
 
 /// Starts the backend and manages [`Session`]. Add it to the builder before the first update.

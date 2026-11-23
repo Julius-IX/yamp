@@ -15,7 +15,7 @@ const trackUrl = (id: string) =>
 /** There is no id of the artist at hand, so the link is a search for the name. */
 const artistUrl = (artist: string) => `https://music.youtube.com/search?q=${encodeURIComponent(artist)}`;
 
-/** Whether this build can show a presence. False on a phone, and without a Discord application id. */
+/** Whether this build can show a presence. False on iOS, and without a Discord application id. Android also needs the SDK in the build. */
 export function useDiscordAvailable() {
   const [available, setAvailable] = useState(false);
   useEffect(() => {

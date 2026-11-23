@@ -141,3 +141,7 @@ fn action(event: MediaControlEvent) -> Option<Action> {
     _ => return None,
   })
 }
+
+pub async fn native(_command: &str, _payload: serde_json::Value) -> Result<serde_json::Value, String> {
+  Err("there is no native side on this platform".into())
+}

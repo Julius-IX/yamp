@@ -2,7 +2,7 @@ import { useDiscordAvailable } from "@/lib/discord";
 import { isBoolean, useSetting } from "@/lib/settings";
 import type { AudioQuality } from "@/lib/types";
 import { defaultPrefetchAmount, isPrefetchAmount, isQuality, type PrefetchAmount } from "@/player/store";
-import { IS_MOBILE } from "@/util/platform";
+import { IS_ANDROID, IS_MOBILE } from "@/util/platform";
 import { ChoiceRow, SwitchRow } from "./controls";
 import { PrefRow, Section } from "./rows";
 
@@ -36,17 +36,28 @@ export default function PlaybackPage() {
         checked={autoplay}
         onChange={setAutoplay}
       />
-      {/* Discord runs on a desktop, there is nothing to show on a phone */}
-      {!IS_MOBILE &&
+      {/* iOS only shows a presence after a sign in, which is not built, so only it has nothing to offer */}
+      {(!IS_MOBILE || IS_ANDROID) &&
         (discordAvailable ? (
           <SwitchRow
             title="Discord Rich Presence"
-            summary="Show what you're listening to on Discord"
+            summary={
+              IS_ANDROID
+                ? "Show what you're listening to on Discord. The Discord app has to be installed and signed in"
+                : "Show what you're listening to on Discord"
+            }
             checked={discord}
             onChange={setDiscord}
           />
         ) : (
-          <PrefRow title="Discord Rich Presence" summary="No Discord application is set up in this build" />
+          <PrefRow
+            title="Discord Rich Presence"
+            summary={
+              IS_ANDROID
+                ? "This build has no Discord application or no Discord SDK"
+                : "No Discord application is set up in this build"
+            }
+          />
         ))}
       <ChoiceRow
         title="Audio quality"
