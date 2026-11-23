@@ -48,6 +48,12 @@ class SessionPlugin(private val activity: Activity) : Plugin(activity) {
         invoke.resolve()
     }
 
+    /** The Discord presence, see [DiscordHost]. */
+    @Command
+    fun discord(invoke: Invoke) {
+        invoke.resolve(DiscordHost.run(invoke.getArgs()))
+    }
+
     // The notification is silently dropped without this on Android 13 and newer. Asked once,
     // the first time something plays, so the prompt has a reason the person can see.
     private fun askForNotifications() {

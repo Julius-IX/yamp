@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.webkit.WebView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
+import app.tauri.plugin.JSObject
+import com.salad.yamp.session.DiscordHost
 import com.salad.yamp.session.SessionHost
 
 class MainActivity : TauriActivity() {
@@ -28,6 +30,7 @@ class MainActivity : TauriActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
+    DiscordHost.engine(this)
   }
 
   override fun onWebViewCreate(webView: WebView) {
@@ -40,5 +43,11 @@ class MainActivity : TauriActivity() {
   override fun onPause() {
     super.onPause()
     if (SessionHost.isPlaying) webView?.onResume()
+  }
+
+  // Only the webview knows what plays, and it goes with the activity, so the card would go stale.
+  override fun onDestroy() {
+    DiscordHost.run(JSObject().put("op", "clear"))
+    super.onDestroy()
   }
 }

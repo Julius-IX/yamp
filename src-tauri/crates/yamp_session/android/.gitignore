@@ -1,2 +1,5 @@
 /build
 /.tauri
+# the Discord Social SDK is downloaded by hand, see the readme of yamp-discord
+/libs/
+/.cxx/

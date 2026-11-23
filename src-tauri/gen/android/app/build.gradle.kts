@@ -89,7 +89,12 @@ rust {
     rootDirRel = "../../../"
 }
 
+// The Discord Social SDK of the session plugin, which is not in the repository. It is packaged
+// here because a library cannot carry a local aar.
+val discordSdk = file("../../../crates/yamp_session/android/libs/discord_partner_sdk.aar")
+
 dependencies {
+    if (discordSdk.exists()) implementation(files(discordSdk))
     implementation("androidx.webkit:webkit:1.14.0")
     implementation("androidx.appcompat:appcompat:1.7.1")
     implementation("androidx.activity:activity-ktx:1.10.1")
