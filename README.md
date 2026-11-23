@@ -45,7 +45,7 @@ Please read both before using the app.
 | **Radio** | Listen to internet radio, found by search or by tag |
 | **Themes** | Custom themes with a color for every part of the interface, in both dark and light |
 | **Statistics** | Listening statistics that stay on your devices and can be turned off |
-| **Discord** | Rich Presence on desktop |
+| **Discord** | Rich Presence on desktop and Android |
 | **System integration** | Media controls from the lock screen or the system, and updates from inside the app |
 
 ## Screenshots
@@ -147,7 +147,7 @@ A build only offers a service when it was compiled with client ids for it, see [
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Reading and downloading YouTube content on desktop, fetched from its releases and kept up to date by the app |
 | [youtubedl-android](https://github.com/yausername/youtubedl-android) | The same job on Android |
 | [Radio Browser](https://www.radio-browser.info) | The directory of radio stations |
-| [Discord](https://discord.com) | Rich Presence, through the app running on your computer |
+| [Discord](https://discord.com) | Rich Presence, through the Discord app on your computer, or through the Discord Social SDK on Android |
 
 ## Tech stack
 

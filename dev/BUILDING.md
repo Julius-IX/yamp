@@ -95,6 +95,12 @@ The template is [`config.toml.example`](../src-tauri/crates/yamp_discord/config.
 [When nothing shows up](../src-tauri/crates/yamp_discord/README.md#when-nothing-shows-up) in the
 readme of [`yamp-discord`](../src-tauri/crates/yamp_discord/README.md).
 
+Android shows the presence through the Discord Social SDK, which is not part of the repository.
+Download it once and put `discord_partner_sdk.aar` in
+`src-tauri/crates/yamp_session/android/libs/`, and install CMake 3.22 or newer in the Android SDK
+Manager. A build without the file works as before and has no presence on Android. The steps are in
+[Android](../src-tauri/crates/yamp_discord/README.md#android) in the readme of `yamp-discord`.
+
 ### Cloud sync
 
 The sign in for Google Drive and OneDrive needs a client id per platform. A service without an id
@@ -219,7 +225,7 @@ newest release and opens its `.apk` asset. macOS and iOS are not built here.
 | [`cloud-auth`](../src-tauri/crates/cloud_auth/README.md) | Client registration, variables and the mobile deep link |
 | [`cloud-sync`](../src-tauri/crates/cloud_sync/README.md) | Providers and the storage interface |
 | [`cloud-kit`](../src-tauri/crates/cloud_kit/README.md) | Documents, logs and blobs on top of a store |
-| [`yamp-discord`](../src-tauri/crates/yamp_discord/README.md) | The presence card and its application id |
+| [`yamp-discord`](../src-tauri/crates/yamp_discord/README.md) | The presence card, its application id and the Android SDK setup |
 | [`tauri-groups`](../src-tauri/crates/tauri_groups/README.md) | Command groups and the generated bindings |
 | [`tauri-settings`](../src-tauri/crates/tauri_settings/README.md) | Stored settings |
 | [`ts-types`](../src-tauri/crates/ts_types/README.md) | The derive that describes a Rust type for the bindings |

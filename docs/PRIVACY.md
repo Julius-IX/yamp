@@ -55,8 +55,8 @@ not receive these requests, and each service handles them under its own privacy 
   are sent to YouTube.
 - **Radio Browser:** finding internet radio stations by search or tag.
 - **GitHub:** checking for and downloading updates to the app and to yt-dlp.
-- **Discord:** if you enable Rich Presence on desktop, what you are listening to is passed to
-  the Discord app running on your own computer.
+- **Discord:** if you enable Rich Presence, what you are listening to is passed to the Discord app
+  running on your own computer or phone. On Android this happens through the Discord Social SDK.
 
 ## Data collection and sharing
 

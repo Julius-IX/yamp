@@ -33,7 +33,7 @@ The Developer does not operate any server that mediates between the user and the
 | Google Drive | Optional synchronization between the user's devices, using the hidden App Data folder (`drive.appdata` scope). The App has no access to any other file in the user's Drive. |
 | OneDrive | Optional synchronization between the user's devices, using the App's dedicated folder (`approot`). |
 | iCloud | Optional synchronization between Apple devices, using the App's own iCloud container. |
-| Discord (Rich Presence) | Optional, desktop only. Displays the current listening activity on the user's Discord profile through the Discord application running on the user's computer. |
+| Discord (Rich Presence) | Optional, desktop and Android. Displays the current listening activity on the user's Discord profile through the Discord application on the user's computer or phone. On Android this uses the Discord Social SDK. |
 | YouTube and YouTube Music | Searching, browsing, streaming, and downloading of media content. See Section 5. |
 | Radio Browser (radio-browser.info) | Community directory of internet radio stations. Station streams connect directly to the servers of the respective stations. |
 | yt-dlp (GitHub) | On desktop, the App retrieves the open-source yt-dlp tool from its GitHub releases in order to read YouTube content. |
@@ -70,7 +70,7 @@ They leave the device only if the user has linked a cloud account, and then only
 The user may disable statistics in the settings of the App.
 
 4.5. **Discord.**
-If the user enables Rich Presence, the track title, artist, and cover image are transmitted to Discord through the Discord application on the user's computer for display on the user's profile.
+If the user enables Rich Presence, the track title, artist, and cover image are transmitted to Discord through the Discord application on the user's computer or phone for display on the user's profile.
 The handling of this information by Discord is governed by Discord's own policies.
 
 4.6. **Revocation and deletion.**
