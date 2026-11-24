@@ -100,6 +100,8 @@ Download it once and put `discord_partner_sdk.aar` in
 `src-tauri/crates/yamp_session/android/libs/`, and install CMake 3.22 or newer in the Android SDK
 Manager. A build without the file works as before and has no presence on Android. The steps are in
 [Android](../src-tauri/crates/yamp_discord/README.md#android) in the readme of `yamp-discord`.
+`scripts/build.sh` lists a missing file, and a CMake that is too old, with its checks before it
+builds. The Android build needs the application id too, not only the desktop ones.
 
 ### Cloud sync
 
