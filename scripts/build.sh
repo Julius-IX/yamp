@@ -24,10 +24,10 @@
 # release. The Android app only looks for the first .apk asset of the latest release.
 #
 # Before building, everything that is missing is listed in one place: the Discord id, the Discord
-# SDK of the Android build, the cloud client ids of every platform being built, the updater signing
-# key when the updater is on, and any target the host cannot build. The ids are looked up the way the build.rs of cloud-auth and
-# yamp-discord do it: the environment, then the config.toml of the crate, then
-# src-tauri/.cargo/config.toml.
+# SDK of the Android build and the CMake it needs, the cloud client ids of every platform being
+# built, the updater signing key when the updater is on, and any target the host cannot build. The
+# ids are looked up the way the build.rs of cloud-auth and yamp-discord do it: the environment, then
+# the config.toml of the crate, then src-tauri/.cargo/config.toml.
 
 set -uo pipefail
 
@@ -403,11 +403,26 @@ check_icons() {
   ' "$CONF" 2>/dev/null
 }
 
+# Succeeds when the first version is the second or newer. An empty first one never is.
+version_at_least() { # version minimum
+  [[ -n "$1" && "$(printf '%s\n%s\n' "$1" "$2" | sort -V | head -n1)" == "$2" ]]
+}
+
 # The Discord Social SDK is a manual download and not in the repository. Gradle leaves the presence
 # out without it, so the APK builds fine and silently has no card. That is reported here instead.
 check_discord_sdk() {
-  [[ -f "$DISCORD_SDK" ]] ||
+  if [[ ! -f "$DISCORD_SDK" ]]; then
     add_warn "android: $DISCORD_SDK is missing, the APK has no Discord presence, see the Android section of src-tauri/crates/yamp_discord/README.md"
+    return
+  fi
+  # With the SDK in place Gradle builds the JNI glue, which needs CMake 3.22 or newer. The SDK
+  # Manager one is what Gradle looks for first, so a CMake on the PATH is only the second choice.
+  local sdk v; sdk="$(android_sdk)"
+  v="$(find "$sdk/cmake" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort -V | tail -n1)"
+  version_at_least "$v" 3.22 && return
+  v="$(cmake --version 2>/dev/null | sed -n '1s/[^0-9]*\([0-9][0-9.]*\).*/\1/p')"
+  version_at_least "$v" 3.22 && return
+  add_warn "android: $DISCORD_SDK is there but no CMake 3.22 or newer was found in the Android SDK, install it with the SDK Manager or the build is likely to fail"
 }
 
 preflight() {
