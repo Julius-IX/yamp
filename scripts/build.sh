@@ -23,9 +23,9 @@
 # script also writes that file next to the artifacts. Upload everything it lists at the end to one
 # release. The Android app only looks for the first .apk asset of the latest release.
 #
-# Before building, everything that is missing is listed in one place: the Discord id, the cloud
-# client ids of every platform being built, the updater signing key when the updater is on, and
-# any target the host cannot build. The ids are looked up the way the build.rs of cloud-auth and
+# Before building, everything that is missing is listed in one place: the Discord id, the Discord
+# SDK of the Android build, the cloud client ids of every platform being built, the updater signing
+# key when the updater is on, and any target the host cannot build. The ids are looked up the way the build.rs of cloud-auth and
 # yamp-discord do it: the environment, then the config.toml of the crate, then
 # src-tauri/.cargo/config.toml.
 
@@ -39,6 +39,7 @@ CONF="src-tauri/tauri.conf.json"
 ANDROID_DIR="src-tauri/gen/android"
 CARGO_CONF="src-tauri/.cargo/config.toml"
 DISCORD_CONF="src-tauri/crates/yamp_discord/config.toml"
+DISCORD_SDK="src-tauri/crates/yamp_session/android/libs/discord_partner_sdk.aar"
 CLOUD_CONF="src-tauri/crates/cloud_auth/config.toml"
 BUILDS_ROOT="${YAMP_BUILDS_DIR:-$ROOT/builds}"
 SIGN_KEY_FILE="${YAMP_SIGNING_KEY:-$HOME/.tauri/yamp.key}"
@@ -402,6 +403,13 @@ check_icons() {
   ' "$CONF" 2>/dev/null
 }
 
+# The Discord Social SDK is a manual download and not in the repository. Gradle leaves the presence
+# out without it, so the APK builds fine and silently has no card. That is reported here instead.
+check_discord_sdk() {
+  [[ -f "$DISCORD_SDK" ]] ||
+    add_warn "android: $DISCORD_SDK is missing, the APK has no Discord presence, see the Android section of src-tauri/crates/yamp_discord/README.md"
+}
+
 preflight() {
   local t desktop=0
   for t in "${SELECTED[@]}"; do [[ "$t" == android ]] || desktop=1; done
@@ -420,6 +428,7 @@ preflight() {
   # Android hands the id to the Discord SDK as well, so every target needs it
   cfg_get YAMP_DISCORD_APP_ID "$DISCORD_CONF" >/dev/null ||
     add_warn "no YAMP_DISCORD_APP_ID in the environment, $DISCORD_CONF or $CARGO_CONF, the builds have no Discord presence"
+  [[ " ${SELECTED[*]} " == *" android "* ]] && check_discord_sdk
 
   # the AppImage bundles GStreamer when this is on, and the build host has to have it
   if [[ " ${SELECTED[*]} " == *" linux "* && -n "$(conf_get bundle.linux.appimage.bundleMediaFramework)" ]]; then
