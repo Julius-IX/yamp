@@ -417,11 +417,9 @@ preflight() {
 
   for t in "${SELECTED[@]}"; do check_cloud "$t"; done
 
-  # the Discord presence is compiled out of the mobile builds, so only the desktop ones need the id
-  if [[ $desktop -eq 1 ]]; then
-    cfg_get YAMP_DISCORD_APP_ID "$DISCORD_CONF" >/dev/null ||
-      add_warn "no YAMP_DISCORD_APP_ID in the environment, $DISCORD_CONF or $CARGO_CONF, the desktop builds have no Discord presence"
-  fi
+  # Android hands the id to the Discord SDK as well, so every target needs it
+  cfg_get YAMP_DISCORD_APP_ID "$DISCORD_CONF" >/dev/null ||
+    add_warn "no YAMP_DISCORD_APP_ID in the environment, $DISCORD_CONF or $CARGO_CONF, the builds have no Discord presence"
 
   # the AppImage bundles GStreamer when this is on, and the build host has to have it
   if [[ " ${SELECTED[*]} " == *" linux "* && -n "$(conf_get bundle.linux.appimage.bundleMediaFramework)" ]]; then
