@@ -1,4 +1,4 @@
-/git add src-tauri/crates/yamp_session/android src-tauri/gen/android/app && git commit -m 'feat(discord): add social sdk presence to the android plugin'/ The Discord presence of Android, shown by the Discord Social SDK through the Discord app of the
+// The Discord presence of Android, shown by the Discord Social SDK through the Discord app of the
 // phone. No sign in is involved, the SDK needs only the application id and a Discord app that is
 // installed and signed in. The functions are called by `DiscordNative` in Kotlin.
 //
